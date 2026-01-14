@@ -17,21 +17,27 @@ const Housekeeping: React.FC = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'Clean': return 'bg-emerald-100 text-emerald-800 border-emerald-200';
-      case 'Dirty': return 'bg-rose-100 text-rose-800 border-rose-200';
-      case 'Maintenance': return 'bg-amber-100 text-amber-800 border-amber-200';
-      case 'Occupied': return 'bg-slate-900 text-white border-slate-900';
+      case RoomStatus.CLEAN: return 'bg-emerald-100 text-emerald-800 border-emerald-200';
+      case RoomStatus.DIRTY: return 'bg-rose-100 text-rose-800 border-rose-200';
+      case RoomStatus.OOO: return 'bg-amber-100 text-amber-800 border-amber-200';
+      case RoomStatus.INSPECT: return 'bg-blue-100 text-blue-800 border-blue-200';
+      case RoomStatus.OCCUPIED: return 'bg-slate-900 text-white border-slate-900';
       default: return 'bg-slate-100 text-slate-800';
     }
   };
 
-  const getStatusDisplay = (status: string) => status;
+  const getStatusDisplay = (status: string) => {
+    if (status === RoomStatus.OOO) return 'Maintenance';
+    return status;
+  };
 
-  // Filter logic might need adjustment if RoomStatus enum values differ from display labels
-  // Assuming MOCK_ROOMS uses RoomStatus enum values which likely match or map close enough for this mock.
+  // Correctly filter based on RoomStatus enum values
   const filteredRooms = filter === 'ALL'
     ? MOCK_ROOMS
-    : MOCK_ROOMS.filter(r => r.status === filter || (filter === 'Occupied' && r.status === RoomStatus.OCCUPIED));
+    : MOCK_ROOMS.filter(r => {
+      if (filter === 'Maintenance') return r.status === RoomStatus.OOO;
+      return r.status === filter;
+    });
 
   return (
     <div className="space-y-8 animate-fadeIn pb-10">
@@ -68,8 +74,8 @@ const Housekeeping: React.FC = () => {
             key={f.value}
             onClick={() => setFilter(f.value)}
             className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${filter === f.value
-                ? 'bg-slate-900 text-white shadow-md'
-                : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
+              ? 'bg-slate-900 text-white shadow-md'
+              : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
               }`}
           >
             {f.label}

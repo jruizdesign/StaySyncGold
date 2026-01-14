@@ -1,118 +1,128 @@
-import React from 'react';
-import { Card, Button, Badge } from '../components/UIComponents';
-import { MOCK_TRANSACTIONS } from '../constants';
-import { Download, PieChart, TrendingUp, DollarSign } from 'lucide-react';
-import { PieChart as RePieChart, Pie, Cell, ResponsiveContainer, Tooltip as ReTooltip, Legend } from 'recharts';
+import React, { useState } from 'react';
+import { Calendar, Printer, DollarSign, Wallet, TrendingUp, CreditCard } from 'lucide-react';
 
 const Financials: React.FC = () => {
-  const pieData = [
-    { name: 'Room Revenue', value: 65, color: '#f59e0b' },
-    { name: 'F&B', value: 20, color: '#10b981' },
-    { name: 'Services', value: 10, color: '#3b82f6' },
-    { name: 'Events', value: 5, color: '#8b5cf6' },
-  ];
+  const [selectedDate, setSelectedDate] = useState('2026-01-14');
+
+  // Helper to format date for header (e.g., "Tuesday, January 13, 2026")
+  const formatDate = (dateString: string) => {
+    const options: Intl.DateTimeFormatOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+    return new Date(dateString).toLocaleDateString('en-US', options);
+  };
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-xl font-bold text-slate-800">Financial Performance</h2>
-        <Button variant="outline" icon={Download}>Export Report</Button>
+    <div className="space-y-8 animate-fadeIn pb-10">
+      {/* Page Header */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-3 mb-1">
+            <Calendar className="w-6 h-6 text-emerald-600" />
+            <h1 className="text-2xl font-bold text-slate-900">Daily Financial Record</h1>
+          </div>
+          <p className="text-slate-500 text-sm">Day-at-a-glance view of collections and guest balances.</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="relative">
+            <input
+              type="date"
+              className="pl-4 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-slate-700 font-medium focus:ring-2 focus:ring-blue-500 outline-none shadow-sm"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+            />
+          </div>
+          <button className="flex items-center gap-2 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-medium transition-colors shadow-sm">
+            <Printer className="w-4 h-4" />
+            Print Report
+          </button>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-         <Card className="lg:col-span-2">
-           <div className="flex justify-between items-center mb-6">
-              <h3 className="font-bold text-slate-800">Recent Transactions</h3>
-              <Button variant="ghost" className="text-sm">View All</Button>
-           </div>
-           <div className="overflow-x-auto">
-             <table className="w-full text-sm text-left">
-               <thead className="text-slate-500 border-b border-slate-100 bg-slate-50/50">
-                 <tr>
-                   <th className="pb-3 pl-2 font-medium">Date</th>
-                   <th className="pb-3 font-medium">Description</th>
-                   <th className="pb-3 font-medium">Category</th>
-                   <th className="pb-3 font-medium text-right pr-2">Amount</th>
-                 </tr>
-               </thead>
-               <tbody className="divide-y divide-slate-50">
-                 {MOCK_TRANSACTIONS.map(t => (
-                   <tr key={t.id} className="group hover:bg-slate-50 transition-colors">
-                     <td className="py-3 pl-2 text-slate-500">{new Date(t.date).toLocaleDateString()}</td>
-                     <td className="py-3 font-medium text-slate-800">{t.description}</td>
-                     <td className="py-3">
-                       <Badge color="gray">{t.category}</Badge>
-                     </td>
-                     <td className={`py-3 pr-2 text-right font-bold ${t.type === 'Credit' ? 'text-emerald-600' : 'text-slate-800'}`}>
-                       {t.type === 'Credit' ? '+' : '-'}${t.amount}
-                     </td>
-                   </tr>
-                 ))}
-               </tbody>
-             </table>
-           </div>
-         </Card>
-
-         <Card title="Revenue Distribution">
-           <div className="h-64">
-             <ResponsiveContainer width="100%" height="100%">
-               <RePieChart>
-                 <Pie
-                   data={pieData}
-                   innerRadius={60}
-                   outerRadius={80}
-                   paddingAngle={5}
-                   dataKey="value"
-                 >
-                   {pieData.map((entry, index) => (
-                     <Cell key={`cell-${index}`} fill={entry.color} />
-                   ))}
-                 </Pie>
-                 <ReTooltip />
-                 <Legend />
-               </RePieChart>
-             </ResponsiveContainer>
-           </div>
-           <div className="mt-4 space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-slate-500">Projected RevPAR</span>
-                <span className="font-bold text-slate-900">$142.50</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-slate-500">ADR (Average Daily Rate)</span>
-                <span className="font-bold text-slate-900">$185.00</span>
-              </div>
-           </div>
-         </Card>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-slate-900 rounded-xl p-6 text-white relative overflow-hidden">
-           <div className="absolute top-0 right-0 p-8 opacity-10">
-              <DollarSign className="w-32 h-32" />
-           </div>
-           <p className="text-slate-400 font-medium mb-1">Total Monthly Revenue</p>
-           <h3 className="text-4xl font-bold text-white mb-6">$124,592.00</h3>
-           <div className="flex gap-4">
-              <div className="bg-slate-800 p-3 rounded-lg flex-1">
-                 <p className="text-xs text-slate-400 mb-1">Expenses</p>
-                 <p className="text-lg font-bold text-rose-400">$32,100</p>
-              </div>
-              <div className="bg-slate-800 p-3 rounded-lg flex-1">
-                 <p className="text-xs text-slate-400 mb-1">Net Profit</p>
-                 <p className="text-lg font-bold text-emerald-400">$92,492</p>
-              </div>
-           </div>
+      {/* KPI Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Total Collected */}
+        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-[0_2px_8px_rgba(0,0,0,0.04)] flex flex-col justify-between h-40">
+          <div className="flex justify-between items-start">
+            <div>
+              <p className="text-sm font-bold text-slate-500">Total Collected</p>
+              <p className="text-4xl font-bold text-emerald-600 mt-2">$0</p>
+            </div>
+            <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center">
+              <DollarSign className="w-5 h-5 text-emerald-600" />
+            </div>
+          </div>
+          <p className="text-xs text-slate-400">Cash/card received on this date</p>
         </div>
 
-        <div className="bg-gold-500 rounded-xl p-6 text-white relative overflow-hidden">
-           <div className="absolute top-0 right-0 p-8 opacity-10">
-              <TrendingUp className="w-32 h-32" />
-           </div>
-           <p className="text-gold-100 font-medium mb-1">Outstanding Invoices</p>
-           <h3 className="text-4xl font-bold text-white mb-6">3</h3>
-           <p className="text-sm text-gold-100 mb-4">Total Value: $4,250.00</p>
-           <Button className="w-full bg-white text-gold-600 hover:bg-gold-50">View Invoices</Button>
+        {/* Outstanding Balances */}
+        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-[0_2px_8px_rgba(0,0,0,0.04)] flex flex-col justify-between h-40">
+          <div className="flex justify-between items-start">
+            <div>
+              <p className="text-sm font-bold text-slate-500">Outstanding Balances</p>
+              <p className="text-4xl font-bold text-rose-500 mt-2">$0</p>
+            </div>
+            <div className="w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center">
+              <Wallet className="w-5 h-5 text-rose-500" />
+            </div>
+          </div>
+          <p className="text-xs text-slate-400">Total amount owed by active guests</p>
+        </div>
+
+        {/* Daily Accrued */}
+        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-[0_2px_8px_rgba(0,0,0,0.04)] flex flex-col justify-between h-40">
+          <div className="flex justify-between items-start">
+            <div>
+              <p className="text-sm font-bold text-slate-500">Daily Accrued</p>
+              <p className="text-4xl font-bold text-blue-600 mt-2">$0</p>
+            </div>
+            <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+              <TrendingUp className="w-5 h-5 text-blue-600" />
+            </div>
+          </div>
+          <p className="text-xs text-slate-400">Revenue from today's stays</p>
+        </div>
+
+        {/* Projected Revenue */}
+        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-[0_2px_8px_rgba(0,0,0,0.04)] flex flex-col justify-between h-40">
+          <div className="flex justify-between items-start">
+            <div>
+              <p className="text-sm font-bold text-slate-500">Projected Revenue</p>
+              <p className="text-4xl font-bold text-purple-600 mt-2">$0</p>
+            </div>
+            <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
+              <CreditCard className="w-5 h-5 text-purple-600" />
+            </div>
+          </div>
+          <p className="text-xs text-slate-400">Total expected from current stays</p>
+        </div>
+      </div>
+
+      {/* Room Details Table */}
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="p-6 border-b border-slate-100">
+          <h3 className="font-bold text-slate-900">Room Details - {formatDate(selectedDate)}</h3>
+        </div>
+        <div className="overflow-x-auto min-h-[300px]">
+          <table className="w-full text-sm text-left">
+            <thead className="text-slate-800 bg-slate-50/50 uppercase font-bold text-xs tracking-wider">
+              <tr>
+                <th className="px-6 py-4">Room</th>
+                <th className="px-6 py-4">Guest Name</th>
+                <th className="px-6 py-4">Status</th>
+                <th className="px-6 py-4">Nightly Rate</th>
+                <th className="px-6 py-4">Projected Bill</th>
+                <th className="px-6 py-4 bg-emerald-50 text-emerald-800">Paid Today</th>
+                <th className="px-6 py-4">Total Due Now</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {/* Empty State */}
+              <tr>
+                <td colSpan={7} className="px-6 py-20 text-center text-slate-400 italic">
+                  No activity found for this date.
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
