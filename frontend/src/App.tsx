@@ -8,6 +8,7 @@ import StaffKiosk from './pages/StaffKiosk';
 import Staff from './pages/Staff';
 import Financials from './pages/Financials';
 import Login from './pages/Login';
+import AdminSettings from './pages/AdminSettings';
 
 // Placeholder components for brevity
 const Guests = () => <div className="p-4 text-slate-500">Guest Management Module (See Reservations for data)</div>;
@@ -19,6 +20,7 @@ const App: React.FC = () => {
       <Layout>
         <Routes>
           <Route path="/login" element={<Login />} />
+          <Route path="/admin" element={<AdminSettings />} />
           <Route path="/" element={<Dashboard />} />
           <Route path="/reservations" element={<Reservations />} />
           <Route path="/guests" element={<Guests />} />

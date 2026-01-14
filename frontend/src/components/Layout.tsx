@@ -1,9 +1,10 @@
+```
 import React, { useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, CalendarRange, Users, BedDouble,
-  Wrench, UserCog, CreditCard, BarChart3, Clock,
-  LogOut, Menu, X, MonitorPlay, Hotel
+  Wrench, UserCog, CreditCard, BarChart3, Clock, 
+  LogOut, Menu, X, MonitorPlay, Hotel, Settings
 } from 'lucide-react';
 import { SmartAssistant } from './SmartAssistant';
 
@@ -15,12 +16,13 @@ const SidebarLink = ({ to, icon: Icon, label }: { to: string, icon: any, label: 
   <NavLink
     to={to}
     className={({ isActive }) => `
-      flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 group
-      ${isActive
-        ? 'bg-gold-500 text-white shadow-lg shadow-gold-500/30'
-        : 'text-slate-400 hover:bg-slate-800 hover:text-white'
-      }
-    `}
+      flex items - center gap - 3 px - 4 py - 3 rounded - lg transition - all duration - 200 group
+      ${
+  isActive
+    ? 'bg-gold-500 text-white shadow-lg shadow-gold-500/30'
+    : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+}
+`}
   >
     <Icon className="w-5 h-5 transition-transform group-hover:scale-110" />
     <span className="font-medium">{label}</span>
@@ -49,9 +51,9 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
       {/* Sidebar */}
       <aside className={`
-        fixed lg:static inset-y-0 left-0 z-50 w-64 bg-slate-900 text-white transform transition-transform duration-300 ease-in-out flex flex-col
-        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-      `}>
+        fixed lg:static inset - y - 0 left - 0 z - 50 w - 64 bg - slate - 900 text - white transform transition - transform duration - 300 ease -in -out flex flex - col
+        ${ sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0' }
+`}>
         <div className="h-16 flex items-center px-6 border-b border-slate-800">
           <Hotel className="w-8 h-8 text-gold-500 mr-3" />
           <span className="text-xl font-bold tracking-tight text-white">
@@ -68,6 +70,9 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           <SidebarLink to="/staff" icon={UserCog} label="Staff & Schedule" />
           <SidebarLink to="/financials" icon={CreditCard} label="Billing & Reports" />
           <SidebarLink to="/kiosk" icon={MonitorPlay} label="Staff Kiosk Mode" />
+          <div className="pt-4 mt-4 border-t border-slate-800">
+             <SidebarLink to="/admin" icon={Settings} label="Settings" />
+          </div>
         </nav>
 
         <div className="p-4 border-t border-slate-800">
@@ -91,7 +96,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
           <div className="flex-1 px-4 lg:px-8">
             <h1 className="text-lg lg:text-xl font-semibold text-slate-800 capitalize">
-              {location.pathname === '/' ? 'Admin Control Center' : location.pathname.split('/')[1].replace('-', ' ')}
+              {location.pathname === '/' ? 'Dashboard' : location.pathname.split('/')[1].replace('-', ' ')}
             </h1>
           </div>
 
