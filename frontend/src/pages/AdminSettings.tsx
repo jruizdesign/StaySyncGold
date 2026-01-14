@@ -118,6 +118,7 @@ const DatabaseInspector: React.FC = () => {
                 .from('properties')
                 .upsert([{
                     id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+                    name: 'Grand Hotel & Suites',
                     location: '123 Luxury Blvd',
                     managerName: 'Jason',
                     ownerName: 'Jason',
