@@ -25,7 +25,7 @@ const Login: React.FC = () => {
             setError(authError.message);
             setLoading(false);
         } else {
-            navigate('/');
+            navigate('/dashboard');
         }
     };
 
