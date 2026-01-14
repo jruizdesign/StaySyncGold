@@ -1,9 +1,9 @@
-```
+
 import React, { useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, CalendarRange, Users, BedDouble,
-  Wrench, UserCog, CreditCard, BarChart3, Clock, 
+  Wrench, UserCog, CreditCard, BarChart3, Clock,
   LogOut, Menu, X, MonitorPlay, Hotel, Settings
 } from 'lucide-react';
 import { SmartAssistant } from './SmartAssistant';
@@ -17,11 +17,10 @@ const SidebarLink = ({ to, icon: Icon, label }: { to: string, icon: any, label: 
     to={to}
     className={({ isActive }) => `
       flex items - center gap - 3 px - 4 py - 3 rounded - lg transition - all duration - 200 group
-      ${
-  isActive
-    ? 'bg-gold-500 text-white shadow-lg shadow-gold-500/30'
-    : 'text-slate-400 hover:bg-slate-800 hover:text-white'
-}
+      ${isActive
+        ? 'bg-gold-500 text-white shadow-lg shadow-gold-500/30'
+        : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+      }
 `}
   >
     <Icon className="w-5 h-5 transition-transform group-hover:scale-110" />
@@ -52,7 +51,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       {/* Sidebar */}
       <aside className={`
         fixed lg:static inset - y - 0 left - 0 z - 50 w - 64 bg - slate - 900 text - white transform transition - transform duration - 300 ease -in -out flex flex - col
-        ${ sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0' }
+        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
 `}>
         <div className="h-16 flex items-center px-6 border-b border-slate-800">
           <Hotel className="w-8 h-8 text-gold-500 mr-3" />
@@ -71,7 +70,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           <SidebarLink to="/financials" icon={CreditCard} label="Billing & Reports" />
           <SidebarLink to="/kiosk" icon={MonitorPlay} label="Staff Kiosk Mode" />
           <div className="pt-4 mt-4 border-t border-slate-800">
-             <SidebarLink to="/admin" icon={Settings} label="Settings" />
+            <SidebarLink to="/admin" icon={Settings} label="Settings" />
           </div>
         </nav>
 
