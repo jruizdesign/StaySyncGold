@@ -165,40 +165,47 @@ const DatabaseInspector: React.FC = () => {
 
             // 3. Create Rooms
             // To link MOCK_ROOMS (which use random IDs) to real DB IDs, we just iterate.
-            const roomMap: Record<string, number> = {}; // mockID -> realID
+            const roomMap: Record<string, string> = {}; // mockID -> realUUID
             for (const mockRoom of MOCK_ROOMS) {
-                const { data: roomData, error: roomError } = await supabase
+                const newRoomId = crypto.randomUUID();
+                const { error: roomError } = await supabase
                     .from('rooms')
                     .insert({
+                        id: newRoomId,
                         property_id: propertyId,
                         room_number: mockRoom.number,
-                        type: mockRoom.type, // Using string type as per new schema
-                        // type_id: typeMap[mockRoom.type] || typeMap['Double'], // Removed FK
+                        type: mockRoom.type,
                         status: mockRoom.status,
                         floor: mockRoom.floor
-                    })
-                    .select()
-                    .single();
+                    });
 
-                if (roomData) roomMap[mockRoom.id] = roomData.id;
+                if (!roomError) {
+                    roomMap[mockRoom.id] = newRoomId;
+                } else {
+                    console.error('Room seed error:', roomError);
+                }
             }
 
             // 4. Create Guests
-            const guestMap: Record<string, number> = {};
+            const guestMap: Record<string, string> = {};
             for (const mockGuest of MOCK_GUESTS) {
-                const { data: guestData } = await supabase
+                const newGuestId = crypto.randomUUID();
+                const { error: guestError } = await supabase
                     .from('guests')
                     .insert({
+                        id: newGuestId,
                         property_id: propertyId,
                         first_name: mockGuest.fullName.split(' ')[0],
                         last_name: mockGuest.fullName.split(' ')[1] || '',
                         email: mockGuest.email,
                         phone: mockGuest.phone
-                    })
-                    .select()
-                    .single();
+                    });
 
-                if (guestData) guestMap[mockGuest.id] = guestData.id;
+                if (!guestError) {
+                    guestMap[mockGuest.id] = newGuestId;
+                } else {
+                    console.error('Guest seed error:', guestError);
+                }
             }
 
             // 5. Create Reservations
