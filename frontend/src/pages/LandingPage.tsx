@@ -12,7 +12,7 @@ const LandingPage: React.FC = () => {
             <nav className="fixed top-0 w-full z-50 bg-[#020617]/80 backdrop-blur-md border-b border-slate-800">
                 <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold">S</div>
+                        <div className="w-8 h-8 bg-gold-600 rounded-lg flex items-center justify-center text-white font-bold">S</div>
                         <span className="text-xl font-bold tracking-tight">STAYSYNC<span className="text-slate-400 font-light">OS</span></span>
                     </div>
 
@@ -34,14 +34,14 @@ const LandingPage: React.FC = () => {
             {/* Hero Section */}
             <main className="pt-32 pb-20 px-6 max-w-7xl mx-auto flex flex-col items-center text-center">
                 {/* Badge */}
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-900/30 border border-blue-700/50 text-blue-400 text-xs font-semibold tracking-wide mb-8 animate-fadeIn">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gold-900/10 border border-gold-700/50 text-gold-400 text-xs font-semibold tracking-wide mb-8 animate-fadeIn">
                     <Sparkles className="w-3 h-3" />
                     NEW: GEMINI 3.0 INTEGRATION
                 </div>
 
                 {/* Headline */}
                 <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight mb-6 max-w-4xl leading-[1.1]">
-                    The Operating System for <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400">Modern Hospitality</span>
+                    The Operating System for <span className="text-transparent bg-clip-text bg-gradient-to-r from-gold-400 to-amber-200">Modern Hospitality</span>
                 </h1>
 
                 {/* Subtitle */}
@@ -54,7 +54,7 @@ const LandingPage: React.FC = () => {
                 <div className="flex flex-col sm:flex-row gap-4 mb-20">
                     <button
                         onClick={() => navigate('/dashboard')}
-                        className="group flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-8 py-3.5 rounded-lg font-semibold text-lg transition-all hover:shadow-[0_0_20px_rgba(37,99,235,0.3)]"
+                        className="group flex items-center justify-center gap-2 bg-gold-600 hover:bg-gold-500 text-white px-8 py-3.5 rounded-lg font-semibold text-lg transition-all hover:shadow-[0_0_20px_rgba(234,179,8,0.3)]"
                     >
                         Start Live Trial
                         <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
@@ -69,7 +69,7 @@ const LandingPage: React.FC = () => {
                 {/* Dashboard Mockup */}
                 <div className="relative w-full max-w-5xl mx-auto perspective-1000">
                     {/* Glow Effect */}
-                    <div className="absolute inset-0 bg-blue-500/10 blur-[100px] -z-10 rounded-full opacity-50 pointer-events-none" />
+                    <div className="absolute inset-0 bg-gold-500/10 blur-[100px] -z-10 rounded-full opacity-50 pointer-events-none" />
 
                     <div className="bg-[#0f172a] rounded-xl border border-slate-800 shadow-2xl overflow-hidden ring-1 ring-white/10 transform rotate-x-2 transition-transform duration-500 hover:rotate-x-0">
                         {/* Browser Header */}
@@ -91,9 +91,9 @@ const LandingPage: React.FC = () => {
                         <div className="p-6 grid grid-cols-12 gap-6 text-left h-[500px] bg-[#0f172a] relative">
                             {/* Fake Sidebar */}
                             <div className="col-span-3 space-y-4">
-                                <div className="p-4 bg-slate-800/50 rounded-lg border border-slate-700 group cursor-pointer hover:border-blue-500/50 transition-colors">
+                                <div className="p-4 bg-slate-800/50 rounded-lg border border-slate-700 group cursor-pointer hover:border-gold-500/50 transition-colors">
                                     <div className="flex items-center gap-3 mb-2">
-                                        <div className="p-2 bg-slate-700 rounded-lg group-hover:bg-blue-500/20 group-hover:text-blue-400 transition-colors">
+                                        <div className="p-2 bg-slate-700 rounded-lg group-hover:bg-gold-500/20 group-hover:text-gold-400 transition-colors">
                                             <BrainCircuit className="w-5 h-5" />
                                         </div>
                                         <span className="font-semibold text-slate-200">AI Operations</span>
@@ -101,14 +101,14 @@ const LandingPage: React.FC = () => {
                                     <p className="text-xs text-slate-500">Real-time revenue tracking and Gemini AI-powered operational insights.</p>
                                 </div>
 
-                                <div className="p-4 bg-blue-900/20 rounded-lg border border-blue-500/50 cursor-pointer">
+                                <div className="p-4 bg-gold-900/10 rounded-lg border border-gold-500/50 cursor-pointer">
                                     <div className="flex items-center gap-3 mb-2">
-                                        <div className="p-2 bg-blue-600 rounded-lg text-white">
+                                        <div className="p-2 bg-gold-600 rounded-lg text-white">
                                             <BedDouble className="w-5 h-5" />
                                         </div>
                                         <span className="font-semibold text-white">Live Inventory</span>
                                     </div>
-                                    <p className="text-xs text-blue-200/70">Visual room grid with one-click status updates for housekeeping.</p>
+                                    <p className="text-xs text-gold-200/70">Visual room grid with one-click status updates for housekeeping.</p>
                                 </div>
                             </div>
 
@@ -145,7 +145,7 @@ const LandingPage: React.FC = () => {
                                 {/* Feature Spotlight Tooltip */}
                                 <div className="absolute top-1/3 right-10 bg-slate-800 text-white p-4 rounded-xl shadow-2xl border border-slate-600 max-w-xs animate-bounce-slow">
                                     <div className="flex items-center gap-2 mb-2">
-                                        <Sparkles className="w-4 h-4 text-blue-400" />
+                                        <Sparkles className="w-4 h-4 text-gold-400" />
                                         <span className="text-xs font-bold uppercase tracking-wider text-slate-300">Feature Spotlight</span>
                                     </div>
                                     <p className="text-sm font-medium">Interactive grid with drag-and-drop status changes.</p>

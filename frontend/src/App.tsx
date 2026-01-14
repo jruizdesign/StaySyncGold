@@ -33,9 +33,9 @@ const App: React.FC = () => {
           <Route path="/financials" element={<Financials />} />
           <Route path="/kiosk" element={<StaffKiosk />} />
           <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes >
-      </Layout >
-    </HashRouter >
+        </Routes>
+      </Layout>
+    </HashRouter>
   );
 };
 
