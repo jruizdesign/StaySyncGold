@@ -226,6 +226,18 @@ const DatabaseInspector: React.FC = () => {
                 }
             }
 
+            // 6. Create Staff
+            for (const mockStaff of MOCK_STAFF) {
+                const [firstName, ...lastNameParts] = mockStaff.name.split(' ');
+                await supabase.from('staff').insert({
+                    property_id: propertyId,
+                    role: mockStaff.role,
+                    firstname: firstName,
+                    last_name: lastNameParts.join(' ') || '',
+                    pin: '1234'
+                });
+            }
+
             alert('Database seeded successfully!');
             fetchTableData(); // Refresh view
         } catch (e: any) {
