@@ -22,12 +22,20 @@ const LandingPage: React.FC = () => {
                         <a href="#" className="hover:text-white transition-colors">Features</a>
                     </div>
 
-                    <button
-                        onClick={() => navigate('/dashboard')}
-                        className="bg-white text-slate-900 px-5 py-2.5 rounded-full font-semibold text-sm hover:bg-slate-100 transition-colors"
-                    >
-                        Launch Demo
-                    </button>
+                    <div className="flex items-center gap-4">
+                        <button
+                            onClick={() => navigate('/login')}
+                            className="text-slate-300 hover:text-white font-medium text-sm transition-colors"
+                        >
+                            Login to Property
+                        </button>
+                        <button
+                            onClick={() => navigate('/dashboard')}
+                            className="bg-white text-slate-900 px-5 py-2.5 rounded-full font-semibold text-sm hover:bg-slate-100 transition-colors"
+                        >
+                            Launch Demo
+                        </button>
+                    </div>
                 </div>
             </nav>
 
@@ -60,9 +68,12 @@ const LandingPage: React.FC = () => {
                         <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                     </button>
 
-                    <button className="flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 px-8 py-3.5 rounded-lg font-semibold text-lg transition-all">
-                        <Play className="w-4 h-4 fill-current" />
-                        Watch Video
+                    <button
+                        onClick={() => navigate('/login')}
+                        className="flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 px-8 py-3.5 rounded-lg font-semibold text-lg transition-all"
+                    >
+                        <ArrowRight className="w-4 h-4" />
+                        Login to Property
                     </button>
                 </div>
 

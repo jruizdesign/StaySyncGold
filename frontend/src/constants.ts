@@ -46,3 +46,11 @@ export const MOCK_TRANSACTIONS: Transaction[] = [
   { id: 't3', date: '2024-05-18', description: 'Restaurant Charge - Room 102', amount: 120, type: 'Credit', category: 'F&B' },
   { id: 't4', date: '2024-05-18', description: 'Maintenance Tools', amount: 200, type: 'Debit', category: 'Maintenance' },
 ];
+
+export const MOCK_GUEST_BALANCES = [
+  { id: 'gb1', roomNumber: '101', guestName: 'John Wick', balance: 4500, daysStayed: 12 },
+  { id: 'gb2', roomNumber: '105', guestName: 'Sarah Connor', balance: 1200, daysStayed: 4 },
+  { id: 'gb3', roomNumber: '204', guestName: 'Ellen Ripley', balance: 850, daysStayed: 3 },
+  { id: 'gb4', roomNumber: '302', guestName: 'Marty McFly', balance: 2100, daysStayed: 7 },
+  { id: 'gb5', roomNumber: '401', guestName: 'Tony Stark', balance: 15000, daysStayed: 30 },
+];

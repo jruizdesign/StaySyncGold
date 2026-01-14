@@ -1,9 +1,25 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Calendar, Printer, DollarSign, Wallet, TrendingUp, CreditCard } from 'lucide-react';
-import { MOCK_TRANSACTIONS } from '../constants';
+import { MOCK_TRANSACTIONS, MOCK_GUEST_BALANCES } from '../constants';
+import { supabase } from '../lib/supabase';
 
 const Financials: React.FC = () => {
-  const [selectedDate, setSelectedDate] = useState('2024-05-20'); // Default to date with mock data
+  const [selectedDate, setSelectedDate] = useState('2024-05-20'); // Default to demo date
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    checkAuth();
+  }, []);
+
+  const checkAuth = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+      setIsAuthenticated(true);
+      setSelectedDate(new Date().toISOString().split('T')[0]); // Use today's date for production
+    }
+    setLoading(false);
+  };
 
   // Helper to format date for header (e.g., "Tuesday, January 13, 2026")
   const formatDate = (dateString: string) => {
@@ -11,8 +27,14 @@ const Financials: React.FC = () => {
     return new Date(dateString).toLocaleDateString('en-US', options);
   };
 
-  // Calculate totals based on mock transactions
+  // Calculate totals based on mock transactions OR real data (empty/production)
   const stats = useMemo(() => {
+    if (isAuthenticated) {
+      // Production Mode: Return 0s or fetched data (placeholder for now)
+      return { totalCollected: 0, outstanding: 0, dailyAccrued: 0, projected: 0 };
+    }
+
+    // Demo Mode: Use mock data
     const totalCollected = MOCK_TRANSACTIONS
       .filter(t => t.type === 'Credit')
       .reduce((sum, t) => sum + t.amount, 0);
@@ -23,10 +45,19 @@ const Financials: React.FC = () => {
     const projected = totalCollected * 1.5;
 
     return { totalCollected, outstanding, dailyAccrued, projected };
-  }, []);
+  }, [isAuthenticated]);
 
-  // Filter transactions for the table (showing all for demo purposes if date matches or empty)
-  const dailyTransactions = MOCK_TRANSACTIONS.filter(t => t.date === selectedDate);
+  // Filter transactions for the table
+  const dailyTransactions = isAuthenticated
+    ? [] // Production: No real transactions yet
+    : MOCK_TRANSACTIONS.filter(t => t.date === selectedDate);
+
+  // Guest Balances for Production
+  const guestBalances = isAuthenticated ? [] : MOCK_GUEST_BALANCES;
+
+  if (loading) {
+    return <div className="p-8 text-center text-slate-500">Loading daily overview...</div>;
+  }
 
   return (
     <div className="space-y-8 animate-fadeIn pb-10">
@@ -52,6 +83,54 @@ const Financials: React.FC = () => {
             <Printer className="w-4 h-4" />
             Print Report
           </button>
+        </div>
+      </div>
+
+      {/* Guest Balances - Front and Center */}
+      <div className="bg-white rounded-xl border border-slate-200 shadow-[0_4px_12px_rgba(0,0,0,0.08)] overflow-hidden border-t-4 border-t-rose-500">
+        <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-rose-50/30">
+          <div className="flex items-center gap-3">
+            <Wallet className="w-6 h-6 text-rose-500" />
+            <div>
+              <h2 className="text-lg font-bold text-slate-900">Current Guest Balances</h2>
+              <p className="text-sm text-slate-500">Outstanding amounts for current long-term stays</p>
+            </div>
+          </div>
+          <span className="text-2xl font-bold text-rose-600">
+            ${guestBalances.reduce((sum, g) => sum + g.balance, 0).toLocaleString()}
+          </span>
+        </div>
+        <div className="p-0">
+          <table className="w-full text-sm text-left">
+            <thead className="bg-slate-50 text-xs uppercase font-bold text-slate-500">
+              <tr>
+                <th className="px-6 py-3">Room</th>
+                <th className="px-6 py-3">Guest Name</th>
+                <th className="px-6 py-3 text-right">Days Stayed</th>
+                <th className="px-6 py-3 text-right">Balance Due</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {guestBalances.length > 0 ? (
+                guestBalances.map((guest) => (
+                  <tr key={guest.id} className="hover:bg-slate-50 transition-colors">
+                    <td className="px-6 py-4 font-bold text-slate-800">{guest.roomNumber}</td>
+                    <td className="px-6 py-4 font-medium text-slate-900">{guest.guestName}</td>
+                    <td className="px-6 py-4 text-right text-slate-600">{guest.daysStayed}</td>
+                    <td className="px-6 py-4 text-right font-bold text-rose-600">
+                      ${guest.balance.toLocaleString()}
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={4} className="px-6 py-8 text-center text-slate-400 italic">
+                    {isAuthenticated ? 'No outstanding balances.' : 'No mock balances loaded.'}
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
 
