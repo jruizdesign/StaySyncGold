@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { 
-  LayoutDashboard, CalendarRange, Users, BedDouble, 
-  Wrench, UserCog, CreditCard, BarChart3, Clock, 
+import {
+  LayoutDashboard, CalendarRange, Users, BedDouble,
+  Wrench, UserCog, CreditCard, BarChart3, Clock,
   LogOut, Menu, X, MonitorPlay, Hotel
 } from 'lucide-react';
 import { SmartAssistant } from './SmartAssistant';
@@ -16,8 +16,8 @@ const SidebarLink = ({ to, icon: Icon, label }: { to: string, icon: any, label: 
     to={to}
     className={({ isActive }) => `
       flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 group
-      ${isActive 
-        ? 'bg-gold-500 text-white shadow-lg shadow-gold-500/30' 
+      ${isActive
+        ? 'bg-gold-500 text-white shadow-lg shadow-gold-500/30'
         : 'text-slate-400 hover:bg-slate-800 hover:text-white'
       }
     `}
@@ -32,8 +32,8 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Hide standard layout for Kiosk mode
-  if (location.pathname === '/kiosk') {
+  // Hide standard layout for Kiosk and Login modes
+  if (location.pathname === '/kiosk' || location.pathname === '/login') {
     return <>{children}</>;
   }
 
@@ -41,7 +41,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     <div className="flex h-screen bg-slate-50 overflow-hidden">
       {/* Mobile Sidebar Overlay */}
       {sidebarOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-slate-900/50 z-40 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
@@ -82,7 +82,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Header */}
         <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 lg:px-8">
-          <button 
+          <button
             className="lg:hidden p-2 text-slate-500 hover:bg-slate-100 rounded-lg"
             onClick={() => setSidebarOpen(true)}
           >
@@ -113,7 +113,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           </div>
         </main>
       </div>
-      
+
       <SmartAssistant />
     </div>
   );
