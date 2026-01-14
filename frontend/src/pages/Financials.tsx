@@ -1,14 +1,32 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Calendar, Printer, DollarSign, Wallet, TrendingUp, CreditCard } from 'lucide-react';
+import { MOCK_TRANSACTIONS } from '../constants';
 
 const Financials: React.FC = () => {
-  const [selectedDate, setSelectedDate] = useState('2026-01-14');
+  const [selectedDate, setSelectedDate] = useState('2024-05-20'); // Default to date with mock data
 
   // Helper to format date for header (e.g., "Tuesday, January 13, 2026")
   const formatDate = (dateString: string) => {
     const options: Intl.DateTimeFormatOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
     return new Date(dateString).toLocaleDateString('en-US', options);
   };
+
+  // Calculate totals based on mock transactions
+  const stats = useMemo(() => {
+    const totalCollected = MOCK_TRANSACTIONS
+      .filter(t => t.type === 'Credit')
+      .reduce((sum, t) => sum + t.amount, 0);
+
+    // Mock logic for other KPIs since we only have transactions
+    const outstanding = 1250;
+    const dailyAccrued = totalCollected * 0.8;
+    const projected = totalCollected * 1.5;
+
+    return { totalCollected, outstanding, dailyAccrued, projected };
+  }, []);
+
+  // Filter transactions for the table (showing all for demo purposes if date matches or empty)
+  const dailyTransactions = MOCK_TRANSACTIONS.filter(t => t.date === selectedDate);
 
   return (
     <div className="space-y-8 animate-fadeIn pb-10">
@@ -44,7 +62,7 @@ const Financials: React.FC = () => {
           <div className="flex justify-between items-start">
             <div>
               <p className="text-sm font-bold text-slate-500">Total Collected</p>
-              <p className="text-4xl font-bold text-emerald-600 mt-2">$0</p>
+              <p className="text-4xl font-bold text-emerald-600 mt-2">${stats.totalCollected.toLocaleString()}</p>
             </div>
             <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center">
               <DollarSign className="w-5 h-5 text-emerald-600" />
@@ -58,7 +76,7 @@ const Financials: React.FC = () => {
           <div className="flex justify-between items-start">
             <div>
               <p className="text-sm font-bold text-slate-500">Outstanding Balances</p>
-              <p className="text-4xl font-bold text-rose-500 mt-2">$0</p>
+              <p className="text-4xl font-bold text-rose-500 mt-2">${stats.outstanding.toLocaleString()}</p>
             </div>
             <div className="w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center">
               <Wallet className="w-5 h-5 text-rose-500" />
@@ -72,7 +90,7 @@ const Financials: React.FC = () => {
           <div className="flex justify-between items-start">
             <div>
               <p className="text-sm font-bold text-slate-500">Daily Accrued</p>
-              <p className="text-4xl font-bold text-blue-600 mt-2">$0</p>
+              <p className="text-4xl font-bold text-blue-600 mt-2">${stats.dailyAccrued.toLocaleString()}</p>
             </div>
             <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
               <TrendingUp className="w-5 h-5 text-blue-600" />
@@ -86,7 +104,7 @@ const Financials: React.FC = () => {
           <div className="flex justify-between items-start">
             <div>
               <p className="text-sm font-bold text-slate-500">Projected Revenue</p>
-              <p className="text-4xl font-bold text-purple-600 mt-2">$0</p>
+              <p className="text-4xl font-bold text-purple-600 mt-2">${stats.projected.toLocaleString()}</p>
             </div>
             <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
               <CreditCard className="w-5 h-5 text-purple-600" />
@@ -105,22 +123,40 @@ const Financials: React.FC = () => {
           <table className="w-full text-sm text-left">
             <thead className="text-slate-800 bg-slate-50/50 uppercase font-bold text-xs tracking-wider">
               <tr>
-                <th className="px-6 py-4">Room</th>
-                <th className="px-6 py-4">Guest Name</th>
-                <th className="px-6 py-4">Status</th>
-                <th className="px-6 py-4">Nightly Rate</th>
-                <th className="px-6 py-4">Projected Bill</th>
-                <th className="px-6 py-4 bg-emerald-50 text-emerald-800">Paid Today</th>
-                <th className="px-6 py-4">Total Due Now</th>
+                <th className="px-6 py-4">Transaction</th>
+                <th className="px-6 py-4">Category</th>
+                <th className="px-6 py-4">Type</th>
+                <th className="px-6 py-4 text-right">Amount</th>
+                <th className="px-6 py-4 text-right">Status</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {/* Empty State */}
-              <tr>
-                <td colSpan={7} className="px-6 py-20 text-center text-slate-400 italic">
-                  No activity found for this date.
-                </td>
-              </tr>
+              {dailyTransactions.length > 0 ? (
+                dailyTransactions.map(t => (
+                  <tr key={t.id} className="hover:bg-slate-50 transition-colors">
+                    <td className="px-6 py-4 font-medium text-slate-900 border-l-4 border-l-transparent hover:border-l-gold-500">{t.description}</td>
+                    <td className="px-6 py-4 text-slate-600">{t.category}</td>
+                    <td className="px-6 py-4">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${t.type === 'Credit' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
+                        }`}>
+                        {t.type}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-right font-bold text-slate-900">
+                      ${t.amount.toLocaleString()}
+                    </td>
+                    <td className="px-6 py-4 text-right text-xs text-slate-400 uppercase font-bold">
+                      Completed
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={5} className="px-6 py-20 text-center text-slate-400 italic">
+                    No activity found for this date.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
