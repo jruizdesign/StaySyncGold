@@ -130,7 +130,8 @@ const DatabaseInspector: React.FC = () => {
             if (propError) throw new Error('Failed to seed property: ' + propError.message);
             const propertyId = propData.id;
 
-            // 2. Create Room Types
+            // 2. Create Room Types - SKIPPED (User schema uses string type directly in Rooms)
+            /*
             const types = ['Suite', 'Double', 'King'];
             const typeMap: Record<string, number> = {};
 
@@ -160,10 +161,9 @@ const DatabaseInspector: React.FC = () => {
                     realTypeData = newType;
                 }
 
-                // If distinct naming isn't enforced in DB, we might create dups. 
-                // Trusted user path: Let's assume blank slate.
                 if (realTypeData) typeMap[name] = realTypeData.id;
             }
+            */
 
             // 3. Create Rooms
             // To link MOCK_ROOMS (which use random IDs) to real DB IDs, we just iterate.
@@ -174,7 +174,8 @@ const DatabaseInspector: React.FC = () => {
                     .insert({
                         property_id: propertyId,
                         room_number: mockRoom.number,
-                        type_id: typeMap[mockRoom.type] || typeMap['Double'], // Fallback
+                        type: mockRoom.type, // Using string type as per new schema
+                        // type_id: typeMap[mockRoom.type] || typeMap['Double'], // Removed FK
                         status: mockRoom.status,
                         floor: mockRoom.floor
                     })
