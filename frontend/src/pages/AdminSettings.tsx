@@ -117,10 +117,10 @@ const DatabaseInspector: React.FC = () => {
             const { data: propData, error: propError } = await supabase
                 .from('properties')
                 .upsert([{
-                    id: 1,
+                    id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
                     location: '123 Luxury Blvd',
-                    managername: 'Jason',
-                    ownername: 'Jason',
+                    managerName: 'Jason',
+                    ownerName: 'Jason',
                     phone_num: '555-0199'
                 }])
                 .select()
@@ -138,7 +138,7 @@ const DatabaseInspector: React.FC = () => {
                     .from('roomtypes')
                     .upsert([{
                         property_id: propertyId,
-                        name,
+                        name: name,
                         base_price: name === 'Suite' ? 350 : 180,
                         max_occupancy: name === 'Suite' ? 4 : 2
                     }], { onConflict: 'name, property_id' }) // Assuming generic constraint or just insert
@@ -152,7 +152,7 @@ const DatabaseInspector: React.FC = () => {
                 if (!realTypeData) { // If upsert didn't return due to conflict or logic
                     const { data: newType } = await supabase.from('roomtypes').insert({
                         property_id: propertyId,
-                        name,
+                        name: name,
                         base_price: name === 'Suite' ? 350 : 180,
                         max_occupancy: name === 'Suite' ? 4 : 2
                     }).select().single();
@@ -250,8 +250,8 @@ const DatabaseInspector: React.FC = () => {
                             key={table}
                             onClick={() => setSelectedTable(table)}
                             className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${selectedTable === table
-                                    ? 'bg-slate-800 text-white'
-                                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                ? 'bg-slate-800 text-white'
+                                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                                 }`}
                         >
                             {table}
