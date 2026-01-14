@@ -253,7 +253,7 @@ const DatabaseInspector: React.FC = () => {
             <div className="mb-6">
                 <label className="block text-sm font-medium text-slate-700 mb-2">Select Table</label>
                 <div className="flex gap-2 flex-wrap">
-                    {['reservations', 'rooms', 'guests', 'staff', 'properties'].map(table => (
+                    {['reservations', 'rooms', 'guests', 'staff', 'properties', 'users'].map(table => (
                         <button
                             key={table}
                             onClick={() => setSelectedTable(table)}
