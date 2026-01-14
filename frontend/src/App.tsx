@@ -7,6 +7,7 @@ import Housekeeping from './pages/Housekeeping';
 import StaffKiosk from './pages/StaffKiosk';
 import Staff from './pages/Staff';
 import Financials from './pages/Financials';
+import LandingPage from './pages/LandingPage';
 import Login from './pages/Login';
 import AdminSettings from './pages/AdminSettings';
 
@@ -19,9 +20,11 @@ const App: React.FC = () => {
     <HashRouter>
       <Layout>
         <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/landing" element={<LandingPage />} />
+          <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/login" element={<Login />} />
           <Route path="/admin" element={<AdminSettings />} />
-          <Route path="/" element={<Dashboard />} />
           <Route path="/reservations" element={<Reservations />} />
           <Route path="/guests" element={<Guests />} />
           <Route path="/housekeeping" element={<Housekeeping />} />
@@ -30,9 +33,9 @@ const App: React.FC = () => {
           <Route path="/financials" element={<Financials />} />
           <Route path="/kiosk" element={<StaffKiosk />} />
           <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </Layout>
-    </HashRouter>
+        </Routes >
+      </Layout >
+    </HashRouter >
   );
 };
 

@@ -33,8 +33,8 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Hide standard layout for Kiosk and Login modes
-  if (location.pathname === '/kiosk' || location.pathname === '/login') {
+  // Hide standard layout for Kiosk, Login, and Landing modes
+  if (['/kiosk', '/login', '/', '/landing'].includes(location.pathname)) {
     return <>{children}</>;
   }
 
@@ -61,7 +61,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         </div>
 
         <nav className="flex-1 px-3 py-6 space-y-1 overflow-y-auto custom-scrollbar">
-          <SidebarLink to="/" icon={LayoutDashboard} label="Dashboard" />
+          <SidebarLink to="/dashboard" icon={LayoutDashboard} label="Dashboard" />
           <SidebarLink to="/reservations" icon={CalendarRange} label="Reservations" />
           <SidebarLink to="/guests" icon={Users} label="Guests" />
           <SidebarLink to="/housekeeping" icon={BedDouble} label="Housekeeping" />
