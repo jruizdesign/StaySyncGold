@@ -1,0 +1,39 @@
+{
+  "name": "staysyncgold",
+  "version": "1.0.0",
+  "description": "HMS/PMS Property management system",
+  "keywords": [
+    "hms",
+    "pms",
+    "hotel",
+    "management",
+    "streamlined",
+    "SaaS",
+    "motel"
+  ],
+  "homepage": "https://github.com/jruizdesign/StaySyncGold#readme",
+  "bugs": {
+    "url": "https://github.com/jruizdesign/StaySyncGold/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jruizdesign/StaySyncGold.git"
+  },
+  "license": "ISC",
+  "author": "Jason Ruiz @JruizDesign",
+  "type": "commonjs",
+  "main": "main.jsx",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "install:all": "npm install && npm install --prefix frontend && npm install --prefix backend",
+    "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
+    "dev:frontend": "npm run dev --prefix frontend",
+    "dev:backend": "npm run dev --prefix backend"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}
