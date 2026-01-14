@@ -114,21 +114,19 @@ const DatabaseInspector: React.FC = () => {
         setSeeding(true);
         try {
             // 1. Create Property
-            const { data: propData, error: propError } = await supabase
+            const propertyId = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';
+            const { error: propError } = await supabase
                 .from('properties')
                 .upsert([{
-                    id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+                    id: propertyId,
                     name: 'Grand Hotel & Suites',
                     location: '123 Luxury Blvd',
                     managerName: 'Jason',
                     ownerName: 'Jason',
                     phone_num: '555-0199'
-                }])
-                .select()
-                .single();
+                }]);
 
             if (propError) throw new Error('Failed to seed property: ' + propError.message);
-            const propertyId = propData.id;
 
             // 2. Create Room Types - SKIPPED (User schema uses string type directly in Rooms)
             /*
