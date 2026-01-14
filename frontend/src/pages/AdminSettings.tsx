@@ -172,10 +172,12 @@ const DatabaseInspector: React.FC = () => {
                     .insert({
                         id: newRoomId,
                         property_id: propertyId,
-                        room_number: mockRoom.number,
+                        number: mockRoom.number, // Required Text column
+                        room_number: mockRoom.number, // Optional Varchar column
                         type: mockRoom.type,
                         status: mockRoom.status,
-                        floor: mockRoom.floor
+                        floor: mockRoom.floor,
+                        price_per_night: mockRoom.rate // Numeric column
                     });
 
                 if (!roomError) {
