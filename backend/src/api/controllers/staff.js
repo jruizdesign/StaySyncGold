@@ -26,7 +26,7 @@ const createStaff = async (req, res, next) => {
       [property_id, role, firstname, last_name, phone_num, hashedPin]
     );
     res.status(201).json(rows[0]);
-  } catch (error) => {
+  } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };

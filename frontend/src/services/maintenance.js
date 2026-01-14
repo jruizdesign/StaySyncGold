@@ -68,3 +68,5 @@ export const deleteMaintenanceRecord = async (id) => {
     throw error;
   }
 };
+
+export const getMaintenanceLogs = getMaintenanceRecords;
