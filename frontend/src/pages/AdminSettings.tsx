@@ -122,8 +122,7 @@ const DatabaseInspector: React.FC = () => {
                     name: 'Grand Hotel & Suites',
                     location: '123 Luxury Blvd',
                     managerName: 'Jason',
-                    ownerName: 'Jason',
-                    phone_num: '555-0199'
+                    ownerName: 'Jason'
                 }]);
 
             if (propError) throw new Error('Failed to seed property: ' + propError.message);
