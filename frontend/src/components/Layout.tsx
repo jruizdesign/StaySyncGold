@@ -64,7 +64,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           <SidebarLink to="/dashboard" icon={LayoutDashboard} label="Dashboard" />
           <SidebarLink to="/reservations" icon={CalendarRange} label="Reservations" />
           <SidebarLink to="/guests" icon={Users} label="Guests" />
-          <SidebarLink to="/housekeeping" icon={BedDouble} label="Housekeeping" />
+          <SidebarLink to="/housekeeping" icon={BedDouble} label="Rooms" />
           <SidebarLink to="/maintenance" icon={Wrench} label="Maintenance" />
           <SidebarLink to="/staff" icon={UserCog} label="Staff & Schedule" />
           <SidebarLink to="/financials" icon={CreditCard} label="Billing & Reports" />

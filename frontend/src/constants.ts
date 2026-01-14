@@ -4,7 +4,12 @@ export const MOCK_ROOMS: Room[] = Array.from({ length: 20 }, (_, i) => ({
   id: `room-${i + 1}`,
   number: `${100 + i}`,
   type: i % 3 === 0 ? 'Suite' : i % 2 === 0 ? 'Double' : 'King',
-  status: i % 5 === 0 ? RoomStatus.DIRTY : i % 7 === 0 ? RoomStatus.INSPECT : RoomStatus.CLEAN,
+  // Distribute statuses: Clean (default), Dirty, Inspect, OOO, Occupied
+  status:
+    i % 5 === 0 ? RoomStatus.DIRTY :
+      i % 7 === 0 ? RoomStatus.INSPECT :
+        i % 11 === 0 ? RoomStatus.OOO :
+          i % 3 === 0 ? RoomStatus.OCCUPIED : RoomStatus.CLEAN,
   rate: i % 3 === 0 ? 350 : 180,
   floor: 1
 }));

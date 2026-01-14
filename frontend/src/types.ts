@@ -2,7 +2,8 @@ export enum RoomStatus {
   CLEAN = 'Clean',
   DIRTY = 'Dirty',
   INSPECT = 'Inspect',
-  OOO = 'Out of Order'
+  OOO = 'Out of Order',
+  OCCUPIED = 'Occupied'
 }
 
 export enum ReservationStatus {
