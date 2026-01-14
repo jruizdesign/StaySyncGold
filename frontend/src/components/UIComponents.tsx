@@ -1,9 +1,15 @@
 import React from 'react';
 import { LucideIcon } from 'lucide-react';
 
-export const Button: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'primary' | 'secondary' | 'danger' | 'outline' | 'ghost', icon?: LucideIcon }> = ({ children, variant = 'primary', className = '', icon: Icon, ...props }) => {
-  const baseStyle = "inline-flex items-center justify-center px-4 py-2 rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed";
-  
+export const Button: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'primary' | 'secondary' | 'danger' | 'outline' | 'ghost', size?: 'sm' | 'md' | 'lg', icon?: LucideIcon }> = ({ children, variant = 'primary', size = 'md', className = '', icon: Icon, ...props }) => {
+  const baseStyle = "inline-flex items-center justify-center rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed";
+
+  const sizes = {
+    sm: "px-3 py-1.5 text-sm",
+    md: "px-4 py-2",
+    lg: "px-6 py-3 text-lg"
+  };
+
   const variants = {
     primary: "bg-gold-500 hover:bg-gold-600 text-white focus:ring-gold-500",
     secondary: "bg-slate-800 hover:bg-slate-900 text-white focus:ring-slate-800",
@@ -13,8 +19,8 @@ export const Button: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement> & { 
   };
 
   return (
-    <button className={`${baseStyle} ${variants[variant]} ${className}`} {...props}>
-      {Icon && <Icon className="w-4 h-4 mr-2" />}
+    <button className={`${baseStyle} ${sizes[size]} ${variants[variant]} ${className}`} {...props}>
+      {Icon && <Icon className={`mr-2 ${size === 'sm' ? 'w-3 h-3' : size === 'lg' ? 'w-5 h-5' : 'w-4 h-4'}`} />}
       {children}
     </button>
   );
@@ -32,11 +38,12 @@ export const Card: React.FC<{ children: React.ReactNode, className?: string, tit
   </div>
 );
 
-export const Badge: React.FC<{ children: React.ReactNode, color?: 'green' | 'red' | 'yellow' | 'blue' | 'gray' }> = ({ children, color = 'gray' }) => {
+export const Badge: React.FC<{ children: React.ReactNode, color?: 'green' | 'red' | 'yellow' | 'blue' | 'gray' | 'amber' }> = ({ children, color = 'gray' }) => {
   const colors = {
     green: "bg-emerald-100 text-emerald-800",
     red: "bg-rose-100 text-rose-800",
     yellow: "bg-amber-100 text-amber-800",
+    amber: "bg-amber-100 text-amber-800", // Added amber alias
     blue: "bg-blue-100 text-blue-800",
     gray: "bg-slate-100 text-slate-800"
   };
@@ -50,9 +57,9 @@ export const Badge: React.FC<{ children: React.ReactNode, color?: 'green' | 'red
 export const Input: React.FC<React.InputHTMLAttributes<HTMLInputElement> & { label?: string }> = ({ label, className = '', ...props }) => (
   <div className="mb-4">
     {label && <label className="block text-sm font-medium text-slate-700 mb-1">{label}</label>}
-    <input 
+    <input
       className={`w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-gold-500 focus:border-gold-500 outline-none transition-shadow ${className}`}
-      {...props} 
+      {...props}
     />
   </div>
 );
@@ -60,9 +67,9 @@ export const Input: React.FC<React.InputHTMLAttributes<HTMLInputElement> & { lab
 export const Select: React.FC<React.SelectHTMLAttributes<HTMLSelectElement> & { label?: string }> = ({ label, children, className = '', ...props }) => (
   <div className="mb-4">
     {label && <label className="block text-sm font-medium text-slate-700 mb-1">{label}</label>}
-    <select 
+    <select
       className={`w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-gold-500 focus:border-gold-500 outline-none transition-shadow bg-white ${className}`}
-      {...props} 
+      {...props}
     >
       {children}
     </select>
