@@ -167,6 +167,12 @@ const LandingPage: React.FC = () => {
                     </div>
                 </div>
             </main>
+
+            {/* Footer */}
+            <footer className="py-8 border-t border-slate-800 text-center text-slate-500 text-sm">
+                <p>&copy; {new Date().getFullYear()} StaySync Gold. All rights reserved.</p>
+                <p className="mt-2 text-xs">Architected by <a href="https://twitter.com/jruizdesign" target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-gold-400 transition-colors">Jason Ruiz @jruizdesign</a></p>
+            </footer>
         </div>
     );
 };

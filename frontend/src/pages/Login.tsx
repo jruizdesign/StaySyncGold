@@ -3,8 +3,6 @@ import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
 import { Hotel, Mail, Lock, Loader2, AlertCircle, Check } from 'lucide-react';
 import { Button, Input } from '../components/UIComponents';
-import { browserLocalPersistence, browserSessionPersistence } from '@supabase/supabase-js';
-
 
 const Login: React.FC = () => {
     const [email, setEmail] = useState('');
@@ -20,8 +18,8 @@ const Login: React.FC = () => {
         setError(null);
 
         try {
-            // Set persistence based on the 'keepLoggedIn' state
-            await supabase.auth.setPersistence(keepLoggedIn ? browserLocalPersistence : browserSessionPersistence);
+            // Persistence logic removed to prevent crash. 
+            // Default Supabase behavior (local storage) applies.
 
             const { error: authError } = await supabase.auth.signInWithPassword({
                 email,
@@ -127,6 +125,12 @@ const Login: React.FC = () => {
                 <p className="text-center text-sm text-slate-300">
                     Need an account? <a href="#" className="font-semibold text-white hover:text-gold-400 underline decoration-gold-400/50 hover:decoration-gold-400 transition-all">Contact Sales</a>
                 </p>
+
+                <div className="pt-8 text-center">
+                    <p className="text-xs text-slate-400 font-medium tracking-wide">
+                        Architected by <a href="https://twitter.com/jruizdesign" target="_blank" rel="noopener noreferrer" className="text-slate-300 hover:text-gold-400 transition-colors">Jason Ruiz @jruizdesign</a>
+                    </p>
+                </div>
             </div>
         </div>
     );

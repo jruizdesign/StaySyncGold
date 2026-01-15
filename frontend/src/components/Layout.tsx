@@ -142,6 +142,12 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         <main className="flex-1 overflow-y-auto p-4 lg:p-8">
           <div className="max-w-7xl mx-auto space-y-6">
             {children}
+
+            <footer className="pt-10 pb-6 text-center">
+              <p className="text-sm text-slate-400">
+                &copy; {new Date().getFullYear()} StaySync Gold. All rights reserved.
+              </p>
+            </footer>
           </div>
         </main>
       </div>
