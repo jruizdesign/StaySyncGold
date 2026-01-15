@@ -54,13 +54,20 @@ export const Badge: React.FC<{ children: React.ReactNode, color?: 'green' | 'red
   );
 };
 
-export const Input: React.FC<React.InputHTMLAttributes<HTMLInputElement> & { label?: string }> = ({ label, className = '', ...props }) => (
+export const Input: React.FC<React.InputHTMLAttributes<HTMLInputElement> & { label?: string, icon?: LucideIcon }> = ({ label, className = '', icon: Icon, ...props }) => (
   <div className="mb-4">
     {label && <label className="block text-sm font-medium text-slate-700 mb-1">{label}</label>}
-    <input
-      className={`w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-gold-500 focus:border-gold-500 outline-none transition-shadow ${className}`}
-      {...props}
-    />
+    <div className="relative">
+      {Icon && (
+        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+          <Icon className="w-5 h-5" />
+        </div>
+      )}
+      <input
+        className={`w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-gold-500 focus:border-gold-500 outline-none transition-shadow ${Icon ? 'pl-10' : ''} ${className}`}
+        {...props}
+      />
+    </div>
   </div>
 );
 
