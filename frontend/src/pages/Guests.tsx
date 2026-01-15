@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Button, Card, Input, Badge, Select } from '../components/UIComponents';
-import { Users, MessageSquare, Ban, FileText, Plus, Receipt, Loader } from 'lucide-react';
+import { Button, Card, Input, Badge, Select, Modal } from '../components/UIComponents';
+import { Users, MessageSquare, Ban, FileText, Plus, Receipt, Loader, Edit } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { Guest } from '../types';
@@ -9,10 +9,21 @@ const Guests: React.FC = () => {
     const { user } = useAuth();
     const [guests, setGuests] = useState<Guest[]>([]);
     const [selectedGuest, setSelectedGuest] = useState<Guest | null>(null);
-    const [notes, setNotes] = useState('');
     const [activeSubTab, setActiveSubTab] = useState<'profile' | 'billing'>('profile');
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+
+    // Modal State
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
+    const [formData, setFormData] = useState({
+        first_name: '',
+        last_name: '',
+        email: '',
+        phone: '',
+        notes: '',
+        vip_status: false
+    });
 
     useEffect(() => {
         if (user) {
@@ -45,14 +56,90 @@ const Guests: React.FC = () => {
                     phone: g.phone || '',
                     vipStatus: g.vip_status || false,
                     notes: g.notes || '',
-                    lastStay: g.last_stay // Optional in interface
+                    lastStay: g.last_stay
                 }));
+                // Sort by name
+                mappedGuests.sort((a, b) => a.fullName.localeCompare(b.fullName));
                 setGuests(mappedGuests);
+
+                // Update selected guest if it exists to keep data fresh
+                if (selectedGuest) {
+                    const updated = mappedGuests.find(g => g.id === selectedGuest.id);
+                    if (updated) setSelectedGuest(updated);
+                }
             }
         } catch (error) {
             console.error('Error fetching guests:', error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleOpenAdd = () => {
+        setModalMode('add');
+        setFormData({
+            first_name: '',
+            last_name: '',
+            email: '',
+            phone: '',
+            notes: '',
+            vip_status: false
+        });
+        setIsModalOpen(true);
+    };
+
+    const handleOpenEdit = () => {
+        if (!selectedGuest) return;
+        setModalMode('edit');
+        // Split full name back to first/last roughly
+        const nameParts = selectedGuest.fullName.split(' ');
+        const firstName = nameParts[0];
+        const lastName = nameParts.slice(1).join(' ') || '';
+
+        setFormData({
+            first_name: firstName,
+            last_name: lastName,
+            email: selectedGuest.email,
+            phone: selectedGuest.phone,
+            notes: selectedGuest.notes,
+            vip_status: selectedGuest.vipStatus
+        });
+        setIsModalOpen(true);
+    };
+
+    const handleSaveGuest = async () => {
+        if (!user?.propertyId && !user?.isAdmin) return;
+
+        try {
+            const payload = {
+                first_name: formData.first_name,
+                last_name: formData.last_name,
+                email: formData.email,
+                phone: formData.phone,
+                notes: formData.notes,
+                vip_status: formData.vip_status,
+                property_id: user?.propertyId // Required for new guests
+            };
+
+            let error;
+            if (modalMode === 'add') {
+                const { error: insertError } = await supabase.from('guests').insert([payload]);
+                error = insertError;
+            } else {
+                const { error: updateError } = await supabase
+                    .from('guests')
+                    .update(payload)
+                    .eq('id', selectedGuest!.id);
+                error = updateError;
+            }
+
+            if (error) throw error;
+
+            setIsModalOpen(false);
+            fetchGuests(); // Refresh list
+        } catch (err) {
+            console.error('Error saving guest:', err);
+            alert('Failed to save guest');
         }
     };
 
@@ -79,7 +166,7 @@ const Guests: React.FC = () => {
         <div className="space-y-6 animate-fadeIn">
             <div className="flex justify-between items-center">
                 <h1 className="text-2xl font-bold text-slate-900">Guest CRM</h1>
-                <Button icon={Plus}>Add New Guest</Button>
+                <Button icon={Plus} onClick={handleOpenAdd}>Add New Guest</Button>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -94,16 +181,12 @@ const Guests: React.FC = () => {
                             {filteredGuests.map(guest => (
                                 <div
                                     key={guest.id}
-                                    onClick={() => {
-                                        setSelectedGuest(guest);
-                                        setNotes(guest.notes);
-                                    }}
+                                    onClick={() => setSelectedGuest(guest)}
                                     className={`p-3 rounded-lg border cursor-pointer transition-all ${selectedGuest?.id === guest.id ? 'border-gold-500 bg-gold-50' : 'border-slate-100 hover:bg-slate-50'}`}
                                 >
                                     <div className="flex justify-between items-start">
                                         <p className="font-medium text-slate-900">{guest.fullName}</p>
-                                        {/* guest.vipStatus && <Badge color="gold">VIP</Badge> */}
-                                        {/* Example specific logic if needed */}
+                                        {guest.vipStatus && <Badge color="yellow">VIP</Badge>}
                                     </div>
                                     <p className="text-xs text-slate-500">{guest.email}</p>
                                 </div>
@@ -128,37 +211,33 @@ const Guests: React.FC = () => {
                                     <div className="flex gap-4">
                                         <div className="flex-1 space-y-4">
                                             <div className="grid grid-cols-2 gap-4">
-                                                <Input label="Email" defaultValue={selectedGuest.email} readOnly /> {/* ReadOnly for now until edit implemented */}
-                                                <Input label="Phone" defaultValue={selectedGuest.phone} readOnly />
+                                                <Input label="Email" value={selectedGuest.email} readOnly disabled className="bg-slate-50" />
+                                                <Input label="Phone" value={selectedGuest.phone} readOnly disabled className="bg-slate-50" />
                                             </div>
                                             <div>
                                                 <label className="block text-sm font-medium text-slate-700 mb-1">Internal Notes</label>
-                                                <textarea
-                                                    className="w-full p-3 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-gold-500 outline-none"
-                                                    rows={6}
-                                                    placeholder="Add private notes about this guest (e.g., preferences, past issues)..."
-                                                    value={notes}
-                                                    onChange={(e) => setNotes(e.target.value)}
-                                                />
+                                                <div className="w-full p-3 border border-slate-200 rounded-lg text-sm bg-slate-50 min-h-[100px] whitespace-pre-wrap">
+                                                    {selectedGuest.notes || <span className="text-slate-400 italic">No notes added.</span>}
+                                                </div>
                                             </div>
                                         </div>
                                         <div className="w-48 space-y-4">
+                                            {selectedGuest.vipStatus && (
+                                                <div className="p-4 bg-yellow-50 border border-yellow-100 rounded-lg text-center">
+                                                    <span className="text-sm font-bold text-yellow-800">VIP Guest</span>
+                                                </div>
+                                            )}
                                             <div className="p-4 bg-red-50 border border-red-100 rounded-lg">
                                                 <div className="flex items-center gap-2 text-red-700 mb-2">
                                                     <Ban className="w-4 h-4" />
                                                     <span className="text-xs font-bold uppercase">Restriction</span>
                                                 </div>
-                                                <label className="flex items-center gap-2 cursor-pointer">
-                                                    <input type="checkbox" className="rounded text-red-600" defaultChecked={false} />
-                                                    <span className="text-sm text-red-900">Do Not Rent</span>
-                                                </label>
+                                                <span className="text-sm text-red-900">Do Not Rent (Off)</span>
                                             </div>
-                                            <Button variant="outline" icon={MessageSquare} className="w-full">AI Messaging</Button>
                                         </div>
                                     </div>
                                     <div className="flex justify-end gap-2">
-                                        <Button variant="outline" onClick={() => setSelectedGuest(null)}>Close</Button>
-                                        <Button>Save Profile</Button>
+                                        <Button icon={Edit} onClick={handleOpenEdit}>Edit Profile</Button>
                                     </div>
                                 </div>
                             ) : (
@@ -167,24 +246,7 @@ const Guests: React.FC = () => {
                                         <h4 className="font-bold text-slate-800">Invoice History</h4>
                                         <Button size="sm" icon={Plus}>Generate Invoice</Button>
                                     </div>
-                                    <div className="border border-slate-100 rounded-lg overflow-hidden">
-                                        <table className="w-full text-sm text-left">
-                                            <thead className="bg-slate-50 text-slate-500 uppercase text-xs">
-                                                <tr>
-                                                    <th className="px-4 py-2">Date</th>
-                                                    <th className="px-4 py-2">Amount</th>
-                                                    <th className="px-4 py-2">Status</th>
-                                                    <th className="px-4 py-2 text-right">Action</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody className="divide-y divide-slate-100">
-                                                {/* Placeholder invoices */}
-                                                <tr>
-                                                    <td colSpan={4} className="px-4 py-3 text-center text-slate-400">No invoices found.</td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
-                                    </div>
+                                    <p className="text-center text-slate-400 py-8">No invoices found (Module coming soon).</p>
                                 </div>
                             )}
                         </div>
@@ -196,6 +258,63 @@ const Guests: React.FC = () => {
                     )}
                 </Card>
             </div>
+
+            {/* Add/Edit Modal */}
+            <Modal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                title={modalMode === 'add' ? 'Add New Guest' : 'Edit Guest Profile'}
+            >
+                <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                        <Input
+                            label="First Name"
+                            value={formData.first_name}
+                            onChange={e => setFormData({ ...formData, first_name: e.target.value })}
+                        />
+                        <Input
+                            label="Last Name"
+                            value={formData.last_name}
+                            onChange={e => setFormData({ ...formData, last_name: e.target.value })}
+                        />
+                    </div>
+                    <Input
+                        label="Email"
+                        type="email"
+                        value={formData.email}
+                        onChange={e => setFormData({ ...formData, email: e.target.value })}
+                    />
+                    <Input
+                        label="Phone"
+                        value={formData.phone}
+                        onChange={e => setFormData({ ...formData, phone: e.target.value })}
+                    />
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Notes</label>
+                        <textarea
+                            className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-gold-500 outline-none"
+                            rows={4}
+                            value={formData.notes}
+                            onChange={e => setFormData({ ...formData, notes: e.target.value })}
+                        />
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <input
+                            type="checkbox"
+                            checked={formData.vip_status}
+                            onChange={e => setFormData({ ...formData, vip_status: e.target.checked })}
+                            className="w-4 h-4 text-gold-600 rounded focus:ring-gold-500"
+                        />
+                        <span className="text-sm font-medium text-slate-700">VIP Status</span>
+                    </div>
+                    <div className="pt-4 flex justify-end gap-2">
+                        <Button variant="outline" onClick={() => setIsModalOpen(false)}>Cancel</Button>
+                        <Button onClick={handleSaveGuest}>
+                            {modalMode === 'add' ? 'Create Guest' : 'Save Changes'}
+                        </Button>
+                    </div>
+                </div>
+            </Modal>
         </div>
     );
 };
