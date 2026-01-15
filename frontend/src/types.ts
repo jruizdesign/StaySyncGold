@@ -85,4 +85,5 @@ export interface AppUser {
   role: 'admin' | 'manager' | 'staff';
   propertyId?: string; // Foreign key to Property
   isAdmin?: boolean;
+  isManager?: boolean;
 }

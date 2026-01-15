@@ -77,7 +77,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     email: data.email,
                     role: data.role as 'admin' | 'manager' | 'staff',
                     propertyId: data.property_id,
-                    isAdmin: data.isAdmin // Using the column from DB
+                    isAdmin: data.isAdmin, // Using the column from DB
+                    isManager: data.isManager || data.role === 'manager' // specific boolean or role-based fallback
                 };
                 setUser(appUser);
             } else {

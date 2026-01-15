@@ -498,7 +498,8 @@ const AdminSettings: React.FC = () => {
     // If user.isAdmin exists -> Super Admin
     // If user.propertyId exists -> Manager/Owner of that property
     const isAdmin = !!user?.isAdmin;
-    const isManagement = !!user?.propertyId || isAdmin;
+    const isManager = !!user?.isManager;
+    const isManagement = isManager || isAdmin; // Managers and Admins can see property settings
 
     const [activeTab, setActiveTab] = useState<'database' | 'users' | 'property' | 'rooms' | 'channel' | 'superadmin'>('property');
 
@@ -539,10 +540,13 @@ const AdminSettings: React.FC = () => {
                                 <button onClick={() => setActiveTab('rooms')} className={`flex items-center justify-between px-6 py-4 text-left border-l-4 transition-colors ${activeTab === 'rooms' ? 'border-gold-500 bg-gold-50' : 'border-transparent hover:bg-slate-50'}`}>
                                     <div className="flex items-center gap-3"><Layout className="w-5 h-5" /> <span className="font-medium">Rooms & Units</span></div>
                                 </button>
-                                <button onClick={() => setActiveTab('database')} className={`flex items-center justify-between px-6 py-4 text-left border-l-4 transition-colors ${activeTab === 'database' ? 'border-gold-500 bg-gold-50' : 'border-transparent hover:bg-slate-50'}`}>
-                                    <div className="flex items-center gap-3"><Database className="w-5 h-5" /> <span className="font-medium">Data Inspector</span></div>
-                                </button>
                             </>
+                        )}
+                        {/* Database Inspector - STRICTLY ADMIN ONLY */}
+                        {isAdmin && (
+                            <button onClick={() => setActiveTab('database')} className={`flex items-center justify-between px-6 py-4 text-left border-l-4 transition-colors ${activeTab === 'database' ? 'border-gold-500 bg-gold-50' : 'border-transparent hover:bg-slate-50'}`}>
+                                <div className="flex items-center gap-3"><Database className="w-5 h-5" /> <span className="font-medium">Data Inspector</span></div>
+                            </button>
                         )}
                     </nav>
                 </Card>
