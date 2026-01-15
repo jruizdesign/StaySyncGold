@@ -27,6 +27,82 @@ const Guests: React.FC = () => {
         do_not_rent: false
     });
 
+    // Invoice State
+    const [invoices, setInvoices] = useState<Invoice[]>([]);
+    const [invoiceModalOpen, setInvoiceModalOpen] = useState(false);
+    const [invoiceForm, setInvoiceForm] = useState({
+        amount: 0,
+        description: '',
+        dueDate: new Date().toISOString().split('T')[0]
+    });
+
+    // ... (fetchGuests remains same)
+
+    const fetchInvoices = async (guestId: string) => {
+        try {
+            const { data, error } = await supabase
+                .from('invoices')
+                .select('*')
+                .eq('guest_id', guestId)
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+
+            if (data) {
+                setInvoices(data.map((inv: any) => ({
+                    id: inv.id,
+                    guestId: inv.guest_id,
+                    propertyId: inv.property_id,
+                    amount: inv.amount,
+                    status: inv.status,
+                    dueDate: inv.due_date,
+                    createdAt: inv.created_at,
+                    items: inv.items || []
+                })));
+            }
+        } catch (error) {
+            console.error('Error fetching invoices:', error);
+        }
+    };
+
+    useEffect(() => {
+        if (selectedGuest && activeSubTab === 'billing') {
+            fetchInvoices(selectedGuest.id);
+        }
+    }, [selectedGuest, activeSubTab]);
+
+    const handleGenerateInvoice = async () => {
+        if (!selectedGuest || !user?.propertyId) return;
+
+        try {
+            const newItem = { description: invoiceForm.description || 'Accommodation Charges', amount: invoiceForm.amount };
+
+            const { error } = await supabase.from('invoices').insert([{
+                guest_id: selectedGuest.id,
+                property_id: user.propertyId,
+                amount: invoiceForm.amount,
+                status: 'Pending',
+                due_date: invoiceForm.dueDate,
+                items: [newItem]
+            }]);
+
+            if (error) throw error;
+
+            alert('Invoice generated successfully!');
+            setInvoiceModalOpen(false);
+            fetchInvoices(selectedGuest.id);
+        } catch (error: any) {
+            console.error('Error generating invoice:', error);
+            alert(`Failed to generate invoice: ${error.message}`);
+        }
+    };
+
+    // ... (rest of the component)
+
+    // ... (Inside the 'billing' tab check)
+
+
+
     useEffect(() => {
         if (user) {
             fetchGuests();
@@ -113,8 +189,26 @@ const Guests: React.FC = () => {
     };
 
     const handleSaveGuest = async () => {
-        if (!user?.propertyId && !user?.isAdmin) return;
+        // Validation: Ensure Global Admins select a property or have one assigned contextually
+        // For now, we'll enforce that a propertyId must be present to add a guest.
+        // In a future update, we can add a PropertySelector for Global Admins.
+        const targetPropertyId = user?.propertyId;
 
+        if (!targetPropertyId && !user?.isAdmin) {
+            alert("You must be assigned to a property to manage guests.");
+            return;
+        }
+
+        if (!targetPropertyId) {
+            // If Admin but no property ID (e.g. Super Admin view all), warn them.
+            // Ideally, they should select a property from a dropdown in the modal.
+            alert("System Warning: No specific property context found. Guest will be created without a specific property link, which may hide them from property-level views.");
+            // Proceeding cautiously or we could block. Let's block for safety until selector is added.
+            alert("Error: Cannot create guest without a Property ID. Please switch to a specific property context or contact support.");
+            return;
+        }
+
+        setLoading(true);
         try {
             const payload = {
                 first_name: formData.first_name,
@@ -124,7 +218,7 @@ const Guests: React.FC = () => {
                 notes: formData.notes,
                 vip_status: formData.vip_status,
                 do_not_rent: formData.do_not_rent,
-                property_id: user?.propertyId // Required for new guests
+                property_id: targetPropertyId
             };
 
             let error;
@@ -142,10 +236,14 @@ const Guests: React.FC = () => {
             if (error) throw error;
 
             setIsModalOpen(false);
-            fetchGuests(); // Refresh list
-        } catch (err) {
+            await fetchGuests(); // Refresh list
+            alert(modalMode === 'add' ? 'Guest added successfully!' : 'Guest updated successfully!');
+
+        } catch (err: any) {
             console.error('Error saving guest:', err);
-            alert('Failed to save guest');
+            alert(`Failed to save guest: ${err.message}`);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -277,9 +375,28 @@ const Guests: React.FC = () => {
                                 <div className="space-y-4">
                                     <div className="flex justify-between items-center">
                                         <h4 className="font-bold text-slate-800">Invoice History</h4>
-                                        <Button size="sm" icon={Plus}>Generate Invoice</Button>
+                                        <Button size="sm" icon={Plus} onClick={() => setInvoiceModalOpen(true)}>Generate Invoice</Button>
                                     </div>
-                                    <p className="text-center text-slate-400 py-8">No invoices found (Module coming soon).</p>
+
+                                    {invoices.length > 0 ? (
+                                        <div className="space-y-3">
+                                            {invoices.map(inv => (
+                                                <div key={inv.id} className="bg-white border border-slate-100 p-4 rounded-lg flex justify-between items-center">
+                                                    <div>
+                                                        <div className="flex items-center gap-2">
+                                                            <p className="font-bold text-slate-800">${inv.amount.toFixed(2)}</p>
+                                                            <Badge color={inv.status === 'Paid' ? 'green' : inv.status === 'Pending' ? 'yellow' : 'red'}>{inv.status}</Badge>
+                                                        </div>
+                                                        <p className="text-sm text-slate-500">Due: {new Date(inv.dueDate).toLocaleDateString()}</p>
+                                                        <p className="text-xs text-slate-400 mt-1">{inv.items.map(i => i.description).join(', ')}</p>
+                                                    </div>
+                                                    <Button variant="ghost" size="sm" icon={Receipt}>View</Button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <p className="text-center text-slate-400 py-8">No invoices generated.</p>
+                                    )}
                                 </div>
                             )}
                         </div>
@@ -356,6 +473,38 @@ const Guests: React.FC = () => {
                         <Button onClick={handleSaveGuest}>
                             {modalMode === 'add' ? 'Create Guest' : 'Save Changes'}
                         </Button>
+                    </div>
+                </div>
+            </Modal>
+
+            {/* Invoice Modal */}
+            <Modal
+                isOpen={invoiceModalOpen}
+                onClose={() => setInvoiceModalOpen(false)}
+                title="Generate New Invoice"
+            >
+                <div className="space-y-4">
+                    <Input
+                        label="Amount ($)"
+                        type="number"
+                        value={invoiceForm.amount}
+                        onChange={e => setInvoiceForm({ ...invoiceForm, amount: parseFloat(e.target.value) })}
+                    />
+                    <Input
+                        label="Description"
+                        value={invoiceForm.description}
+                        onChange={e => setInvoiceForm({ ...invoiceForm, description: e.target.value })}
+                        placeholder="e.g. Room Charges, Room Service, etc."
+                    />
+                    <Input
+                        label="Due Date"
+                        type="date"
+                        value={invoiceForm.dueDate}
+                        onChange={e => setInvoiceForm({ ...invoiceForm, dueDate: e.target.value })}
+                    />
+                    <div className="flex justify-end gap-2 pt-4">
+                        <Button variant="outline" onClick={() => setInvoiceModalOpen(false)}>Cancel</Button>
+                        <Button onClick={handleGenerateInvoice}>Create Invoice</Button>
                     </div>
                 </div>
             </Modal>

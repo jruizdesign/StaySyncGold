@@ -70,6 +70,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 }
             }
 
+            // Fetch Property Details if property_id exists
+            let propertyName = undefined;
+            if (data?.property_id) {
+                const { data: propertyData } = await supabase
+                    .from('properties')
+                    .select('name')
+                    .eq('id', data.property_id)
+                    .single();
+
+                if (propertyData) {
+                    propertyName = propertyData.name;
+                }
+            }
+
             if (data) {
                 console.log(`[Auth] Profile loaded. Admin: ${data.isAdmin}`);
                 const appUser: AppUser = {
@@ -77,6 +91,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     email: data.email,
                     role: data.role as 'admin' | 'manager' | 'staff',
                     propertyId: data.property_id,
+                    propertyName: propertyName,
                     isAdmin: data.isAdmin, // Using the column from DB
                     isManager: data.isManager || data.role === 'manager' // specific boolean or role-based fallback
                 };

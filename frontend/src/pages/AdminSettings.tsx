@@ -296,6 +296,14 @@ const PropertyManagement: React.FC = () => {
     const [property, setProperty] = useState<Property | null>(null);
     const [loading, setLoading] = useState(false);
 
+    // Form State
+    const [formData, setFormData] = useState({
+        name: '',
+        phone: '',
+        address: '',
+        timezone: 'Pacific Time (PT)'
+    });
+
     useEffect(() => {
         if (user?.propertyId) fetchProperty();
     }, [user]);
@@ -307,7 +315,42 @@ const PropertyManagement: React.FC = () => {
             .eq('id', user?.propertyId)
             .single();
 
-        if (data) setProperty(data);
+        if (data) {
+            setProperty(data);
+            setFormData({
+                name: data.name || '',
+                phone: data.phone || '+1 (555) 123-4567',
+                address: data.address || '123 Luxury Blvd, Metropolis',
+                timezone: 'Pacific Time (PT)' // Default or fetch if column exists
+            });
+        }
+    };
+
+    const handleSaveProperty = async () => {
+        if (!user?.propertyId) return;
+        setLoading(true);
+
+        try {
+            const { error } = await supabase
+                .from('properties')
+                .update({
+                    name: formData.name,
+                    phone: formData.phone,
+                    address: formData.address
+                    // timezone is likely local-only or needs a column
+                })
+                .eq('id', user.propertyId);
+
+            if (error) throw error;
+            alert('Property settings saved successfully!');
+            await fetchProperty();
+
+        } catch (error: any) {
+            console.error('Error saving property:', error);
+            alert(`Failed to save settings: ${error.message}`);
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleToggleDemoMode = async () => {
@@ -361,10 +404,26 @@ const PropertyManagement: React.FC = () => {
         <Card title="Property Configuration">
             <div className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <Input label="Property Name" defaultValue={property.name} />
-                    <Input label="Contact Phone" defaultValue="+1 (555) 123-4567" />
-                    <Input label="Address" defaultValue="123 Luxury Blvd, Metropolis" />
-                    <Select label="Time Zone">
+                    <Input
+                        label="Property Name"
+                        value={formData.name}
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    />
+                    <Input
+                        label="Contact Phone"
+                        value={formData.phone}
+                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    />
+                    <Input
+                        label="Address"
+                        value={formData.address}
+                        onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                    />
+                    <Select
+                        label="Time Zone"
+                        value={formData.timezone}
+                        onChange={(e) => setFormData({ ...formData, timezone: e.target.value })}
+                    >
                         <option>Pacific Time (PT)</option>
                         <option>Eastern Time (ET)</option>
                         <option>Central Time (CT)</option>
@@ -386,7 +445,7 @@ const PropertyManagement: React.FC = () => {
                             <button
                                 onClick={handleToggleDemoMode}
                                 disabled={loading}
-                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gold-500 ${property.demo_mode ? 'bg-gold-500' : 'bg-slate-200'}`}
+                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gold-500 ${property.demo_mode ? 'bg-gold-50' : 'bg-slate-200'}`}
                             >
                                 <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${property.demo_mode ? 'translate-x-6' : 'translate-x-1'}`} />
                             </button>
@@ -404,7 +463,9 @@ const PropertyManagement: React.FC = () => {
                 </div>
 
                 <div className="flex justify-end pt-4">
-                    <Button>Save Changes</Button>
+                    <Button onClick={handleSaveProperty} disabled={loading}>
+                        {loading ? 'Saving...' : 'Save Changes'}
+                    </Button>
                 </div>
             </div>
         </Card>

@@ -78,8 +78,8 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       `}>
         <div className="h-16 flex items-center px-6 border-b border-slate-800">
           <Hotel className="w-8 h-8 text-gold-500 mr-3" />
-          <span className="text-xl font-bold tracking-tight text-white">
-            StaySync<span className="text-gold-500">Gold</span>
+          <span className="text-xl font-bold tracking-tight text-white truncate">
+            {user?.propertyName || <span>StaySync<span className="text-gold-500">Gold</span></span>}
           </span>
         </div>
 

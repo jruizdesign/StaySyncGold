@@ -86,6 +86,18 @@ export interface AppUser {
   email: string;
   role: 'admin' | 'manager' | 'staff';
   propertyId?: string; // Foreign key to Property
+  propertyName?: string; // Fetched name of the property
   isAdmin?: boolean;
   isManager?: boolean;
+}
+
+export interface Invoice {
+  id: string;
+  guestId: string;
+  propertyId: string;
+  amount: number;
+  status: 'Paid' | 'Pending' | 'Overdue' | 'Cancelled';
+  dueDate: string;
+  createdAt: string;
+  items: { description: string; amount: number }[];
 }
