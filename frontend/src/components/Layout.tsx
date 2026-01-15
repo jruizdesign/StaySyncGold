@@ -16,6 +16,7 @@ import {
   Menu
 } from 'lucide-react';
 import { SmartAssistant } from './SmartAssistant';
+import { CommitTracker } from './CommitTracker';
 
 interface SidebarLinkProps {
   to: string;
@@ -147,6 +148,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       </div>
 
       <SmartAssistant />
+      <CommitTracker />
     </div>
   );
 };
