@@ -11,20 +11,39 @@ const DatabaseInspector: React.FC = () => {
     const { user } = useAuth();
     const [selectedTable, setSelectedTable] = useState('reservations');
     const [data, setData] = useState<any[]>([]);
-    const [seeding, setSeeding] = useState(false);
+
+    // Admin Filtering State
+    const [properties, setProperties] = useState<Property[]>([]);
+    const [filterPropertyId, setFilterPropertyId] = useState<string>('ALL');
+
+    useEffect(() => {
+        if (user?.isAdmin) {
+            fetchProperties();
+        }
+    }, [user]);
 
     useEffect(() => {
         fetchTableData();
-    }, [selectedTable, user]);
+    }, [selectedTable, user, filterPropertyId]); // Re-fetch when filter changes
+
+    const fetchProperties = async () => {
+        const { data } = await supabase.from('properties').select('id, name');
+        if (data) setProperties(data);
+    };
 
     const fetchTableData = async () => {
         if (!user) return;
 
         let query = supabase.from(selectedTable).select('*').limit(50);
 
-        // Basic scoping for inspection if not super admin (privacy)
-        // If user is Admin, they can see all data
-        if (!user.isAdmin && user.propertyId && ['reservations', 'rooms', 'guests', 'staff'].includes(selectedTable)) {
+        // Scoping Logic
+        if (user.isAdmin) {
+            // Admin: Filter if specific property selected, otherwise show all
+            if (filterPropertyId !== 'ALL' && ['reservations', 'rooms', 'guests', 'staff'].includes(selectedTable)) {
+                query = query.eq('property_id', filterPropertyId);
+            }
+        } else if (user.propertyId && ['reservations', 'rooms', 'guests', 'staff'].includes(selectedTable)) {
+            // Non-Admin: Forced scoping
             query = query.eq('property_id', user.propertyId);
         }
 
@@ -38,28 +57,42 @@ const DatabaseInspector: React.FC = () => {
         }
     };
 
-    const handleSeedData = async () => {
-        // ... (Keep existing seeding logic or disable if strict production)
-        alert('Seeding is restricted in this view.');
-    };
-
     return (
         <Card title="Database Inspector (Scoped)" action={<Button variant="outline" onClick={fetchTableData}>Refresh</Button>}>
-            <div className="mb-6">
-                <label className="block text-sm font-medium text-slate-700 mb-2">Select Table</label>
-                <div className="flex gap-2 flex-wrap">
-                    {['reservations', 'rooms', 'guests', 'staff', 'properties'].map(table => (
-                        <button
-                            key={table}
-                            onClick={() => setSelectedTable(table)}
-                            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${selectedTable === table
-                                ? 'bg-slate-800 text-white'
-                                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                                }`}
+            <div className="mb-6 space-y-4">
+                {/* Admin Filter Controls */}
+                {user?.isAdmin && (
+                    <div className="flex items-center gap-3 p-3 bg-slate-50 border border-slate-200 rounded-lg">
+                        <span className="text-sm font-bold text-slate-700">Admin View:</span>
+                        <select
+                            className="bg-white border border-slate-300 text-slate-700 text-sm rounded-md focus:ring-blue-500 focus:border-blue-500 block p-2"
+                            value={filterPropertyId}
+                            onChange={(e) => setFilterPropertyId(e.target.value)}
                         >
-                            {table}
-                        </button>
-                    ))}
+                            <option value="ALL">All Properties (Global)</option>
+                            {properties.map(p => (
+                                <option key={p.id} value={p.id}>{p.name}</option>
+                            ))}
+                        </select>
+                    </div>
+                )}
+
+                <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">Select Table</label>
+                    <div className="flex gap-2 flex-wrap">
+                        {['reservations', 'rooms', 'guests', 'staff', 'properties'].map(table => (
+                            <button
+                                key={table}
+                                onClick={() => setSelectedTable(table)}
+                                className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${selectedTable === table
+                                    ? 'bg-slate-800 text-white'
+                                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                    }`}
+                            >
+                                {table}
+                            </button>
+                        ))}
+                    </div>
                 </div>
             </div>
             <div className="overflow-x-auto border border-slate-200 rounded-lg">
@@ -83,7 +116,7 @@ const DatabaseInspector: React.FC = () => {
                         ))}
                         {data.length === 0 && (
                             <tr>
-                                <td colSpan={6} className="px-6 py-8 text-center text-slate-500">No data found or access restricted.</td>
+                                <td colSpan={6} className="px-6 py-8 text-center text-slate-500">No data found matching your filters.</td>
                             </tr>
                         )}
                     </tbody>
