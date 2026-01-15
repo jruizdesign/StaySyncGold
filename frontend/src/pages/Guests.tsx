@@ -9,10 +9,66 @@ const Guests: React.FC = () => {
     const { user } = useAuth();
     const [guests, setGuests] = useState<Guest[]>([]);
     const [selectedGuest, setSelectedGuest] = useState<Guest | null>(null);
-    const [activeSubTab, setActiveSubTab] = useState<'profile' | 'billing'>('profile');
+    const [activeSubTab, setActiveSubTab] = useState<'profile' | 'billing' | 'documents'>('profile');
     const [showAIChat, setShowAIChat] = useState(false);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+
+    // Documents State
+    const [documents, setDocuments] = useState<any[]>([]);
+    const [uploading, setUploading] = useState(false);
+
+    const fetchDocuments = async () => {
+        if (!selectedGuest) return;
+
+        const { data, error } = await supabase.storage
+            .from('guest_documents')
+            .list(selectedGuest.id);
+
+        if (data) {
+            // Get public URLs (or signed URLs if private)
+            const docsWithUrls = data.map(file => {
+                const { data: urlData } = supabase.storage
+                    .from('guest_documents')
+                    .getPublicUrl(`${selectedGuest.id}/${file.name}`);
+                return { ...file, url: urlData.publicUrl };
+            });
+            setDocuments(docsWithUrls);
+        }
+    };
+
+    const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        if (!event.target.files || event.target.files.length === 0 || !selectedGuest) return;
+
+        const file = event.target.files[0];
+        setUploading(true);
+        try {
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${Math.random().toString(36).substring(7)}.${fileExt}`;
+            const filePath = `${selectedGuest.id}/${fileName}`; // Folder by Guest ID
+
+            const { error: uploadError } = await supabase.storage
+                .from('guest_documents')
+                .upload(filePath, file);
+
+            if (uploadError) throw uploadError;
+
+            await fetchDocuments();
+            alert('Document uploaded successfully!');
+        } catch (error: any) {
+            console.error('Upload error:', error);
+            alert(`Upload failed: ${error.message}`);
+        } finally {
+            setUploading(false);
+        }
+    };
+
+    // Effect to fetch documents when tab changes
+    useEffect(() => {
+        if (selectedGuest && activeSubTab === 'documents') {
+            fetchDocuments();
+        }
+    }, [selectedGuest, activeSubTab]);
 
     // Modal State
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -135,7 +191,8 @@ const Guests: React.FC = () => {
                     vipStatus: g.vip_status || false,
                     notes: g.notes || '',
                     lastStay: g.last_stay,
-                    doNotRent: g.do_not_rent || false
+                    doNotRent: g.do_not_rent || false,
+                    propertyId: g.property_id
                 }));
                 // Sort by name
                 mappedGuests.sort((a, b) => a.fullName.localeCompare(b.fullName));
@@ -189,37 +246,46 @@ const Guests: React.FC = () => {
     };
 
     const handleSaveGuest = async () => {
-        // Validation: Ensure Global Admins select a property or have one assigned contextually
-        // For now, we'll enforce that a propertyId must be present to add a guest.
-        // In a future update, we can add a PropertySelector for Global Admins.
-        const targetPropertyId = user?.propertyId;
+        // Validation: Ensure Global Admins match context
+        const contextPropertyId = user?.propertyId;
+
+        // If 'add' mode, we NEED a property ID. 
+        // If 'edit' mode, we use the guest's existing property ID unless admin sets a new one (not implemented yet).
+
+        let targetPropertyId = contextPropertyId;
+
+        if (modalMode === 'edit' && selectedGuest) {
+            targetPropertyId = selectedGuest.propertyId;
+        }
 
         if (!targetPropertyId && !user?.isAdmin) {
-            alert("You must be assigned to a property to manage guests.");
+            // Should verify: Can a non-admin exist without propertyId? Ideally no.
+            alert("Error: Missing Property Context.");
             return;
         }
 
-        if (!targetPropertyId) {
-            // If Admin but no property ID (e.g. Super Admin view all), warn them.
-            // Ideally, they should select a property from a dropdown in the modal.
-            alert("System Warning: No specific property context found. Guest will be created without a specific property link, which may hide them from property-level views.");
-            // Proceeding cautiously or we could block. Let's block for safety until selector is added.
-            alert("Error: Cannot create guest without a Property ID. Please switch to a specific property context or contact support.");
+        // Deep Guard: If still no ID (e.g. Super Admin adding guest without selecting property context)
+        if (!targetPropertyId && modalMode === 'add') {
+            alert("Cannot create guest. valid Property ID required.");
             return;
         }
 
         setLoading(true);
         try {
-            const payload = {
+            const payload: any = {
                 first_name: formData.first_name,
                 last_name: formData.last_name,
                 email: formData.email,
                 phone: formData.phone,
                 notes: formData.notes,
                 vip_status: formData.vip_status,
-                do_not_rent: formData.do_not_rent,
-                property_id: targetPropertyId
+                do_not_rent: formData.do_not_rent
             };
+
+            // Only add property_id if creating new
+            if (modalMode === 'add') {
+                payload.property_id = targetPropertyId;
+            }
 
             let error;
             if (modalMode === 'add') {
@@ -308,9 +374,10 @@ const Guests: React.FC = () => {
                             <div className="flex border-b border-slate-100">
                                 <button onClick={() => setActiveSubTab('profile')} className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeSubTab === 'profile' ? 'border-gold-500 text-gold-600' : 'border-transparent text-slate-500'}`}>Profile & Notes</button>
                                 <button onClick={() => setActiveSubTab('billing')} className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeSubTab === 'billing' ? 'border-gold-500 text-gold-600' : 'border-transparent text-slate-500'}`}>Billing & Invoices</button>
+                                <button onClick={() => setActiveSubTab('documents')} className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeSubTab === 'documents' ? 'border-gold-500 text-gold-600' : 'border-transparent text-slate-500'}`}>Documents</button>
                             </div>
 
-                            {activeSubTab === 'profile' ? (
+                            {activeSubTab === 'profile' && (
                                 showAIChat ? (
                                     <div className="space-y-4 animate-slideIn">
                                         <div className="flex justify-between items-center">
@@ -371,7 +438,9 @@ const Guests: React.FC = () => {
                                         </div>
                                     </div>
                                 )
-                            ) : (
+                            )}
+
+                            {activeSubTab === 'billing' && (
                                 <div className="space-y-4">
                                     <div className="flex justify-between items-center">
                                         <h4 className="font-bold text-slate-800">Invoice History</h4>
@@ -396,6 +465,53 @@ const Guests: React.FC = () => {
                                         </div>
                                     ) : (
                                         <p className="text-center text-slate-400 py-8">No invoices generated.</p>
+                                    )}
+                                </div>
+
+                            )}
+                            {activeSubTab === 'documents' && (
+                                <div className="space-y-4">
+                                    <div className="flex justify-between items-center">
+                                        <h4 className="font-bold text-slate-800">Documents</h4>
+                                        <div className="relative">
+                                            <input
+                                                type="file"
+                                                id="file-upload"
+                                                className="hidden"
+                                                onChange={handleFileUpload}
+                                                disabled={uploading}
+                                            />
+                                            <label htmlFor="file-upload">
+                                                <Button size="sm" icon={Plus} as="span" className="cursor-pointer">
+                                                    {uploading ? 'Uploading...' : 'Upload Document'}
+                                                </Button>
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    {documents.length > 0 ? (
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                            {documents.map((doc: any, i: number) => (
+                                                <div key={i} className="bg-white border border-slate-100 p-3 rounded-lg flex items-center justify-between">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-8 h-8 bg-blue-50 text-blue-500 rounded flex items-center justify-center">
+                                                            <FileText className="w-4 h-4" />
+                                                        </div>
+                                                        <div className="overflow-hidden">
+                                                            <p className="font-medium text-slate-800 text-sm truncate w-40" title={doc.name}>{doc.name}</p>
+                                                            <p className="text-xs text-slate-400">{(doc.metadata?.size / 1024).toFixed(1)} KB</p>
+                                                        </div>
+                                                    </div>
+                                                    <Button variant="ghost" size="sm" icon={Receipt} onClick={() => window.open(doc.url, '_blank')}>View</Button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className="text-center py-8 border-2 border-dashed border-slate-100 rounded-lg">
+                                            <FileText className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                                            <p className="text-slate-400 text-sm">No documents uploaded.</p>
+                                            <p className="text-xs text-slate-300">IDs, Contracts, Waivers</p>
+                                        </div>
                                     )}
                                 </div>
                             )}

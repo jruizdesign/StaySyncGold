@@ -21,12 +21,35 @@ interface GuestBalance {
   balance: number;
 }
 
+// Mock data for chart (if user is in demo mode)
+const mockChartData = [
+  { name: 'Mon', revenue: 4000, expenses: 2400 },
+  { name: 'Tue', revenue: 3000, expenses: 1398 },
+  { name: 'Wed', revenue: 2000, expenses: 9800 },
+  { name: 'Thu', revenue: 2780, expenses: 3908 },
+  { name: 'Fri', revenue: 1890, expenses: 4800 },
+  { name: 'Sat', revenue: 2390, expenses: 3800 },
+  { name: 'Sun', revenue: 5490, expenses: 4300 },
+];
+
+const emptyChartData = [
+  { name: 'Mon', revenue: 0, expenses: 0 },
+  { name: 'Tue', revenue: 0, expenses: 0 },
+  { name: 'Wed', revenue: 0, expenses: 0 },
+  { name: 'Thu', revenue: 0, expenses: 0 },
+  { name: 'Fri', revenue: 0, expenses: 0 },
+  { name: 'Sat', revenue: 0, expenses: 0 },
+  { name: 'Sun', revenue: 0, expenses: 0 },
+];
+
 const Financials: React.FC = () => {
   const { user } = useAuth();
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [guestBalances, setGuestBalances] = useState<GuestBalance[]>([]);
+  const [guestBalances, setGuestBalances] = useState<GuestBalance[]>([]); // Kept original type
   const [loading, setLoading] = useState(true);
+
+  const chartData = user?.isDemoMode ? mockChartData : emptyChartData; // Added chartData
 
   useEffect(() => {
     if (user?.propertyId) {
@@ -183,111 +206,154 @@ const Financials: React.FC = () => {
       </div>
 
       {/* Guest Balances - Front and Center */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-[0_4px_12px_rgba(0,0,0,0.08)] overflow-hidden border-t-4 border-t-rose-500">
-        <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-rose-50/30">
-          <div className="flex items-center gap-3">
-            <Wallet className="w-6 h-6 text-rose-500" />
-            <div>
-              <h2 className="text-lg font-bold text-slate-900">Current Guest Balances</h2>
-              <p className="text-sm text-slate-500">Outstanding amounts for current long-term stays</p>
+      {user?.isDemoMode && ( // Conditional rendering for demo mode
+        <div className="bg-white rounded-xl border border-slate-200 shadow-[0_4px_12px_rgba(0,0,0,0.08)] overflow-hidden border-t-4 border-t-rose-500">
+          <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-rose-50/30">
+            <div className="flex items-center gap-3">
+              <Wallet className="w-6 h-6 text-rose-500" />
+              <div>
+                <h2 className="text-lg font-bold text-slate-900">Current Guest Balances</h2>
+                <p className="text-sm text-slate-500">Outstanding amounts for current long-term stays</p>
+              </div>
             </div>
+            <span className="text-2xl font-bold text-rose-600">
+              ${guestBalances.reduce((sum, g) => sum + g.balance, 0).toLocaleString()}
+            </span>
           </div>
-          <span className="text-2xl font-bold text-rose-600">
-            ${guestBalances.reduce((sum, g) => sum + g.balance, 0).toLocaleString()}
-          </span>
-        </div>
-        <div className="p-0">
-          <table className="w-full text-sm text-left">
-            <thead className="bg-slate-50 text-xs uppercase font-bold text-slate-500">
-              <tr>
-                <th className="px-6 py-3">Room</th>
-                <th className="px-6 py-3">Guest Name</th>
-                <th className="px-6 py-3 text-right">Days Stayed</th>
-                <th className="px-6 py-3 text-right">Balance Due</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {guestBalances.length > 0 ? (
-                guestBalances.map((guest) => (
-                  <tr key={guest.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4 font-bold text-slate-800">{guest.roomNumber}</td>
-                    <td className="px-6 py-4 font-medium text-slate-900">{guest.guestName}</td>
-                    <td className="px-6 py-4 text-right text-slate-600">{guest.daysStayed}</td>
-                    <td className="px-6 py-4 text-right font-bold text-rose-600">
-                      ${guest.balance.toLocaleString()}
+          <div className="p-0">
+            <table className="w-full text-sm text-left">
+              <thead className="bg-slate-50 text-xs uppercase font-bold text-slate-500">
+                <tr>
+                  <th className="px-6 py-3">Room</th>
+                  <th className="px-6 py-3">Guest Name</th>
+                  <th className="px-6 py-3 text-right">Days Stayed</th>
+                  <th className="px-6 py-3 text-right">Balance Due</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {guestBalances.length > 0 ? (
+                  guestBalances.map((guest) => (
+                    <tr key={guest.id} className="hover:bg-slate-50 transition-colors">
+                      <td className="px-6 py-4 font-bold text-slate-800">{guest.roomNumber}</td>
+                      <td className="px-6 py-4 font-medium text-slate-900">{guest.guestName}</td>
+                      <td className="px-6 py-4 text-right text-slate-600">{guest.daysStayed}</td>
+                      <td className="px-6 py-4 text-right font-bold text-rose-600">
+                        ${guest.balance.toLocaleString()}
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={4} className="px-6 py-8 text-center text-slate-400 italic">
+                      No outstanding balances found.
                     </td>
                   </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={4} className="px-6 py-8 text-center text-slate-400 italic">
-                    No outstanding balances found.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Total Collected */}
-        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-[0_2px_8px_rgba(0,0,0,0.04)] flex flex-col justify-between h-40">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-sm font-bold text-slate-500">Total Collected</p>
-              <p className="text-4xl font-bold text-emerald-600 mt-2">${stats.totalCollected.toLocaleString()}</p>
+      {user?.isDemoMode && ( // Conditional rendering for demo mode
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Total Collected */}
+          <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-[0_2px_8px_rgba(0,0,0,0.04)] flex flex-col justify-between h-40">
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="text-sm font-bold text-slate-500">Total Collected</p>
+                <p className="text-4xl font-bold text-emerald-600 mt-2">${stats.totalCollected.toLocaleString()}</p>
+              </div>
+              <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center">
+                <DollarSign className="w-5 h-5 text-emerald-600" />
+              </div>
             </div>
-            <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center">
-              <DollarSign className="w-5 h-5 text-emerald-600" />
-            </div>
+            <p className="text-xs text-slate-400">Cash/card received on this date</p>
           </div>
-          <p className="text-xs text-slate-400">Cash/card received on this date</p>
-        </div>
 
-        {/* Outstanding Balances */}
-        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-[0_2px_8px_rgba(0,0,0,0.04)] flex flex-col justify-between h-40">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-sm font-bold text-slate-500">Outstanding Balances</p>
-              <p className="text-4xl font-bold text-rose-500 mt-2">${stats.outstanding.toLocaleString()}</p>
+          {/* Outstanding Balances */}
+          <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-[0_2px_8px_rgba(0,0,0,0.04)] flex flex-col justify-between h-40">
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="text-sm font-bold text-slate-500">Outstanding Balances</p>
+                <p className="text-4xl font-bold text-rose-500 mt-2">${stats.outstanding.toLocaleString()}</p>
+              </div>
+              <div className="w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center">
+                <Wallet className="w-5 h-5 text-rose-500" />
+              </div>
             </div>
-            <div className="w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center">
-              <Wallet className="w-5 h-5 text-rose-500" />
-            </div>
+            <p className="text-xs text-slate-400">Total amount owed by active guests</p>
           </div>
-          <p className="text-xs text-slate-400">Total amount owed by active guests</p>
-        </div>
 
-        {/* Daily Accrued */}
-        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-[0_2px_8px_rgba(0,0,0,0.04)] flex flex-col justify-between h-40">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-sm font-bold text-slate-500">Daily Accrued</p>
-              <p className="text-4xl font-bold text-blue-600 mt-2">${stats.dailyAccrued.toLocaleString()}</p>
+          {/* Daily Accrued */}
+          <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-[0_2px_8px_rgba(0,0,0,0.04)] flex flex-col justify-between h-40">
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="text-sm font-bold text-slate-500">Daily Accrued</p>
+                <p className="text-4xl font-bold text-blue-600 mt-2">${stats.dailyAccrued.toLocaleString()}</p>
+              </div>
+              <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                <TrendingUp className="w-5 h-5 text-blue-600" />
+              </div>
             </div>
-            <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-              <TrendingUp className="w-5 h-5 text-blue-600" />
-            </div>
+            <p className="text-xs text-slate-400">Revenue from today's stays</p>
           </div>
-          <p className="text-xs text-slate-400">Revenue from today's stays</p>
-        </div>
 
-        {/* Projected Revenue */}
-        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-[0_2px_8px_rgba(0,0,0,0.04)] flex flex-col justify-between h-40">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-sm font-bold text-slate-500">Projected Revenue</p>
-              <p className="text-4xl font-bold text-purple-600 mt-2">${stats.projected.toLocaleString()}</p>
+          {/* Projected Revenue */}
+          <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-[0_2px_8px_rgba(0,0,0,0.04)] flex flex-col justify-between h-40">
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="text-sm font-bold text-slate-500">Projected Revenue</p>
+                <p className="text-4xl font-bold text-purple-600 mt-2">${stats.projected.toLocaleString()}</p>
+              </div>
+              <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
+                <CreditCard className="w-5 h-5 text-purple-600" />
+              </div>
             </div>
-            <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
-              <CreditCard className="w-5 h-5 text-purple-600" />
+            <p className="text-xs text-slate-400">Total expected from current stays</p>
+          </div>
+        </div>
+      )}
+
+      {/* New: Revenue Breakdown Chart (Conditional for demo mode) */}
+      {user?.isDemoMode && (
+        <div className="bg-white rounded-xl border border-slate-200 shadow-[0_4px_12px_rgba(0,0,0,0.08)] overflow-hidden border-t-4 border-t-blue-500">
+          <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-blue-50/30">
+            <div className="flex items-center gap-3">
+              <TrendingUp className="w-6 h-6 text-blue-500" />
+              <div>
+                <h2 className="text-lg font-bold text-slate-900">Revenue Breakdown</h2>
+                <p className="text-sm text-slate-500">Distribution of revenue sources</p>
+              </div>
             </div>
           </div>
-          <p className="text-xs text-slate-400">Total expected from current stays</p>
+          <div className="flex justify-center items-center p-4">
+            <PieChart width={400} height={200}>
+              <Pie
+                data={user?.isDemoMode ? [
+                  { name: 'Room Revenue', value: 65, fill: '#f59e0b' },
+                  { name: 'Services', value: 20, fill: '#3b82f6' },
+                  { name: 'F&B', value: 15, fill: '#10b981' }
+                ] : [{ name: 'No Data', value: 100, fill: '#cbd5e1' }]}
+                innerRadius={60}
+                outerRadius={80}
+                paddingAngle={5}
+                dataKey="value"
+              >
+                {user?.isDemoMode && [
+                  { name: 'Room Revenue', value: 65, fill: '#f59e0b' },
+                  { name: 'Services', value: 20, fill: '#3b82f6' },
+                  { name: 'F&B', value: 15, fill: '#10b981' }
+                ].map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.fill} />
+                ))}
+              </Pie>
+              <Tooltip />
+            </PieChart>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Room Details Table */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">

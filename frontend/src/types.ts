@@ -23,6 +23,7 @@ export interface Guest {
   notes: string;
   lastStay?: string;
   doNotRent?: boolean;
+  propertyId: string;
 }
 
 export interface Room {
@@ -89,6 +90,7 @@ export interface AppUser {
   propertyName?: string; // Fetched name of the property
   isAdmin?: boolean;
   isManager?: boolean;
+  isDemoMode?: boolean;
 }
 
 export interface Invoice {

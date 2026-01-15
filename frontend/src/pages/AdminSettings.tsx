@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { Button, Card, Input, Select, Badge } from '../components/UIComponents';
 import { Settings, Database, Users, Building, ShieldCheck, Plus, Search, ChevronRight, Layout, Globe, Loader, GitBranch } from 'lucide-react';
@@ -140,6 +141,34 @@ const UserManagement: React.FC = () => {
     const { user } = useAuth();
     const [users, setUsers] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [showAddForm, setShowAddForm] = useState(false);
+    const [submitting, setSubmitting] = useState(false);
+    const [newStaff, setNewStaff] = useState({ firstname: '', last_name: '', email: '', role: 'Front Desk' });
+
+    const handleAddStaff = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!user?.propertyId) return;
+        setSubmitting(true);
+        try {
+            const { error } = await supabase.from('staff').insert([{
+                property_id: user.propertyId,
+                firstname: newStaff.firstname,
+                last_name: newStaff.last_name,
+                email: newStaff.email,
+                role: newStaff.role,
+                status: 'Active'
+            }]);
+            if (error) throw error;
+            setNewStaff({ firstname: '', last_name: '', email: '', role: 'Front Desk' });
+            setShowAddForm(false);
+            fetchUsers();
+            alert('Staff member added successfully');
+        } catch (err: any) {
+            alert('Error adding staff: ' + err.message);
+        } finally {
+            setSubmitting(false);
+        }
+    };
 
     useEffect(() => {
         if (user?.propertyId) fetchUsers();
@@ -160,9 +189,34 @@ const UserManagement: React.FC = () => {
     };
 
     return (
-        <Card title="Staff Management" action={<Button icon={Plus}>Add Staff</Button>}>
+        <Card title="Staff Management" action={<Button icon={Plus} onClick={() => setShowAddForm(!showAddForm)}>{showAddForm ? 'Cancel' : 'Add Staff'}</Button>}>
             <div className="space-y-4">
-                {/* Search bar placeholder */}
+                {showAddForm && (
+                    <div className="p-4 border border-slate-200 rounded-lg bg-slate-50 mb-4 animate-fadeIn">
+                        <h4 className="font-semibold text-slate-800 mb-3">Add New Staff Member</h4>
+                        <form onSubmit={handleAddStaff} className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <Input label="First Name" value={newStaff.firstname} onChange={e => setNewStaff({ ...newStaff, firstname: e.target.value })} required />
+                                <Input label="Last Name" value={newStaff.last_name} onChange={e => setNewStaff({ ...newStaff, last_name: e.target.value })} required />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <Input label="Email" type="email" value={newStaff.email} onChange={e => setNewStaff({ ...newStaff, email: e.target.value })} required />
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">Role</label>
+                                    <select className="w-full p-2 border rounded-md" value={newStaff.role} onChange={e => setNewStaff({ ...newStaff, role: e.target.value })}>
+                                        <option>Front Desk</option>
+                                        <option>Housekeeper</option>
+                                        <option>Manager</option>
+                                        <option>Maintenance</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div className="flex justify-end">
+                                <Button type="submit" disabled={submitting}>{submitting ? 'Adding...' : 'Save Staff'}</Button>
+                            </div>
+                        </form>
+                    </div>
+                )}
 
                 <div className="space-y-2">
                     {loading ? <Loader className="animate-spin" /> : users.map((staff: any) => (
@@ -685,6 +739,14 @@ const AdminSettings: React.FC = () => {
     const isManagement = isManager || isAdmin; // Managers and Admins can see property settings
 
     const [activeTab, setActiveTab] = useState<'database' | 'users' | 'property' | 'rooms' | 'channel' | 'superadmin' | 'updates'>('property');
+    const [searchParams] = useSearchParams();
+
+    useEffect(() => {
+        const tab = searchParams.get('tab');
+        if (tab && ['database', 'users', 'property', 'rooms', 'channel', 'superadmin', 'updates'].includes(tab)) {
+            setActiveTab(tab as any);
+        }
+    }, [searchParams]);
 
     return (
         <div className="space-y-6 animate-fadeIn transition-all duration-500">

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, Badge, Button } from '../components/UIComponents';
 import { UserPlus, Calendar, Clock, MoreHorizontal, Loader } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -6,6 +7,7 @@ import { supabase } from '../lib/supabase';
 
 const Staff: React.FC = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [staffList, setStaffList] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -41,8 +43,8 @@ const Staff: React.FC = () => {
       <div className="flex flex-col sm:flex-row justify-between gap-4">
         <h2 className="text-xl font-bold text-slate-800">Team Management</h2>
         <div className="flex gap-3">
-          <Button variant="outline" icon={Calendar}>View Schedule</Button>
-          <Button icon={UserPlus}>Add Employee</Button>
+          <Button variant="outline" icon={Calendar} onClick={() => alert('Shift scheduling coming soon!')}>View Schedule</Button>
+          <Button icon={UserPlus} onClick={() => navigate('/admin?tab=users')}>Add Employee</Button>
         </div>
       </div>
 
