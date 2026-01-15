@@ -31,8 +31,8 @@ const SidebarLink: React.FC<SidebarLinkProps> = ({ to, icon: Icon, label }) => {
     <Link
       to={to}
       className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${isActive
-          ? 'bg-gold-500 text-white shadow-sm'
-          : 'text-slate-400 hover:text-white hover:bg-slate-800'
+        ? 'bg-gold-500 text-white shadow-sm'
+        : 'text-slate-400 hover:text-white hover:bg-slate-800'
         }`}
     >
       <Icon className="w-5 h-5" />
@@ -51,8 +51,8 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Hide standard layout for Kiosk, Login, and Landing modes
-  if (['/kiosk', '/login', '/', '/landing'].includes(location.pathname)) {
+  // Hide standard layout for Kiosk, Login, and Landing modes including new Digital Services pages
+  if (['/kiosk', '/login', '/', '/landing', '/it-security', '/digital-solutions'].includes(location.pathname)) {
     return <>{children}</>;
   }
 
