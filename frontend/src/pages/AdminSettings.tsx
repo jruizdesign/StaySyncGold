@@ -267,25 +267,85 @@ const RoomWizard: React.FC = () => {
 };
 
 const ChannelManager: React.FC = () => {
+    const [channels, setChannels] = useState([
+        { name: 'Booking.com', connected: true, lastSync: '2 mins ago', status: 'Healthy' },
+        { name: 'Expedia', connected: true, lastSync: '15 mins ago', status: 'Healthy' },
+        { name: 'Airbnb', connected: false, lastSync: 'Never', status: 'Disconnected' },
+        { name: 'Direct Website', connected: true, lastSync: 'Just now', status: 'Live' }
+    ]);
+
+    const [syncing, setSyncing] = useState(false);
+
+    const toggleChannel = (index: number) => {
+        const newChannels = [...channels];
+        newChannels[index].connected = !newChannels[index].connected;
+        if (newChannels[index].connected) {
+            newChannels[index].lastSync = 'Syncing...';
+            newChannels[index].status = 'Initializing';
+            setTimeout(() => {
+                setChannels(prev => {
+                    const up = [...prev];
+                    up[index].lastSync = 'Just now';
+                    up[index].status = 'Healthy';
+                    return up;
+                });
+            }, 2000);
+        } else {
+            newChannels[index].status = 'Disconnected';
+        }
+        setChannels(newChannels);
+    };
+
+    const handleSyncAll = () => {
+        setSyncing(true);
+        setTimeout(() => {
+            setChannels(channels.map(c => c.connected ? { ...c, lastSync: 'Just now', status: 'Healthy' } : c));
+            setSyncing(false);
+            alert('All channels synced successfully.');
+        }, 1500);
+    };
+
     return (
-        <Card title="Channel Manager" action={<Button variant="outline" icon={Globe}>Sync All</Button>}>
+        <Card title="Channel Manager" action={
+            <Button variant="outline" icon={Globe} onClick={handleSyncAll} disabled={syncing}>
+                {syncing ? 'Syncing...' : 'Sync All'}
+            </Button>
+        }>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {['Booking.com', 'Expedia', 'Airbnb', 'Direct Website'].map(channel => (
-                    <div key={channel} className="p-4 border border-slate-100 rounded-xl flex items-center justify-between">
+                {channels.map((channel, idx) => (
+                    <div key={channel.name} className={`p-4 border rounded-xl flex items-center justify-between transition-colors ${channel.connected ? 'border-slate-200 bg-white' : 'border-slate-100 bg-slate-50 opacity-75'}`}>
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center">
-                                <Globe className="w-5 h-5 text-slate-400" />
+                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${channel.connected ? 'bg-blue-50 text-blue-500' : 'bg-slate-100 text-slate-400'}`}>
+                                <Globe className="w-5 h-5" />
                             </div>
                             <div>
-                                <p className="font-bold text-slate-900">{channel}</p>
-                                <p className="text-xs text-green-600">Connected & Syncing</p>
+                                <p className="font-bold text-slate-900">{channel.name}</p>
+                                <p className={`text-xs ${channel.connected ? 'text-green-600' : 'text-slate-400'}`}>
+                                    {channel.connected ? `● ${channel.status} · ${channel.lastSync}` : 'Disconnected'}
+                                </p>
                             </div>
                         </div>
-                        <div className="relative inline-flex h-6 w-11 items-center rounded-full bg-gold-500">
-                            <span className="translate-x-6 inline-block h-4 w-4 transform rounded-full bg-white transition" />
-                        </div>
+                        <button
+                            onClick={() => toggleChannel(idx)}
+                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gold-500 ${channel.connected ? 'bg-gold-500' : 'bg-slate-300'}`}
+                        >
+                            <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${channel.connected ? 'translate-x-6' : 'translate-x-1'}`} />
+                        </button>
                     </div>
                 ))}
+            </div>
+
+            <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-100">
+                <div className="flex items-start gap-3">
+                    <ShieldCheck className="w-5 h-5 text-blue-600 mt-0.5" />
+                    <div>
+                        <h4 className="font-semibold text-blue-900 text-sm">Channel Optimization Active</h4>
+                        <p className="text-sm text-blue-700 mt-1">
+                            Your rates are automatically adjusted across all connected channels based on occupancy rules.
+                            Next scheduled sync: <strong>14:00</strong>.
+                        </p>
+                    </div>
+                </div>
             </div>
         </Card>
     );
