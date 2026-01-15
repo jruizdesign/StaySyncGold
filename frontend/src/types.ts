@@ -77,6 +77,7 @@ export interface Property {
   name: string;
   address?: string;
   createdAt: string;
+  demo_mode?: boolean;
 }
 
 export interface AppUser {

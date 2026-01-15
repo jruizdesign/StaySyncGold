@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { GitCommit, ExternalLink, RefreshCw, AlertCircle } from 'lucide-react';
+import { GitCommit, ExternalLink, Clock, User } from 'lucide-react';
+import { Card } from './UIComponents';
 
 interface CommitInfo {
     sha: string;
@@ -7,18 +8,19 @@ interface CommitInfo {
     author: string;
     date: string;
     html_url: string;
+    author_avatar?: string;
 }
 
 export const CommitTracker: React.FC = () => {
-    const [commit, setCommit] = useState<CommitInfo | null>(null);
+    const [commits, setCommits] = useState<CommitInfo[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(false);
 
-    const fetchLatestCommit = async () => {
+    const fetchLatestCommits = async () => {
         setLoading(true);
         setError(false);
         try {
-            const response = await fetch('https://api.github.com/repos/jruizdesign/StaySyncGold/commits?per_page=1');
+            const response = await fetch('https://api.github.com/repos/jruizdesign/StaySyncGold/commits?per_page=3');
 
             if (!response.ok) {
                 if (response.status === 403 || response.status === 404) {
@@ -31,15 +33,15 @@ export const CommitTracker: React.FC = () => {
             }
 
             const data = await response.json();
-            if (data && data.length > 0) {
-                const latest = data[0];
-                setCommit({
-                    sha: latest.sha.substring(0, 7),
-                    message: latest.commit.message,
-                    author: latest.commit.author.name,
-                    date: new Date(latest.commit.author.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                    html_url: latest.html_url
-                });
+            if (data && Array.isArray(data)) {
+                const formatted = data.map((item: any) => ({
+                    sha: item.sha.substring(0, 7),
+                    message: item.commit.message,
+                    author: item.commit.author.name,
+                    date: new Date(item.commit.author.date).toLocaleString(),
+                    html_url: item.html_url
+                }));
+                setCommits(formatted);
             }
         } catch (err) {
             console.error(err);
@@ -50,46 +52,54 @@ export const CommitTracker: React.FC = () => {
     };
 
     useEffect(() => {
-        fetchLatestCommit();
-        // Optional: Poll every 60 seconds
-        const interval = setInterval(fetchLatestCommit, 60000);
+        fetchLatestCommits();
+        const interval = setInterval(fetchLatestCommits, 60000); // Poll every minute
         return () => clearInterval(interval);
     }, []);
 
-    if (error) return null; // Hide if cannot fetch (e.g. private repo without auth)
+    if (error) return null;
 
     return (
-        <div className="fixed bottom-4 right-4 z-50">
-            <div className="bg-slate-900 border border-slate-700 text-slate-300 px-4 py-2 rounded-full shadow-xl flex items-center gap-3 text-xs backdrop-blur-md bg-opacity-90 transition-all hover:bg-opacity-100 animate-slideUp">
-                <div className="flex items-center gap-2">
-                    <div className={`w-2 h-2 rounded-full ${loading ? 'bg-yellow-500 animate-pulse' : 'bg-green-500'}`}></div>
-                    <GitCommit className="w-3 h-3 text-slate-400" />
-                </div>
-
-                {loading && !commit ? (
-                    <span className="opacity-75">Syncing updates...</span>
+        <Card title="System Updates (Latest Commits)">
+            <div className="space-y-4">
+                {loading && commits.length === 0 ? (
+                    <div className="p-4 text-center text-slate-500">Syncing latest updates...</div>
                 ) : (
-                    <>
-                        <span className="font-mono text-gold-500 font-bold">
-                            {commit?.sha}
-                        </span>
-                        <span className="max-w-[150px] truncate hidden sm:inline-block" title={commit?.message}>
-                            {commit?.message}
-                        </span>
-                        <span className="text-slate-500 border-l border-slate-700 pl-2 ml-1">
-                            {commit?.date}
-                        </span>
-                        <a
-                            href={commit?.html_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="p-1 hover:text-white transition-colors"
-                        >
-                            <ExternalLink className="w-3 h-3" />
-                        </a>
-                    </>
+                    commits.map((commit) => (
+                        <div key={commit.sha} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-100 hover:border-slate-200 transition-colors">
+                            <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-1">
+                                    <span className="font-mono text-xs px-2 py-0.5 bg-blue-100 text-blue-700 rounded-md border border-blue-200">
+                                        {commit.sha}
+                                    </span>
+                                    <p className="font-medium text-slate-900 text-sm line-clamp-1">
+                                        {commit.message}
+                                    </p>
+                                </div>
+                                <div className="flex items-center gap-4 text-xs text-slate-500 mt-2">
+                                    <div className="flex items-center gap-1">
+                                        <User className="w-3 h-3" />
+                                        {commit.author}
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                        <Clock className="w-3 h-3" />
+                                        {commit.date}
+                                    </div>
+                                </div>
+                            </div>
+                            <a
+                                href={commit.html_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="mt-3 sm:mt-0 p-2 text-slate-400 hover:text-blue-600 transition-colors"
+                                title="View on GitHub"
+                            >
+                                <ExternalLink className="w-4 h-4" />
+                            </a>
+                        </div>
+                    ))
                 )}
             </div>
-        </div>
+        </Card>
     );
 };

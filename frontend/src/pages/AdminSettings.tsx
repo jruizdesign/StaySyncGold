@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Button, Card, Input, Select, Badge } from '../components/UIComponents';
-import { Settings, Database, Users, Building, ShieldCheck, Plus, Search, ChevronRight, Layout, Globe, Loader } from 'lucide-react';
+import { Settings, Database, Users, Building, ShieldCheck, Plus, Search, ChevronRight, Layout, Globe, Loader, GitBranch } from 'lucide-react';
 import { Property } from '../types';
 import { useAuth } from '../context/AuthContext';
+import { CommitTracker } from '../components/CommitTracker';
 
 // --- Sub-Components ---
 
@@ -300,6 +301,50 @@ const PropertyManagement: React.FC = () => {
         if (data) setProperty(data);
     };
 
+    const handleToggleDemoMode = async () => {
+        if (!property || !user?.propertyId) return;
+
+        const newStatus = !property.demo_mode;
+
+        if (newStatus === false) {
+            // Turning OFF Demo Mode -> Wipe Data
+            const confirmWipe = window.confirm(
+                "⚠️ WARNING: Disabling Demo Mode will PERMANENTLY DELETE all mock data (Reservations, Rooms, Guests, Staff) for this property to give you a fresh start.\n\nAre you sure you want to proceed?"
+            );
+            if (!confirmWipe) return;
+        }
+
+        setLoading(true);
+        try {
+            // 1. Update Property Status
+            const { error: updateError } = await supabase
+                .from('properties')
+                .update({ demo_mode: newStatus })
+                .eq('id', user.propertyId);
+
+            if (updateError) throw updateError;
+
+            // 2. If turning OFF demo mode, wipe related data
+            if (newStatus === false) {
+                console.log("Wiping demo data...");
+                await supabase.from('reservations').delete().eq('property_id', user.propertyId);
+                await supabase.from('rooms').delete().eq('property_id', user.propertyId);
+                await supabase.from('guests').delete().eq('property_id', user.propertyId);
+                await supabase.from('staff').delete().eq('property_id', user.propertyId);
+            }
+
+            // 3. Refresh
+            await fetchProperty();
+            alert(`Demo Mode ${newStatus ? 'Enabled' : 'Disabled'}. ${newStatus ? '' : 'All mock data has been cleared.'}`);
+
+        } catch (err: any) {
+            console.error(err);
+            alert("Error updating Demo Mode: " + err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     if (!user?.propertyId) return <div className="p-4">No property assigned.</div>;
     if (!property) return <div className="p-4 flex items-center gap-2"><Loader className="animate-spin" /> Loading property details...</div>;
 
@@ -323,11 +368,19 @@ const PropertyManagement: React.FC = () => {
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="font-medium text-slate-700">Demo Mode</p>
-                                <p className="text-sm text-slate-500">Use mock data for demonstration</p>
+                                <p className="text-sm text-slate-500">
+                                    {property.demo_mode
+                                        ? "Currently using mock data. Turn off to go live."
+                                        : "Live Production Mode. Data is real."}
+                                </p>
                             </div>
-                            <div className="relative inline-flex h-6 w-11 items-center rounded-full bg-gold-500">
-                                <span className="translate-x-6 inline-block h-4 w-4 transform rounded-full bg-white transition" />
-                            </div>
+                            <button
+                                onClick={handleToggleDemoMode}
+                                disabled={loading}
+                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gold-500 ${property.demo_mode ? 'bg-gold-500' : 'bg-slate-200'}`}
+                            >
+                                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${property.demo_mode ? 'translate-x-6' : 'translate-x-1'}`} />
+                            </button>
                         </div>
                         <div className="flex items-center justify-between">
                             <div>
@@ -501,7 +554,7 @@ const AdminSettings: React.FC = () => {
     const isManager = !!user?.isManager;
     const isManagement = isManager || isAdmin; // Managers and Admins can see property settings
 
-    const [activeTab, setActiveTab] = useState<'database' | 'users' | 'property' | 'rooms' | 'channel' | 'superadmin'>('property');
+    const [activeTab, setActiveTab] = useState<'database' | 'users' | 'property' | 'rooms' | 'channel' | 'superadmin' | 'updates'>('property');
 
     return (
         <div className="space-y-6 animate-fadeIn transition-all duration-500">
@@ -542,6 +595,9 @@ const AdminSettings: React.FC = () => {
                                 </button>
                             </>
                         )}
+                        <button onClick={() => setActiveTab('updates')} className={`flex items-center justify-between px-6 py-4 text-left border-l-4 transition-colors ${activeTab === 'updates' ? 'border-gold-500 bg-gold-50' : 'border-transparent hover:bg-slate-50'}`}>
+                            <div className="flex items-center gap-3"><GitBranch className="w-5 h-5" /> <span className="font-medium">System Updates</span></div>
+                        </button>
                         {/* Database Inspector - STRICTLY ADMIN ONLY */}
                         {isAdmin && (
                             <button onClick={() => setActiveTab('database')} className={`flex items-center justify-between px-6 py-4 text-left border-l-4 transition-colors ${activeTab === 'database' ? 'border-gold-500 bg-gold-50' : 'border-transparent hover:bg-slate-50'}`}>
@@ -558,6 +614,7 @@ const AdminSettings: React.FC = () => {
                     {activeTab === 'rooms' && <RoomWizard />}
                     {activeTab === 'channel' && <ChannelManager />}
                     {activeTab === 'property' && <PropertyManagement />}
+                    {activeTab === 'updates' && <CommitTracker />}
                     {activeTab === 'superadmin' && isAdmin && <SuperAdminConsole />}
                 </div>
             </div>
