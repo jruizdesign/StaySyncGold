@@ -34,7 +34,8 @@ const Housekeeping: React.FC = () => {
     const { data, error } = await supabase
       .from('rooms')
       .select('*')
-      .eq('property_id', user.propertyId);
+      .eq('property_id', user.propertyId)
+      .order('number');
 
     if (error) {
       console.error('Error fetching rooms:', error);
@@ -42,6 +43,23 @@ const Housekeeping: React.FC = () => {
       setRooms(data || []);
     }
     setLoading(false);
+  };
+
+  const handleUpdateStatus = async (roomId: string, newStatus: RoomStatus) => {
+    try {
+      const { error } = await supabase
+        .from('rooms')
+        .update({ status: newStatus })
+        .eq('id', roomId);
+
+      if (error) throw error;
+
+      // Optimistic update
+      setRooms(prev => prev.map(r => r.id === roomId ? { ...r, status: newStatus } : r));
+    } catch (err) {
+      console.error('Error updating status:', err);
+      alert('Failed to update room status');
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -72,7 +90,7 @@ const Housekeeping: React.FC = () => {
     return <div className="flex justify-center items-center h-64"><Loader className="animate-spin w-8 h-8 text-slate-400" /></div>;
   }
 
-  if (!user?.propertyId && user?.email !== 'jason@staysync.com') {
+  if (!user?.propertyId && !user?.isAdmin) {
     return <div className="p-8 text-center text-slate-500">Please contact an administrator to be assigned to a property.</div>;
   }
 
@@ -148,10 +166,18 @@ const Housekeeping: React.FC = () => {
 
             {/* Actions */}
             <div className="flex border-t border-slate-100 divide-x divide-slate-100 bg-slate-50/50">
-              <button className="flex-1 py-3 text-xs font-bold text-emerald-600 hover:bg-emerald-50 transition-colors">
+              <button
+                onClick={() => handleUpdateStatus(room.id, RoomStatus.CLEAN)}
+                className="flex-1 py-3 text-xs font-bold text-emerald-600 hover:bg-emerald-50 transition-colors disabled:opacity-50"
+                disabled={room.status === RoomStatus.CLEAN}
+              >
                 Mark Clean
               </button>
-              <button className="flex-1 py-3 text-xs font-bold text-rose-600 hover:bg-rose-50 transition-colors">
+              <button
+                onClick={() => handleUpdateStatus(room.id, RoomStatus.DIRTY)}
+                className="flex-1 py-3 text-xs font-bold text-rose-600 hover:bg-rose-50 transition-colors disabled:opacity-50"
+                disabled={room.status === RoomStatus.DIRTY}
+              >
                 Mark Dirty
               </button>
             </div>

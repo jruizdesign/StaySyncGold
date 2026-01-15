@@ -27,7 +27,7 @@ const Guests: React.FC = () => {
 
             if (user?.propertyId) {
                 query = query.eq('property_id', user.propertyId);
-            } else if (user?.email !== 'jason@staysync.com') {
+            } else if (!user?.isAdmin) {
                 setGuests([]);
                 setLoading(false);
                 return;
@@ -66,7 +66,7 @@ const Guests: React.FC = () => {
         return <div className="flex justify-center items-center h-64"><Loader className="animate-spin text-gold-500" /></div>;
     }
 
-    if (!user?.propertyId && user?.email !== 'jason@staysync.com') {
+    if (!user?.propertyId && !user?.isAdmin) {
         return (
             <div className="flex flex-col items-center justify-center h-64 text-slate-500">
                 <p>You are not assigned to any property.</p>

@@ -31,7 +31,7 @@ const Financials: React.FC = () => {
   useEffect(() => {
     if (user?.propertyId) {
       fetchFinancialData();
-    } else if (user?.email === 'jason@staysync.com') {
+    } else if (user?.isAdmin) {
       // Super admin view (optional: fetch all or prompt to select property)
       setLoading(false);
     } else {
