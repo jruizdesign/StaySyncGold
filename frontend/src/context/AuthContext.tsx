@@ -44,15 +44,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const fetchUserProfile = async (userId: string, email: string) => {
         try {
-            const { data, error } = await supabase
+            console.log(`[Auth] Fetching profile for ${email} (Auth ID: ${userId})`);
+
+            // 1. Try fetching by Auth ID (Standard)
+            let { data, error } = await supabase
                 .from('users')
                 .select('*')
                 .eq('id', userId)
                 .single();
 
+            if (error) {
+                console.warn(`[Auth] ID lookup failed: ${error.message}. Trying email...`);
+                // 2. Fallback: Try fetching by Email (Manual entry mismatch fix)
+                const { data: emailData, error: emailError } = await supabase
+                    .from('users')
+                    .select('*')
+                    .eq('email', email)
+                    .single();
+
+                if (emailData) {
+                    console.log(`[Auth] Found user by email. DB ID: ${emailData.id}`);
+                    data = emailData;
+                } else {
+                    console.error(`[Auth] Email lookup also failed:`, emailError);
+                }
+            }
+
             if (data) {
+                console.log(`[Auth] Profile loaded. Admin: ${data.isAdmin}`);
                 const appUser: AppUser = {
-                    id: data.id,
+                    id: data.id, // Using DB ID
                     email: data.email,
                     role: data.role as 'admin' | 'manager' | 'staff',
                     propertyId: data.property_id,
@@ -60,6 +81,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 };
                 setUser(appUser);
             } else {
+                console.warn('[Auth] No profile found in public.users. Using default staff fallback.');
                 // Determine user role or create default profile if needed (Production logic)
                 setUser({
                     id: userId,

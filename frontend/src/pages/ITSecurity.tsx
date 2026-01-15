@@ -29,7 +29,7 @@ const ITSecurity: React.FC = () => {
 
                     <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-300">
                         <a href="/" className="hover:text-white transition-colors">Home</a>
-                        <a href="#" className="hover:text-white transition-colors">Digital Solutions</a>
+                        <button onClick={() => navigate('/digital-solutions')} className="hover:text-white transition-colors">Digital Solutions</button>
                         <a href="#" className="text-white transition-colors">IT & Security</a>
                     </div>
 

@@ -475,6 +475,10 @@ const AdminSettings: React.FC = () => {
                 <div>
                     <h1 className="text-2xl font-bold text-slate-900">Admin Control Center</h1>
                     <p className="text-slate-500">Manage system settings, users, and inspect data</p>
+                    {/* Debug Info */}
+                    <p className="text-xs text-slate-400 mt-1 font-mono">
+                        User: {user?.email} | Admin: {user?.isAdmin ? 'TRUE' : 'FALSE'} | Prop: {user?.propertyId || 'NONE'} | ID: {user?.id}
+                    </p>
                 </div>
                 <div className="flex items-center gap-2">
                     <Badge color="blue">{isAdmin ? 'Super Admin' : 'Manager'}</Badge>
