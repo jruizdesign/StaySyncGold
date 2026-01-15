@@ -1,318 +1,54 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Button, Card, Input, Select, Badge } from '../components/UIComponents';
-import { Settings, Database, Users, Building, ChevronRight, Plus, Eye, Loader2, AlertCircle, Layout, Globe, FileText } from 'lucide-react';
-import { MOCK_ROOMS, MOCK_GUESTS, MOCK_RESERVATIONS, MOCK_STAFF } from '../constants';
-import { Staff } from '../types';
-
-const AdminSettings: React.FC = () => {
-    // Mock user role - in a real app, this would come from an Auth Context
-    const userRole: 'admin' | 'owner' | 'manager' | 'staff' = 'admin';
-
-    const [activeTab, setActiveTab] = useState<'database' | 'users' | 'property' | 'rooms' | 'channel'>('property');
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-
-    const isAdmin = userRole === 'admin';
-    const isManagement = ['admin', 'owner', 'manager'].includes(userRole);
-
-    return (
-        <div className="space-y-6 animate-fadeIn">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl font-bold text-slate-900">Admin Control Center</h1>
-                    <p className="text-slate-500">Manage system settings, users, and inspect data</p>
-                </div>
-                <div className="flex items-center gap-2">
-                    <Badge color="blue">Admin Mode</Badge>
-                    <Badge color="green">System Healthy</Badge>
-                </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                {/* Sidebar Navigation for Settings */}
-                <Card className="col-span-1 p-0 overflow-hidden">
-                    <nav className="flex flex-col">
-                        {isAdmin && (
-                            <button
-                                onClick={() => setActiveTab('database')}
-                                className={`flex items-center justify-between px-6 py-4 text-left border-l-4 transition-colors ${activeTab === 'database'
-                                    ? 'border-gold-500 bg-gold-50 text-gold-900'
-                                    : 'border-transparent text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-                                    }`}
-                            >
-                                <div className="flex items-center gap-3">
-                                    <Database className="w-5 h-5" />
-                                    <span className="font-medium">Visual Database</span>
-                                </div>
-                                <ChevronRight className={`w-4 h-4 transition-transform ${activeTab === 'database' ? 'rotate-90 text-gold-500' : 'text-slate-400'}`} />
-                            </button>
-                        )}
-
-                        {isAdmin && (
-                            <button
-                                onClick={() => setActiveTab('users')}
-                                className={`flex items-center justify-between px-6 py-4 text-left border-l-4 transition-colors ${activeTab === 'users'
-                                    ? 'border-gold-500 bg-gold-50 text-gold-900'
-                                    : 'border-transparent text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-                                    }`}
-                            >
-                                <div className="flex items-center gap-3">
-                                    <Users className="w-5 h-5" />
-                                    <span className="font-medium">User Management</span>
-                                </div>
-                                <ChevronRight className={`w-4 h-4 transition-transform ${activeTab === 'users' ? 'rotate-90 text-gold-500' : 'text-slate-400'}`} />
-                            </button>
-                        )}
-
-                        {isManagement && (
-                            <button
-                                onClick={() => setActiveTab('rooms')}
-                                className={`flex items-center justify-between px-6 py-4 text-left border-l-4 transition-colors ${activeTab === 'rooms'
-                                    ? 'border-gold-500 bg-gold-50 text-gold-900'
-                                    : 'border-transparent text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-                                    }`}
-                            >
-                                <div className="flex items-center gap-3">
-                                    <Layout className="w-5 h-5" />
-                                    <span className="font-medium">Room Wizard</span>
-                                </div>
-                                <ChevronRight className={`w-4 h-4 transition-transform ${activeTab === 'rooms' ? 'rotate-90 text-gold-500' : 'text-slate-400'}`} />
-                            </button>
-                        )}
-
-                        {isManagement && (
-                            <button
-                                onClick={() => setActiveTab('channel')}
-                                className={`flex items-center justify-between px-6 py-4 text-left border-l-4 transition-colors ${activeTab === 'channel'
-                                    ? 'border-gold-500 bg-gold-50 text-gold-900'
-                                    : 'border-transparent text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-                                    }`}
-                            >
-                                <div className="flex items-center gap-3">
-                                    <Globe className="w-5 h-5" />
-                                    <span className="font-medium">Channel Manager</span>
-                                </div>
-                                <ChevronRight className={`w-4 h-4 transition-transform ${activeTab === 'channel' ? 'rotate-90 text-gold-500' : 'text-slate-400'}`} />
-                            </button>
-                        )}
-
-                        <button
-                            onClick={() => setActiveTab('property')}
-                            className={`flex items-center justify-between px-6 py-4 text-left border-l-4 transition-colors ${activeTab === 'property'
-                                ? 'border-gold-500 bg-gold-50 text-gold-900'
-                                : 'border-transparent text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-                                }`}
-                        >
-                            <div className="flex items-center gap-3">
-                                <Building className="w-5 h-5" />
-                                <span className="font-medium">Property Details</span>
-                            </div>
-                            <ChevronRight className={`w-4 h-4 transition-transform ${activeTab === 'property' ? 'rotate-90 text-gold-500' : 'text-slate-400'}`} />
-                        </button>
-                    </nav>
-                </Card>
-
-                {/* Main Content Area */}
-                <div className="col-span-1 md:col-span-3">
-                    {activeTab === 'database' && isAdmin && <DatabaseInspector />}
-                    {activeTab === 'users' && isAdmin && <UserManagement />}
-                    {activeTab === 'rooms' && isManagement && <RoomWizard />}
-                    {activeTab === 'channel' && isManagement && <ChannelManager />}
-                    {activeTab === 'property' && <PropertyManagement />}
-                </div>
-            </div>
-        </div>
-    );
-};
+import { Settings, Database, Users, Building, ShieldCheck, Plus, Search, ChevronRight, Layout, Globe, Loader } from 'lucide-react';
+import { Property } from '../types';
+import { useAuth } from '../context/AuthContext';
 
 // --- Sub-Components ---
 
 const DatabaseInspector: React.FC = () => {
+    const { user } = useAuth();
     const [selectedTable, setSelectedTable] = useState('reservations');
     const [data, setData] = useState<any[]>([]);
     const [seeding, setSeeding] = useState(false);
 
     useEffect(() => {
         fetchTableData();
-    }, [selectedTable]);
+    }, [selectedTable, user]);
 
     const fetchTableData = async () => {
-        const { data: tableData, error } = await supabase
-            .from(selectedTable)
-            .select('*')
-            .limit(50);
+        if (!user) return;
+
+        let query = supabase.from(selectedTable).select('*').limit(50);
+
+        // Basic scoping for inspection if not super admin (privacy)
+        // For now, let's keep it open for debugging or strictly scoped
+        if (user.propertyId && ['reservations', 'rooms', 'guests', 'staff'].includes(selectedTable)) {
+            query = query.eq('property_id', user.propertyId);
+        }
+
+        const { data: tableData, error } = await query;
 
         if (error) {
             console.error('Error fetching data:', error);
-            // Fallback to mock data if fetch fails (likely due to missing tables/connection)
-            switch (selectedTable) {
-                case 'reservations': setData(MOCK_RESERVATIONS); break;
-                case 'rooms': setData(MOCK_ROOMS); break;
-                case 'guests': setData(MOCK_GUESTS); break;
-                default: setData([]);
-            }
+            setData([]);
         } else {
             setData(tableData || []);
         }
     };
 
     const handleSeedData = async () => {
-        setSeeding(true);
-        try {
-            // 1. Create Property
-            const propertyId = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';
-            const { error: propError } = await supabase
-                .from('properties')
-                .upsert([{
-                    id: propertyId,
-                    name: 'Grand Hotel & Suites',
-                    location: '123 Luxury Blvd',
-                    managerName: 'Jason',
-                    ownerName: 'Jason'
-                }]);
-
-            if (propError) throw new Error('Failed to seed property: ' + propError.message);
-
-            // 2. Create Room Types - SKIPPED (User schema uses string type directly in Rooms)
-            /*
-            const types = ['Suite', 'Double', 'King'];
-            const typeMap: Record<string, number> = {};
-
-            for (const name of types) {
-                const { data: typeData, error: typeError } = await supabase
-                    .from('roomtypes')
-                    .upsert([{
-                        property_id: propertyId,
-                        name: name,
-                        base_price: name === 'Suite' ? 350 : 180,
-                        max_occupancy: name === 'Suite' ? 4 : 2
-                    }], { onConflict: 'name, property_id' }) // Assuming generic constraint or just insert
-                    .select() // If constraint fails, we might need to just select
-                    .maybeSingle(); // upsert might assume id constraint.
-
-                // Simplified: Just insert if not exists logic is hard without unique constraints. 
-                // Let's standard insert first.
-                // Actually, better to just Select first, then Insert if missing.
-                let realTypeData = typeData;
-                if (!realTypeData) { // If upsert didn't return due to conflict or logic
-                    const { data: newType } = await supabase.from('roomtypes').insert({
-                        property_id: propertyId,
-                        name: name,
-                        base_price: name === 'Suite' ? 350 : 180,
-                        max_occupancy: name === 'Suite' ? 4 : 2
-                    }).select().single();
-                    realTypeData = newType;
-                }
-
-                if (realTypeData) typeMap[name] = realTypeData.id;
-            }
-            */
-
-            // 3. Create Rooms
-            // To link MOCK_ROOMS (which use random IDs) to real DB IDs, we just iterate.
-            const roomMap: Record<string, string> = {}; // mockID -> realUUID
-            for (const mockRoom of MOCK_ROOMS) {
-                const newRoomId = crypto.randomUUID();
-                const { error: roomError } = await supabase
-                    .from('rooms')
-                    .insert({
-                        id: newRoomId,
-                        property_id: propertyId,
-                        number: mockRoom.number, // Required Text column
-                        room_number: mockRoom.number, // Optional Varchar column
-                        type: mockRoom.type,
-                        status: mockRoom.status,
-                        floor: mockRoom.floor,
-                        price_per_night: mockRoom.rate // Numeric column
-                    });
-
-                if (!roomError) {
-                    roomMap[mockRoom.id] = newRoomId;
-                } else {
-                    console.error('Room seed error:', roomError);
-                }
-            }
-
-            // 4. Create Guests
-            const guestMap: Record<string, string> = {};
-            for (const mockGuest of MOCK_GUESTS) {
-                const newGuestId = crypto.randomUUID();
-                const { error: guestError } = await supabase
-                    .from('guests')
-                    .insert({
-                        id: newGuestId,
-                        property_id: propertyId,
-                        first_name: mockGuest.fullName.split(' ')[0],
-                        last_name: mockGuest.fullName.split(' ')[1] || '',
-                        email: mockGuest.email,
-                        phone: mockGuest.phone
-                    });
-
-                if (!guestError) {
-                    guestMap[mockGuest.id] = newGuestId;
-                } else {
-                    console.error('Guest seed error:', guestError);
-                }
-            }
-
-            // 5. Create Reservations
-            for (const mockRes of MOCK_RESERVATIONS) {
-                const realGuestId = guestMap[mockRes.guestId];
-                const realRoomId = roomMap[mockRes.roomId];
-
-                if (realGuestId && realRoomId) {
-                    await supabase.from('reservations').insert({
-                        property_id: propertyId,
-                        guest_id: realGuestId,
-                        room_id: realRoomId,
-                        check_in: mockRes.checkIn,
-                        check_out: mockRes.checkOut,
-                        status: mockRes.status
-                    });
-                }
-            }
-
-            // 6. Create Staff
-            for (const mockStaff of MOCK_STAFF) {
-                const [firstName, ...lastNameParts] = mockStaff.name.split(' ');
-                await supabase.from('staff').insert({
-                    property_id: propertyId,
-                    role: mockStaff.role,
-                    firstname: firstName,
-                    last_name: lastNameParts.join(' ') || '',
-                    pin: '1234'
-                });
-            }
-
-            alert('Database seeded successfully!');
-            fetchTableData(); // Refresh view
-        } catch (e: any) {
-            console.error(e);
-            alert('Seeding failed: ' + e.message);
-        } finally {
-            setSeeding(false);
-        }
+        // ... (Keep existing seeding logic or disable if strict production)
+        alert('Seeding is restricted in this view.');
     };
 
     return (
-        <Card title="Database Inspector" action={
-            <div className="flex gap-2">
-                <Button
-                    variant="outline"
-                    icon={Database}
-                    onClick={handleSeedData}
-                    disabled={seeding}
-                >
-                    {seeding ? 'Seeding...' : 'Seed Data'}
-                </Button>
-                <Button variant="outline" icon={Eye} onClick={fetchTableData}>Refresh</Button>
-            </div>
-        }>
+        <Card title="Database Inspector (Scoped)" action={<Button variant="outline" onClick={fetchTableData}>Refresh</Button>}>
             <div className="mb-6">
                 <label className="block text-sm font-medium text-slate-700 mb-2">Select Table</label>
                 <div className="flex gap-2 flex-wrap">
-                    {['reservations', 'rooms', 'guests', 'staff', 'properties', 'users', 'invoices', 'housekeeping'].map(table => (
+                    {['reservations', 'rooms', 'guests', 'staff', 'properties'].map(table => (
                         <button
                             key={table}
                             onClick={() => setSelectedTable(table)}
@@ -326,7 +62,6 @@ const DatabaseInspector: React.FC = () => {
                     ))}
                 </div>
             </div>
-
             <div className="overflow-x-auto border border-slate-200 rounded-lg">
                 <table className="w-full text-sm text-left">
                     <thead className="text-xs text-slate-500 uppercase bg-slate-50 border-b border-slate-200">
@@ -348,43 +83,63 @@ const DatabaseInspector: React.FC = () => {
                         ))}
                         {data.length === 0 && (
                             <tr>
-                                <td colSpan={6} className="px-6 py-8 text-center text-slate-500">No data found in this table</td>
+                                <td colSpan={6} className="px-6 py-8 text-center text-slate-500">No data found or access restricted.</td>
                             </tr>
                         )}
                     </tbody>
                 </table>
             </div>
-            <p className="mt-4 text-xs text-slate-400 text-center">Showing first 6 columns. Real Supabase data.</p>
         </Card>
     );
 };
 
 const UserManagement: React.FC = () => {
+    const { user } = useAuth();
+    const [users, setUsers] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        if (user?.propertyId) fetchUsers();
+    }, [user]);
+
+    const fetchUsers = async () => {
+        setLoading(true);
+        // Fetching from 'staff' table as primary source for property staff
+        const { data, error } = await supabase
+            .from('staff')
+            .select('*')
+            .eq('property_id', user?.propertyId);
+
+        if (!error && data) {
+            setUsers(data);
+        }
+        setLoading(false);
+    };
+
     return (
-        <Card title="User Management" action={<Button icon={Plus}>Add User</Button>}>
+        <Card title="Staff Management" action={<Button icon={Plus}>Add Staff</Button>}>
             <div className="space-y-4">
-                <div className="flex gap-2 mb-4">
-                    <Input placeholder="Search users by name or email..." className="w-full" />
-                </div>
+                {/* Search bar placeholder */}
 
                 <div className="space-y-2">
-                    {MOCK_STAFF.map((staff: Staff) => (
+                    {loading ? <Loader className="animate-spin" /> : users.map((staff: any) => (
                         <div key={staff.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-100">
                             <div className="flex items-center gap-3">
                                 <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center font-bold text-slate-600">
-                                    {staff.name.charAt(0)}
+                                    {staff.firstname?.[0]}
                                 </div>
                                 <div>
-                                    <p className="font-medium text-slate-900">{staff.name}</p>
+                                    <p className="font-medium text-slate-900">{staff.firstname} {staff.last_name}</p>
                                     <p className="text-sm text-slate-500">{staff.role}</p>
                                 </div>
                             </div>
                             <div className="flex items-center gap-3">
-                                <Badge color={staff.status === 'Active' ? 'green' : 'gray'}>{staff.status}</Badge>
+                                <Badge color="green">Active</Badge> {/* Mock status status */}
                                 <Button variant="ghost" className="text-sm">Edit</Button>
                             </div>
                         </div>
                     ))}
+                    {!loading && users.length === 0 && <p className="text-slate-500 text-center py-4">No staff found.</p>}
                 </div>
             </div>
         </Card>
@@ -392,44 +147,76 @@ const UserManagement: React.FC = () => {
 };
 
 const RoomWizard: React.FC = () => {
-    return (
-        <Card title="Room Setup Wizard">
-            <div className="max-w-2xl mx-auto space-y-8 py-4">
-                <div className="flex items-center justify-between relative">
-                    <div className="absolute top-1/2 left-0 w-full h-0.5 bg-slate-100 -z-10" />
-                    {[1, 2, 3].map(step => (
-                        <div key={step} className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${step === 1 ? 'bg-gold-500 text-white' : 'bg-slate-200 text-slate-500'}`}>
-                            {step}
-                        </div>
-                    ))}
-                </div>
+    const { user } = useAuth();
+    const [roomNumber, setRoomNumber] = useState('');
+    const [type, setType] = useState('King Suite');
+    const [price, setPrice] = useState('200');
+    const [loading, setLoading] = useState(false);
+    const [message, setMessage] = useState('');
 
-                <div className="space-y-6">
-                    <div className="grid grid-cols-2 gap-4">
-                        <Input label="Room Number / Name" placeholder="e.g. 301" />
-                        <Select label="Room Type">
+    const handleCreateRoom = async () => {
+        if (!user?.propertyId) return;
+        setLoading(true);
+        setMessage('');
+
+        try {
+            const { error } = await supabase.from('rooms').insert({
+                id: crypto.randomUUID(),
+                property_id: user.propertyId,
+                number: roomNumber,
+                type: type,
+                price_per_night: parseFloat(price),
+                status: 'Clean' // Default
+            });
+
+            if (error) throw error;
+            setMessage('Room created successfully!');
+            setRoomNumber('');
+        } catch (e: any) {
+            setMessage('Error: ' + e.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <Card title="Quick Room Add">
+            <div className="max-w-2xl mx-auto space-y-6 py-4">
+                <div className="grid grid-cols-2 gap-4">
+                    <Input
+                        label="Room Number"
+                        placeholder="e.g. 101"
+                        value={roomNumber}
+                        onChange={(e) => setRoomNumber(e.target.value)}
+                    />
+                    <div className="space-y-1">
+                        <label className="block text-sm font-medium text-slate-700">Room Type</label>
+                        <select
+                            className="w-full p-2 border border-slate-300 rounded-md"
+                            value={type}
+                            onChange={(e) => setType(e.target.value)}
+                        >
                             <option>King Suite</option>
                             <option>Double Queen</option>
-                            <option>Executive Suite</option>
-                        </Select>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                        <Input label="Base Price ($)" type="number" placeholder="250" />
-                        <Input label="Max Occupancy" type="number" placeholder="2" />
-                    </div>
-                    <div className="p-4 bg-slate-50 rounded-lg border border-dashed border-slate-300">
-                        <h4 className="text-sm font-bold text-slate-700 mb-3">Discounts & Rules</h4>
-                        <div className="flex gap-2">
-                            <Input placeholder="Discount Name" className="flex-1" />
-                            <Input placeholder="%" className="w-20" />
-                            <Button variant="outline" icon={Plus}>Add</Button>
-                        </div>
+                            <option>Standard</option>
+                        </select>
                     </div>
                 </div>
+                <div className="grid grid-cols-2 gap-4">
+                    <Input
+                        label="Rate ($)"
+                        type="number"
+                        value={price}
+                        onChange={(e) => setPrice(e.target.value)}
+                    />
+                </div>
 
-                <div className="flex justify-between pt-6">
-                    <Button variant="ghost">Save Draft</Button>
-                    <Button>Next Step</Button>
+                {message && <p className={`text-sm ${message.startsWith('Error') ? 'text-red-500' : 'text-green-500'}`}>{message}</p>}
+
+                <div className="flex justify-end pt-4">
+                    <Button onClick={handleCreateRoom} disabled={loading}>
+                        {loading ? 'Adding...' : 'Add Room'}
+                    </Button>
                 </div>
             </div>
         </Card>
@@ -462,11 +249,32 @@ const ChannelManager: React.FC = () => {
 };
 
 const PropertyManagement: React.FC = () => {
+    const { user } = useAuth();
+    const [property, setProperty] = useState<Property | null>(null);
+    const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        if (user?.propertyId) fetchProperty();
+    }, [user]);
+
+    const fetchProperty = async () => {
+        const { data, error } = await supabase
+            .from('properties')
+            .select('*')
+            .eq('id', user?.propertyId)
+            .single();
+
+        if (data) setProperty(data);
+    };
+
+    if (!user?.propertyId) return <div className="p-4">No property assigned.</div>;
+    if (!property) return <div className="p-4 flex items-center gap-2"><Loader className="animate-spin" /> Loading property details...</div>;
+
     return (
         <Card title="Property Configuration">
             <div className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <Input label="Property Name" defaultValue="Grand Hotel & Suites" />
+                    <Input label="Property Name" defaultValue={property.name} />
                     <Input label="Contact Phone" defaultValue="+1 (555) 123-4567" />
                     <Input label="Address" defaultValue="123 Luxury Blvd, Metropolis" />
                     <Select label="Time Zone">
@@ -505,6 +313,214 @@ const PropertyManagement: React.FC = () => {
                 </div>
             </div>
         </Card>
+    );
+};
+
+// --- Main Page Component ---
+
+const SuperAdminConsole: React.FC = () => {
+    const [properties, setProperties] = useState<Property[]>([]);
+    const [newPropertyName, setNewPropertyName] = useState('');
+    const [message, setMessage] = useState('');
+    const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        fetchProperties();
+    }, []);
+
+    const fetchProperties = async () => {
+        const { data, error } = await supabase.from('properties').select('*');
+        if (!error && data) setProperties(data);
+    };
+
+    const handleCreateProperty = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setLoading(true);
+        setMessage('');
+
+        try {
+            const { error } = await supabase.from('properties').insert([
+                { name: newPropertyName, created_at: new Date().toISOString() }
+            ]);
+
+            if (error) throw error;
+
+            setMessage('Property created successfully!');
+            setNewPropertyName('');
+            fetchProperties();
+        } catch (err: any) {
+            setMessage(`Error: ${err.message}`);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <Card className="p-6">
+            <h2 className="text-xl font-semibold mb-4">Super Admin Console (Global)</h2>
+            {/* ... simplified console for brevity if needed ... */}
+            <div className="mb-6">
+                <h3 className="text-lg font-medium mb-2">Create New Property</h3>
+                <form onSubmit={handleCreateProperty} className="flex gap-2">
+                    <Input
+                        type="text"
+                        placeholder="New Property Name"
+                        value={newPropertyName}
+                        onChange={(e) => setNewPropertyName(e.target.value)}
+                        required
+                        className="flex-grow"
+                    />
+                    <Button type="submit" disabled={loading}>
+                        {loading ? 'Creating...' : 'Create Property'}
+                    </Button>
+                </form>
+                {message && (
+                    <p className={`mt-2 text-sm ${message.startsWith('Error') ? 'text-red-500' : 'text-green-500'}`}>
+                        {message}
+                    </p>
+                )}
+            </div>
+
+            <div className="mt-8">
+                <UserAssignment properties={properties} />
+            </div>
+
+            <div className="mt-8">
+                <h3 className="text-lg font-medium mb-2">Existing Properties</h3>
+                <ul className="list-disc pl-5">
+                    {properties.map((property) => (
+                        <li key={property.id} className="text-slate-700">
+                            {property.name} <span className="text-xs text-slate-400">({property.id})</span>
+                        </li>
+                    ))}
+                </ul>
+            </div>
+        </Card>
+    );
+};
+
+interface UserAssignmentProps {
+    properties: Property[];
+}
+
+const UserAssignment: React.FC<UserAssignmentProps> = ({ properties }) => {
+    const [email, setEmail] = useState('');
+    const [selectedPropertyId, setSelectedPropertyId] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [feedback, setFeedback] = useState('');
+
+    const handleAssign = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setLoading(true);
+        setFeedback('');
+
+        try {
+            // Logic to update user mapping
+            const { data: users, error: searchError } = await supabase
+                .from('users')
+                .select('id')
+                .eq('email', email)
+                .single();
+
+            if (searchError || !users) throw new Error('User not found');
+
+            const { error: updateError } = await supabase
+                .from('users')
+                .update({ property_id: selectedPropertyId })
+                .eq('id', users.id);
+
+            if (updateError) throw updateError;
+            setFeedback('User assigned successfully!');
+        } catch (err: any) {
+            setFeedback(`Error: ${err.message}`);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <Card title="Assign User to Property">
+            <form onSubmit={handleAssign} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Input label="User Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                    <div className="space-y-1">
+                        <label className="block text-sm font-medium text-slate-700">Select Property</label>
+                        <select className="w-full p-2 border rounded-md" value={selectedPropertyId} onChange={e => setSelectedPropertyId(e.target.value)} required>
+                            <option value="">-- Choose --</option>
+                            {properties.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                        </select>
+                    </div>
+                </div>
+                <Button type="submit" disabled={loading}>{loading ? 'Assigning...' : 'Assign'}</Button>
+            </form>
+            {feedback && <p className="mt-2 text-sm">{feedback}</p>}
+        </Card>
+    );
+}
+
+const AdminSettings: React.FC = () => {
+    const { user } = useAuth(); // Global Auth
+
+    // Determine permissions based on user role (Mock or real)
+    // For now, assume if email matches jason@staysync.com -> Admin
+    // If user.propertyId exists -> Manager/Owner of that property
+    const isAdmin = user?.email === 'jason@staysync.com';
+    const isManagement = !!user?.propertyId || isAdmin;
+
+    const [activeTab, setActiveTab] = useState<'database' | 'users' | 'property' | 'rooms' | 'channel' | 'superadmin'>('property');
+
+    return (
+        <div className="space-y-6 animate-fadeIn transition-all duration-500">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h1 className="text-2xl font-bold text-slate-900">Admin Control Center</h1>
+                    <p className="text-slate-500">Manage system settings, users, and inspect data</p>
+                </div>
+                <div className="flex items-center gap-2">
+                    <Badge color="blue">{isAdmin ? 'Super Admin' : 'Manager'}</Badge>
+                    <Badge color="green">System Healthy</Badge>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                {/* Sidebar Navigation */}
+                <Card className="col-span-1 p-0 overflow-hidden">
+                    <nav className="flex flex-col">
+                        {isAdmin && (
+                            <button onClick={() => setActiveTab('superadmin')} className={`flex items-center justify-between px-6 py-4 text-left border-l-4 transition-colors ${activeTab === 'superadmin' ? 'border-purple-500 bg-purple-50' : 'border-transparent hover:bg-slate-50'}`}>
+                                <div className="flex items-center gap-3"><ShieldCheck className="w-5 h-5" /> <span className="font-medium">Super Admin</span></div>
+                            </button>
+                        )}
+                        <button onClick={() => setActiveTab('property')} className={`flex items-center justify-between px-6 py-4 text-left border-l-4 transition-colors ${activeTab === 'property' ? 'border-gold-500 bg-gold-50' : 'border-transparent hover:bg-slate-50'}`}>
+                            <div className="flex items-center gap-3"><Building className="w-5 h-5" /> <span className="font-medium">Property Details</span></div>
+                        </button>
+                        {isManagement && (
+                            <>
+                                <button onClick={() => setActiveTab('users')} className={`flex items-center justify-between px-6 py-4 text-left border-l-4 transition-colors ${activeTab === 'users' ? 'border-gold-500 bg-gold-50' : 'border-transparent hover:bg-slate-50'}`}>
+                                    <div className="flex items-center gap-3"><Users className="w-5 h-5" /> <span className="font-medium">Staff Members</span></div>
+                                </button>
+                                <button onClick={() => setActiveTab('rooms')} className={`flex items-center justify-between px-6 py-4 text-left border-l-4 transition-colors ${activeTab === 'rooms' ? 'border-gold-500 bg-gold-50' : 'border-transparent hover:bg-slate-50'}`}>
+                                    <div className="flex items-center gap-3"><Layout className="w-5 h-5" /> <span className="font-medium">Rooms & Units</span></div>
+                                </button>
+                                <button onClick={() => setActiveTab('database')} className={`flex items-center justify-between px-6 py-4 text-left border-l-4 transition-colors ${activeTab === 'database' ? 'border-gold-500 bg-gold-50' : 'border-transparent hover:bg-slate-50'}`}>
+                                    <div className="flex items-center gap-3"><Database className="w-5 h-5" /> <span className="font-medium">Data Inspector</span></div>
+                                </button>
+                            </>
+                        )}
+                    </nav>
+                </Card>
+
+                {/* Main Content Area */}
+                <div className="col-span-1 md:col-span-3">
+                    {activeTab === 'database' && <DatabaseInspector />}
+                    {activeTab === 'users' && <UserManagement />}
+                    {activeTab === 'rooms' && <RoomWizard />}
+                    {activeTab === 'channel' && <ChannelManager />}
+                    {activeTab === 'property' && <PropertyManagement />}
+                    {activeTab === 'superadmin' && isAdmin && <SuperAdminConsole />}
+                </div>
+            </div>
+        </div>
     );
 };
 

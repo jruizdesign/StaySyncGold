@@ -1,10 +1,14 @@
-import React, { useState } from 'react';
-import { Plus, Wand2, BedDouble, AlertCircle } from 'lucide-react';
-import { MOCK_ROOMS } from '../constants';
-import { RoomStatus } from '../types';
+import React, { useState, useEffect } from 'react';
+import { Plus, Wand2, BedDouble, AlertCircle, Loader } from 'lucide-react';
+import { RoomStatus, Room } from '../types';
+import { useAuth } from '../context/AuthContext';
+import { supabase } from '../lib/supabase';
 
 const Housekeeping: React.FC = () => {
+  const { user } = useAuth();
   const [filter, setFilter] = useState('ALL');
+  const [rooms, setRooms] = useState<Room[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const filters = [
     { label: 'ALL', value: 'ALL' },
@@ -14,6 +18,31 @@ const Housekeeping: React.FC = () => {
     { label: 'Maintenance', value: 'Maintenance' },
     { label: 'Occupied', value: 'Occupied' },
   ];
+
+  useEffect(() => {
+    fetchRooms();
+  }, [user]);
+
+  const fetchRooms = async () => {
+    setLoading(true);
+    if (!user?.propertyId) {
+      setRooms([]);
+      setLoading(false);
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from('rooms')
+      .select('*')
+      .eq('property_id', user.propertyId);
+
+    if (error) {
+      console.error('Error fetching rooms:', error);
+    } else {
+      setRooms(data || []);
+    }
+    setLoading(false);
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -33,11 +62,19 @@ const Housekeeping: React.FC = () => {
 
   // Correctly filter based on RoomStatus enum values
   const filteredRooms = filter === 'ALL'
-    ? MOCK_ROOMS
-    : MOCK_ROOMS.filter(r => {
+    ? rooms
+    : rooms.filter(r => {
       if (filter === 'Maintenance') return r.status === RoomStatus.OOO;
       return r.status === filter;
     });
+
+  if (loading) {
+    return <div className="flex justify-center items-center h-64"><Loader className="animate-spin w-8 h-8 text-slate-400" /></div>;
+  }
+
+  if (!user?.propertyId && user?.email !== 'jason@staysync.com') {
+    return <div className="p-8 text-center text-slate-500">Please contact an administrator to be assigned to a property.</div>;
+  }
 
   return (
     <div className="space-y-8 animate-fadeIn pb-10">
@@ -96,7 +133,7 @@ const Housekeeping: React.FC = () => {
                 <div>
                   <h3 className="text-xl font-bold text-slate-900">{room.number}</h3>
                   <p className="text-xs font-medium text-slate-500 mt-0.5">
-                    {room.type} • Floor {room.floor}
+                    {room.type} • Floor {room.floor || 1}
                   </p>
                 </div>
               </div>
@@ -120,6 +157,12 @@ const Housekeeping: React.FC = () => {
             </div>
           </div>
         ))}
+        {filteredRooms.length === 0 && !loading && (
+          <div className="col-span-full py-12 text-center text-slate-500">
+            <BedDouble className="w-12 h-12 mx-auto mb-3 opacity-20" />
+            <p>No rooms found matching this filter.</p>
+          </div>
+        )}
       </div>
 
       {/* FAB for demo */}

@@ -71,3 +71,17 @@ export interface Transaction {
   type: 'Credit' | 'Debit';
   category: string;
 }
+
+export interface Property {
+  id: string;
+  name: string;
+  address?: string;
+  createdAt: string;
+}
+
+export interface AppUser {
+  id: string;
+  email: string;
+  role: 'admin' | 'manager' | 'staff';
+  propertyId?: string; // Foreign key to Property
+}

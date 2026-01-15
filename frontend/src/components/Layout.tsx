@@ -1,34 +1,9 @@
+import { useAuth } from '../context/AuthContext';
 
-import React, { useState } from 'react';
-import { NavLink, useLocation, useNavigate } from 'react-router-dom';
-import {
-  LayoutDashboard, CalendarRange, Users, BedDouble,
-  Wrench, UserCog, CreditCard, BarChart3, Clock,
-  LogOut, Menu, X, MonitorPlay, Hotel, Settings
-} from 'lucide-react';
-import { SmartAssistant } from './SmartAssistant';
-
-interface LayoutProps {
-  children: React.ReactNode;
-}
-
-const SidebarLink = ({ to, icon: Icon, label }: { to: string, icon: any, label: string }) => (
-  <NavLink
-    to={to}
-    className={({ isActive }) => `
-      flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 group
-      ${isActive
-        ? 'bg-gold-500 text-white shadow-lg shadow-gold-500/30'
-        : 'text-slate-400 hover:bg-slate-800 hover:text-white'
-      }
-`}
-  >
-    <Icon className="w-5 h-5 transition-transform group-hover:scale-110" />
-    <span className="font-medium">{label}</span>
-  </NavLink>
-);
+// ... (SidebarLink component remains unchanged)
 
 export const Layout: React.FC<LayoutProps> = ({ children }) => {
+  const { user, signOut } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
@@ -37,6 +12,11 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   if (['/kiosk', '/login', '/', '/landing'].includes(location.pathname)) {
     return <>{children}</>;
   }
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/');
+  };
 
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden">
@@ -75,7 +55,10 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         </nav>
 
         <div className="p-4 border-t border-slate-800">
-          <button className="flex items-center gap-3 w-full px-4 py-3 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors">
+          <button
+            onClick={handleSignOut}
+            className="flex items-center gap-3 w-full px-4 py-3 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+          >
             <LogOut className="w-5 h-5" />
             <span className="font-medium">Sign Out</span>
           </button>
@@ -101,11 +84,13 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
           <div className="flex items-center gap-4">
             <div className="flex flex-col items-end hidden sm:flex">
-              <span className="text-sm font-medium text-slate-900">Admin User</span>
-              <span className="text-xs text-slate-500">General Manager</span>
+              <span className="text-sm font-medium text-slate-900">{user?.email || 'Guest User'}</span>
+              <span className="text-xs text-slate-500 capitalize">{user?.role || 'Visitor'}</span>
             </div>
             <div className="w-10 h-10 rounded-full bg-gold-100 flex items-center justify-center border-2 border-white shadow-sm">
-              <span className="text-gold-700 font-bold text-sm">AU</span>
+              <span className="text-gold-700 font-bold text-sm">
+                {user?.email?.charAt(0).toUpperCase() || 'G'}
+              </span>
             </div>
           </div>
         </header>

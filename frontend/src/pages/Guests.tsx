@@ -1,12 +1,79 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button, Card, Input, Badge, Select } from '../components/UIComponents';
-import { Users, MessageSquare, Ban, FileText, Plus, Receipt } from 'lucide-react';
-import { MOCK_GUESTS } from '../constants';
+import { Users, MessageSquare, Ban, FileText, Plus, Receipt, Loader } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { supabase } from '../lib/supabase';
+import { Guest } from '../types';
 
 const Guests: React.FC = () => {
-    const [selectedGuest, setSelectedGuest] = useState<any>(null);
+    const { user } = useAuth();
+    const [guests, setGuests] = useState<Guest[]>([]);
+    const [selectedGuest, setSelectedGuest] = useState<Guest | null>(null);
     const [notes, setNotes] = useState('');
     const [activeSubTab, setActiveSubTab] = useState<'profile' | 'billing'>('profile');
+    const [loading, setLoading] = useState(true);
+    const [searchTerm, setSearchTerm] = useState('');
+
+    useEffect(() => {
+        if (user) {
+            fetchGuests();
+        }
+    }, [user]);
+
+    const fetchGuests = async () => {
+        setLoading(true);
+        try {
+            let query = supabase.from('guests').select('*');
+
+            if (user?.propertyId) {
+                query = query.eq('property_id', user.propertyId);
+            } else if (user?.email !== 'jason@staysync.com') {
+                setGuests([]);
+                setLoading(false);
+                return;
+            }
+
+            const { data, error } = await query;
+
+            if (error) throw error;
+
+            if (data) {
+                const mappedGuests: Guest[] = data.map((g: any) => ({
+                    id: g.id,
+                    fullName: `${g.first_name} ${g.last_name}`,
+                    email: g.email || '',
+                    phone: g.phone || '',
+                    vipStatus: g.vip_status || false,
+                    notes: g.notes || '',
+                    lastStay: g.last_stay // Optional in interface
+                }));
+                setGuests(mappedGuests);
+            }
+        } catch (error) {
+            console.error('Error fetching guests:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const filteredGuests = guests.filter(g =>
+        g.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        g.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        g.phone.includes(searchTerm)
+    );
+
+    if (loading) {
+        return <div className="flex justify-center items-center h-64"><Loader className="animate-spin text-gold-500" /></div>;
+    }
+
+    if (!user?.propertyId && user?.email !== 'jason@staysync.com') {
+        return (
+            <div className="flex flex-col items-center justify-center h-64 text-slate-500">
+                <p>You are not assigned to any property.</p>
+                <p className="text-sm">Please contact your administrator.</p>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6 animate-fadeIn">
@@ -18,21 +85,32 @@ const Guests: React.FC = () => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <Card className="lg:col-span-1" title="Guest Directory">
                     <div className="space-y-3">
-                        <Input placeholder="Search by name, email, or phone..." />
+                        <Input
+                            placeholder="Search by name, email, or phone..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
                         <div className="max-h-[600px] overflow-y-auto space-y-2 pr-2">
-                            {MOCK_GUESTS.map(guest => (
+                            {filteredGuests.map(guest => (
                                 <div
                                     key={guest.id}
-                                    onClick={() => setSelectedGuest(guest)}
+                                    onClick={() => {
+                                        setSelectedGuest(guest);
+                                        setNotes(guest.notes);
+                                    }}
                                     className={`p-3 rounded-lg border cursor-pointer transition-all ${selectedGuest?.id === guest.id ? 'border-gold-500 bg-gold-50' : 'border-slate-100 hover:bg-slate-50'}`}
                                 >
                                     <div className="flex justify-between items-start">
                                         <p className="font-medium text-slate-900">{guest.fullName}</p>
-                                        {guest.id === 'g2' && <Badge color="red">Do Not Rent</Badge>}
+                                        {/* guest.vipStatus && <Badge color="gold">VIP</Badge> */}
+                                        {/* Example specific logic if needed */}
                                     </div>
                                     <p className="text-xs text-slate-500">{guest.email}</p>
                                 </div>
                             ))}
+                            {filteredGuests.length === 0 && (
+                                <p className="text-center text-slate-400 py-4">No guests found.</p>
+                            )}
                         </div>
                     </div>
                 </Card>
@@ -50,8 +128,8 @@ const Guests: React.FC = () => {
                                     <div className="flex gap-4">
                                         <div className="flex-1 space-y-4">
                                             <div className="grid grid-cols-2 gap-4">
-                                                <Input label="Email" defaultValue={selectedGuest.email} />
-                                                <Input label="Phone" defaultValue={selectedGuest.phone} />
+                                                <Input label="Email" defaultValue={selectedGuest.email} readOnly /> {/* ReadOnly for now until edit implemented */}
+                                                <Input label="Phone" defaultValue={selectedGuest.phone} readOnly />
                                             </div>
                                             <div>
                                                 <label className="block text-sm font-medium text-slate-700 mb-1">Internal Notes</label>
@@ -71,7 +149,7 @@ const Guests: React.FC = () => {
                                                     <span className="text-xs font-bold uppercase">Restriction</span>
                                                 </div>
                                                 <label className="flex items-center gap-2 cursor-pointer">
-                                                    <input type="checkbox" className="rounded text-red-600" defaultChecked={selectedGuest.id === 'g2'} />
+                                                    <input type="checkbox" className="rounded text-red-600" defaultChecked={false} />
                                                     <span className="text-sm text-red-900">Do Not Rent</span>
                                                 </label>
                                             </div>
@@ -79,7 +157,7 @@ const Guests: React.FC = () => {
                                         </div>
                                     </div>
                                     <div className="flex justify-end gap-2">
-                                        <Button variant="outline">Cancel</Button>
+                                        <Button variant="outline" onClick={() => setSelectedGuest(null)}>Close</Button>
                                         <Button>Save Profile</Button>
                                     </div>
                                 </div>
@@ -100,11 +178,9 @@ const Guests: React.FC = () => {
                                                 </tr>
                                             </thead>
                                             <tbody className="divide-y divide-slate-100">
+                                                {/* Placeholder invoices */}
                                                 <tr>
-                                                    <td className="px-4 py-3">Oct 12, 2023</td>
-                                                    <td className="px-4 py-3 font-medium">$450.00</td>
-                                                    <td className="px-4 py-3"><Badge color="green">Paid</Badge></td>
-                                                    <td className="px-4 py-3 text-right"><Button variant="ghost" size="sm" icon={FileText}>AI PDF</Button></td>
+                                                    <td colSpan={4} className="px-4 py-3 text-center text-slate-400">No invoices found.</td>
                                                 </tr>
                                             </tbody>
                                         </table>
