@@ -11,6 +11,7 @@ import Financials from './pages/Financials';
 import LandingPage from './pages/LandingPage';
 import Login from './pages/Login';
 import AdminSettings from './pages/AdminSettings';
+import ITSecurity from './pages/ITSecurity';
 
 // Placeholder components for brevity
 import Guests from './pages/Guests';
@@ -34,6 +35,7 @@ const App: React.FC = () => {
             <Route path="/staff" element={<Staff />} />
             <Route path="/financials" element={<Financials />} />
             <Route path="/kiosk" element={<StaffKiosk />} />
+            <Route path="/it-security" element={<ITSecurity />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Layout>

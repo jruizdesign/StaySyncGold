@@ -18,7 +18,7 @@ const LandingPage: React.FC = () => {
 
                     <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-300">
                         <a href="#" className="hover:text-white transition-colors">Digital Solutions</a>
-                        <a href="#" className="hover:text-white transition-colors">IT & Security</a>
+                        <button onClick={() => navigate('/it-security')} className="hover:text-white transition-colors">IT & Security</button>
                         <a href="#" className="hover:text-white transition-colors">Features</a>
                     </div>
 
