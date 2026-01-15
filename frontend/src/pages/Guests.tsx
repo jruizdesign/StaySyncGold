@@ -3,7 +3,7 @@ import { Button, Card, Input, Badge, Select, Modal } from '../components/UICompo
 import { Users, MessageSquare, Ban, FileText, Plus, Receipt, Loader, Edit, Send } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
-import { Guest } from '../types';
+import { Guest, Invoice } from '../types';
 
 const Guests: React.FC = () => {
     const { user } = useAuth();
