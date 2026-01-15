@@ -84,36 +84,39 @@ const Staff: React.FC = () => {
         </div>
 
         {/* Quick Schedule Overview */}
+        {/* Quick Schedule Overview - Demo Only */}
         <div className="space-y-6">
-          <Card title="Today's Shift Coverage">
-            <div className="space-y-4">
-              <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                <span className="text-sm font-medium text-slate-700">Front Desk</span>
-                <div className="flex items-center gap-2">
-                  <div className="flex -space-x-2">
-                    <div className="w-8 h-8 rounded-full bg-blue-100 border-2 border-white flex items-center justify-center text-xs">JD</div>
-                    <div className="w-8 h-8 rounded-full bg-purple-100 border-2 border-white flex items-center justify-center text-xs">AS</div>
+          {user?.isDemoMode && (
+            <Card title="Today's Shift Coverage">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                  <span className="text-sm font-medium text-slate-700">Front Desk</span>
+                  <div className="flex items-center gap-2">
+                    <div className="flex -space-x-2">
+                      <div className="w-8 h-8 rounded-full bg-blue-100 border-2 border-white flex items-center justify-center text-xs">JD</div>
+                      <div className="w-8 h-8 rounded-full bg-purple-100 border-2 border-white flex items-center justify-center text-xs">AS</div>
+                    </div>
+                    <span className="text-xs text-slate-500">2/2</span>
                   </div>
-                  <span className="text-xs text-slate-500">2/2</span>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                  <span className="text-sm font-medium text-slate-700">Housekeeping</span>
+                  <div className="flex items-center gap-2">
+                    <div className="flex -space-x-2">
+                      <div className="w-8 h-8 rounded-full bg-green-100 border-2 border-white flex items-center justify-center text-xs">T8</div>
+                    </div>
+                    <span className="text-xs text-red-500 font-medium">1/3 (Short)</span>
+                  </div>
                 </div>
               </div>
-              <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                <span className="text-sm font-medium text-slate-700">Housekeeping</span>
-                <div className="flex items-center gap-2">
-                  <div className="flex -space-x-2">
-                    <div className="w-8 h-8 rounded-full bg-green-100 border-2 border-white flex items-center justify-center text-xs">T8</div>
-                  </div>
-                  <span className="text-xs text-red-500 font-medium">1/3 (Short)</span>
+              <div className="mt-4 pt-4 border-t border-slate-100">
+                <div className="flex items-center gap-2 text-slate-500 text-sm">
+                  <Clock className="w-4 h-4" />
+                  <span>Next shift change in 2h 15m</span>
                 </div>
               </div>
-            </div>
-            <div className="mt-4 pt-4 border-t border-slate-100">
-              <div className="flex items-center gap-2 text-slate-500 text-sm">
-                <Clock className="w-4 h-4" />
-                <span>Next shift change in 2h 15m</span>
-              </div>
-            </div>
-          </Card>
+            </Card>
+          )}
         </div>
       </div>
     </div>
