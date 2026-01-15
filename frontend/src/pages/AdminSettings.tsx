@@ -23,8 +23,8 @@ const DatabaseInspector: React.FC = () => {
         let query = supabase.from(selectedTable).select('*').limit(50);
 
         // Basic scoping for inspection if not super admin (privacy)
-        // For now, let's keep it open for debugging or strictly scoped
-        if (user.propertyId && ['reservations', 'rooms', 'guests', 'staff'].includes(selectedTable)) {
+        // If user is Admin, they can see all data
+        if (!user.isAdmin && user.propertyId && ['reservations', 'rooms', 'guests', 'staff'].includes(selectedTable)) {
             query = query.eq('property_id', user.propertyId);
         }
 
@@ -462,9 +462,9 @@ const AdminSettings: React.FC = () => {
     const { user } = useAuth(); // Global Auth
 
     // Determine permissions based on user role (Mock or real)
-    // For now, assume if email matches jason@staysync.com -> Admin
+    // If user.isAdmin exists -> Super Admin
     // If user.propertyId exists -> Manager/Owner of that property
-    const isAdmin = user?.email === 'jason@staysync.com';
+    const isAdmin = !!user?.isAdmin;
     const isManagement = !!user?.propertyId || isAdmin;
 
     const [activeTab, setActiveTab] = useState<'database' | 'users' | 'property' | 'rooms' | 'channel' | 'superadmin'>('property');

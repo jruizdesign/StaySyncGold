@@ -1,6 +1,49 @@
+import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import {
+  LayoutDashboard,
+  CalendarRange,
+  Users,
+  BedDouble,
+  Wrench,
+  UserCog,
+  CreditCard,
+  MonitorPlay,
+  Settings,
+  LogOut,
+  Hotel,
+  Menu
+} from 'lucide-react';
+import { SmartAssistant } from './SmartAssistant';
 
-// ... (SidebarLink component remains unchanged)
+interface SidebarLinkProps {
+  to: string;
+  icon: React.ElementType;
+  label: string;
+}
+
+const SidebarLink: React.FC<SidebarLinkProps> = ({ to, icon: Icon, label }) => {
+  const location = useLocation();
+  const isActive = location.pathname.startsWith(to) && to !== '/' || location.pathname === to;
+
+  return (
+    <Link
+      to={to}
+      className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${isActive
+          ? 'bg-gold-500 text-white shadow-sm'
+          : 'text-slate-400 hover:text-white hover:bg-slate-800'
+        }`}
+    >
+      <Icon className="w-5 h-5" />
+      <span className="font-medium">{label}</span>
+    </Link>
+  );
+};
+
+interface LayoutProps {
+  children: React.ReactNode;
+}
 
 export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const { user, signOut } = useAuth();
@@ -32,7 +75,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       <aside className={`
         fixed lg:static inset-y-0 left-0 z-50 w-64 bg-slate-900 text-white transform transition-transform duration-300 ease-in-out flex flex-col
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-`}>
+      `}>
         <div className="h-16 flex items-center px-6 border-b border-slate-800">
           <Hotel className="w-8 h-8 text-gold-500 mr-3" />
           <span className="text-xl font-bold tracking-tight text-white">

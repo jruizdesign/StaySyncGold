@@ -51,15 +51,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 .single();
 
             if (data) {
-                setUser(data as AppUser);
-            } else if (email === 'jason@staysync.com') {
-                // Special case for Super Admin if not in DB yet
-                setUser({
-                    id: userId,
-                    email: email,
-                    role: 'admin',
-                    // Super Admin has no specific property by default, or access to all (logic handled in components)
-                });
+                const appUser: AppUser = {
+                    id: data.id,
+                    email: data.email,
+                    role: data.role as 'admin' | 'manager' | 'staff',
+                    propertyId: data.property_id,
+                    isAdmin: data.isAdmin // Using the column from DB
+                };
+                setUser(appUser);
             } else {
                 // Determine user role or create default profile if needed (Production logic)
                 setUser({
