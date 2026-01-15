@@ -22,6 +22,7 @@ export interface Guest {
   vipStatus: boolean;
   notes: string;
   lastStay?: string;
+  doNotRent?: boolean;
 }
 
 export interface Room {

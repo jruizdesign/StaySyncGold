@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button, Card, Input, Badge, Select, Modal } from '../components/UIComponents';
-import { Users, MessageSquare, Ban, FileText, Plus, Receipt, Loader, Edit } from 'lucide-react';
+import { Users, MessageSquare, Ban, FileText, Plus, Receipt, Loader, Edit, Send } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { Guest } from '../types';
@@ -10,6 +10,7 @@ const Guests: React.FC = () => {
     const [guests, setGuests] = useState<Guest[]>([]);
     const [selectedGuest, setSelectedGuest] = useState<Guest | null>(null);
     const [activeSubTab, setActiveSubTab] = useState<'profile' | 'billing'>('profile');
+    const [showAIChat, setShowAIChat] = useState(false);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
 
@@ -22,7 +23,8 @@ const Guests: React.FC = () => {
         email: '',
         phone: '',
         notes: '',
-        vip_status: false
+        vip_status: false,
+        do_not_rent: false
     });
 
     useEffect(() => {
@@ -56,7 +58,8 @@ const Guests: React.FC = () => {
                     phone: g.phone || '',
                     vipStatus: g.vip_status || false,
                     notes: g.notes || '',
-                    lastStay: g.last_stay
+                    lastStay: g.last_stay,
+                    doNotRent: g.do_not_rent || false
                 }));
                 // Sort by name
                 mappedGuests.sort((a, b) => a.fullName.localeCompare(b.fullName));
@@ -83,7 +86,8 @@ const Guests: React.FC = () => {
             email: '',
             phone: '',
             notes: '',
-            vip_status: false
+            vip_status: false,
+            do_not_rent: false
         });
         setIsModalOpen(true);
     };
@@ -102,7 +106,8 @@ const Guests: React.FC = () => {
             email: selectedGuest.email,
             phone: selectedGuest.phone,
             notes: selectedGuest.notes,
-            vip_status: selectedGuest.vipStatus
+            vip_status: selectedGuest.vipStatus,
+            do_not_rent: selectedGuest.doNotRent || false
         });
         setIsModalOpen(true);
     };
@@ -118,6 +123,7 @@ const Guests: React.FC = () => {
                 phone: formData.phone,
                 notes: formData.notes,
                 vip_status: formData.vip_status,
+                do_not_rent: formData.do_not_rent,
                 property_id: user?.propertyId // Required for new guests
             };
 
@@ -186,7 +192,7 @@ const Guests: React.FC = () => {
                                 >
                                     <div className="flex justify-between items-start">
                                         <p className="font-medium text-slate-900">{guest.fullName}</p>
-                                        {guest.vipStatus && <Badge color="yellow">VIP</Badge>}
+                                        <div className="flex gap-1">{guest.vipStatus && <Badge color="yellow">VIP</Badge>} {guest.doNotRent && <Badge color="red">DNR</Badge>}</div>
                                     </div>
                                     <p className="text-xs text-slate-500">{guest.email}</p>
                                 </div>
@@ -207,39 +213,66 @@ const Guests: React.FC = () => {
                             </div>
 
                             {activeSubTab === 'profile' ? (
-                                <div className="space-y-6">
-                                    <div className="flex gap-4">
-                                        <div className="flex-1 space-y-4">
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <Input label="Email" value={selectedGuest.email} readOnly disabled className="bg-slate-50" />
-                                                <Input label="Phone" value={selectedGuest.phone} readOnly disabled className="bg-slate-50" />
+                                showAIChat ? (
+                                    <div className="space-y-4 animate-slideIn">
+                                        <div className="flex justify-between items-center">
+                                            <h4 className="font-bold text-gold-600 flex items-center gap-2"><MessageSquare className="w-4 h-4" /> AI Messaging Center</h4>
+                                            <Button variant="ghost" size="sm" onClick={() => setShowAIChat(false)}>Back to Profile</Button>
+                                        </div>
+                                        <div className="h-64 bg-slate-50 rounded-xl p-4 overflow-y-auto border border-slate-100 space-y-3">
+                                            <div className="bg-white p-3 rounded-lg shadow-sm max-w-[80%] text-sm">
+                                                Hello! I am your AI assistant. I can help you draft personalized welcome messages or handle guest inquiries for {selectedGuest.fullName}.
                                             </div>
-                                            <div>
-                                                <label className="block text-sm font-medium text-slate-700 mb-1">Internal Notes</label>
-                                                <div className="w-full p-3 border border-slate-200 rounded-lg text-sm bg-slate-50 min-h-[100px] whitespace-pre-wrap">
-                                                    {selectedGuest.notes || <span className="text-slate-400 italic">No notes added.</span>}
-                                                </div>
+                                            <div className="bg-gold-500 text-white p-3 rounded-lg shadow-sm max-w-[80%] ml-auto text-sm">
+                                                Draft a checkout reminder for tomorrow morning.
+                                            </div>
+                                            <div className="bg-white p-3 rounded-lg shadow-sm max-w-[80%] text-sm border-l-4 border-gold-500">
+                                                "Dear {selectedGuest.fullName.split(' ')[0]}, we hope you enjoyed your stay! Just a friendly reminder that checkout is at 11:00 AM tomorrow. Safe travels!"
                                             </div>
                                         </div>
-                                        <div className="w-48 space-y-4">
-                                            {selectedGuest.vipStatus && (
-                                                <div className="p-4 bg-yellow-50 border border-yellow-100 rounded-lg text-center">
-                                                    <span className="text-sm font-bold text-yellow-800">VIP Guest</span>
-                                                </div>
-                                            )}
-                                            <div className="p-4 bg-red-50 border border-red-100 rounded-lg">
-                                                <div className="flex items-center gap-2 text-red-700 mb-2">
-                                                    <Ban className="w-4 h-4" />
-                                                    <span className="text-xs font-bold uppercase">Restriction</span>
-                                                </div>
-                                                <span className="text-sm text-red-900">Do Not Rent (Off)</span>
-                                            </div>
+                                        <div className="flex gap-2">
+                                            <Input placeholder="Ask AI to draft a message..." className="flex-1" />
+                                            <Button icon={Send}>Send</Button>
                                         </div>
                                     </div>
-                                    <div className="flex justify-end gap-2">
-                                        <Button icon={Edit} onClick={handleOpenEdit}>Edit Profile</Button>
+                                ) : (
+                                    <div className="space-y-6">
+                                        <div className="flex gap-4">
+                                            <div className="flex-1 space-y-4">
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <Input label="Email" value={selectedGuest.email} readOnly disabled className="bg-slate-50" />
+                                                    <Input label="Phone" value={selectedGuest.phone} readOnly disabled className="bg-slate-50" />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-slate-700 mb-1">Internal Notes</label>
+                                                    <div className="w-full p-3 border border-slate-200 rounded-lg text-sm bg-slate-50 min-h-[100px] whitespace-pre-wrap">
+                                                        {selectedGuest.notes || <span className="text-slate-400 italic">No notes added.</span>}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="w-48 space-y-4">
+                                                {selectedGuest.vipStatus && (
+                                                    <div className="p-4 bg-yellow-50 border border-yellow-100 rounded-lg text-center">
+                                                        <span className="text-sm font-bold text-yellow-800">VIP Guest</span>
+                                                    </div>
+                                                )}
+                                                <div className={`p-4 border rounded-lg ${selectedGuest.doNotRent ? 'bg-red-50 border-red-100' : 'bg-slate-50 border-slate-100'}`}>
+                                                    <div className={`flex items-center gap-2 mb-2 ${selectedGuest.doNotRent ? 'text-red-700' : 'text-slate-500'}`}>
+                                                        <Ban className="w-4 h-4" />
+                                                        <span className="text-xs font-bold uppercase">Restriction</span>
+                                                    </div>
+                                                    <span className={`text-sm font-bold ${selectedGuest.doNotRent ? 'text-red-900' : 'text-slate-400'}`}>
+                                                        {selectedGuest.doNotRent ? 'DO NOT RENT' : 'No Restrictions'}
+                                                    </span>
+                                                </div>
+                                                <Button variant="outline" icon={MessageSquare} className="w-full" onClick={() => setShowAIChat(true)}>AI Messaging</Button>
+                                            </div>
+                                        </div>
+                                        <div className="flex justify-end gap-2">
+                                            <Button icon={Edit} onClick={handleOpenEdit}>Edit Profile</Button>
+                                        </div>
                                     </div>
-                                </div>
+                                )
                             ) : (
                                 <div className="space-y-4">
                                     <div className="flex justify-between items-center">
@@ -298,14 +331,25 @@ const Guests: React.FC = () => {
                             onChange={e => setFormData({ ...formData, notes: e.target.value })}
                         />
                     </div>
-                    <div className="flex items-center gap-2">
-                        <input
-                            type="checkbox"
-                            checked={formData.vip_status}
-                            onChange={e => setFormData({ ...formData, vip_status: e.target.checked })}
-                            className="w-4 h-4 text-gold-600 rounded focus:ring-gold-500"
-                        />
-                        <span className="text-sm font-medium text-slate-700">VIP Status</span>
+                    <div className="flex gap-6">
+                        <div className="flex items-center gap-2">
+                            <input
+                                type="checkbox"
+                                checked={formData.vip_status}
+                                onChange={e => setFormData({ ...formData, vip_status: e.target.checked })}
+                                className="w-4 h-4 text-gold-600 rounded focus:ring-gold-500"
+                            />
+                            <span className="text-sm font-medium text-slate-700">VIP Status</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <input
+                                type="checkbox"
+                                checked={formData.do_not_rent}
+                                onChange={e => setFormData({ ...formData, do_not_rent: e.target.checked })}
+                                className="w-4 h-4 text-red-600 rounded focus:ring-red-500"
+                            />
+                            <span className="text-sm font-medium text-red-700">Do Not Rent</span>
+                        </div>
                     </div>
                     <div className="pt-4 flex justify-end gap-2">
                         <Button variant="outline" onClick={() => setIsModalOpen(false)}>Cancel</Button>

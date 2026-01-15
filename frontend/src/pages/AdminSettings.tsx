@@ -28,8 +28,17 @@ const DatabaseInspector: React.FC = () => {
     }, [selectedTable, user, filterPropertyId]); // Re-fetch when filter changes
 
     const fetchProperties = async () => {
-        const { data } = await supabase.from('properties').select('id, name');
-        if (data) setProperties(data);
+        const { data } = await supabase.from('properties').select('*');
+        if (data) {
+            const mapped: Property[] = data.map((p: any) => ({
+                id: p.id,
+                name: p.name,
+                address: p.address,
+                createdAt: p.created_at,
+                demo_mode: p.demo_mode
+            }));
+            setProperties(mapped);
+        }
     };
 
     const fetchTableData = async () => {
@@ -592,6 +601,9 @@ const AdminSettings: React.FC = () => {
                                 </button>
                                 <button onClick={() => setActiveTab('rooms')} className={`flex items-center justify-between px-6 py-4 text-left border-l-4 transition-colors ${activeTab === 'rooms' ? 'border-gold-500 bg-gold-50' : 'border-transparent hover:bg-slate-50'}`}>
                                     <div className="flex items-center gap-3"><Layout className="w-5 h-5" /> <span className="font-medium">Rooms & Units</span></div>
+                                </button>
+                                <button onClick={() => setActiveTab('channel')} className={`flex items-center justify-between px-6 py-4 text-left border-l-4 transition-colors ${activeTab === 'channel' ? 'border-gold-500 bg-gold-50' : 'border-transparent hover:bg-slate-50'}`}>
+                                    <div className="flex items-center gap-3"><Globe className="w-5 h-5" /> <span className="font-medium">Channel Manager</span></div>
                                 </button>
                             </>
                         )}
