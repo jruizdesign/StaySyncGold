@@ -3,6 +3,7 @@ import { Card, Badge } from '../components/UIComponents';
 import { TrendingUp, Users, BedDouble, AlertCircle, DollarSign } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { LiveActivityFeed } from '../components/LiveActivityFeed';
+import { AIInsightCard } from '../components/AIInsightCard';
 
 import { useAuth } from '../context/AuthContext';
 
@@ -73,6 +74,11 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {/* AI Intel Card */}
+      <AIInsightCard
+        onAction={() => window.location.href = '/maintenance'} // Simple navigation for now
+      />
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard title="Total Revenue" value={stats.revenue} sub={stats.revenueSub} icon={DollarSign} color="bg-emerald-500 text-emerald-600" />
         <StatCard title="Occupancy Rate" value={stats.occupancy} sub={stats.occupancySub} icon={TrendingUp} color="bg-blue-500 text-blue-600" />
