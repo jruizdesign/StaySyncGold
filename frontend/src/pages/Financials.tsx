@@ -55,6 +55,27 @@ const Financials: React.FC = () => {
   useEffect(() => {
     if (user?.propertyId) {
       fetchFinancialData();
+
+      // Listen for new payments or status changes to update balances and stats
+      const channel = supabase
+        .channel('financial-updates')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'payments',
+            filter: `property_id=eq.${user.propertyId}`,
+          },
+          () => {
+            fetchFinancialData(); // Refresh all data when a payment occurs
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     } else if (user?.isAdmin) {
       // Super admin view (optional: fetch all or prompt to select property)
       setLoading(false);
@@ -208,7 +229,7 @@ const Financials: React.FC = () => {
 
       {/* Guest Balances - Front and Center */}
       {user?.isDemoMode && ( // Conditional rendering for demo mode
-        <div className="bg-white rounded-xl border border-slate-200 shadow-[0_4px_12px_rgba(0,0,0,0.08)] overflow-hidden border-t-4 border-t-rose-500">
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden ring-1 ring-slate-200/50">
           <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-rose-50/30">
             <div className="flex items-center gap-3">
               <Wallet className="w-6 h-6 text-rose-500" />
@@ -260,13 +281,13 @@ const Financials: React.FC = () => {
       {user?.isDemoMode && ( // Conditional rendering for demo mode
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Total Collected */}
-          <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-[0_2px_8px_rgba(0,0,0,0.04)] flex flex-col justify-between h-40">
+          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between h-40 transition-all hover:border-emerald-200 group">
             <div className="flex justify-between items-start">
               <div>
-                <p className="text-sm font-bold text-slate-500">Total Collected</p>
-                <p className="text-4xl font-bold text-emerald-600 mt-2">${stats.totalCollected.toLocaleString()}</p>
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Collected</p>
+                <p className="text-3xl font-bold text-slate-900 mt-2 tabular-nums">${stats.totalCollected.toLocaleString()}</p>
               </div>
-              <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center group-hover:bg-emerald-100 transition-colors">
                 <DollarSign className="w-5 h-5 text-emerald-600" />
               </div>
             </div>
@@ -274,13 +295,13 @@ const Financials: React.FC = () => {
           </div>
 
           {/* Outstanding Balances */}
-          <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-[0_2px_8px_rgba(0,0,0,0.04)] flex flex-col justify-between h-40">
+          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between h-40 transition-all hover:border-rose-200 group">
             <div className="flex justify-between items-start">
               <div>
-                <p className="text-sm font-bold text-slate-500">Outstanding Balances</p>
-                <p className="text-4xl font-bold text-rose-500 mt-2">${stats.outstanding.toLocaleString()}</p>
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Outstanding</p>
+                <p className="text-3xl font-bold text-slate-900 mt-2 tabular-nums">${stats.outstanding.toLocaleString()}</p>
               </div>
-              <div className="w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-xl bg-rose-50 flex items-center justify-center group-hover:bg-rose-100 transition-colors">
                 <Wallet className="w-5 h-5 text-rose-500" />
               </div>
             </div>
@@ -288,13 +309,13 @@ const Financials: React.FC = () => {
           </div>
 
           {/* Daily Accrued */}
-          <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-[0_2px_8px_rgba(0,0,0,0.04)] flex flex-col justify-between h-40">
+          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between h-40 transition-all hover:border-blue-200 group">
             <div className="flex justify-between items-start">
               <div>
-                <p className="text-sm font-bold text-slate-500">Daily Accrued</p>
-                <p className="text-4xl font-bold text-blue-600 mt-2">${stats.dailyAccrued.toLocaleString()}</p>
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Daily Accrued</p>
+                <p className="text-3xl font-bold text-slate-900 mt-2 tabular-nums">${stats.dailyAccrued.toLocaleString()}</p>
               </div>
-              <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center group-hover:bg-blue-100 transition-colors">
                 <TrendingUp className="w-5 h-5 text-blue-600" />
               </div>
             </div>
@@ -302,13 +323,13 @@ const Financials: React.FC = () => {
           </div>
 
           {/* Projected Revenue */}
-          <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-[0_2px_8px_rgba(0,0,0,0.04)] flex flex-col justify-between h-40">
+          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between h-40 transition-all hover:border-purple-200 group">
             <div className="flex justify-between items-start">
               <div>
-                <p className="text-sm font-bold text-slate-500">Projected Revenue</p>
-                <p className="text-4xl font-bold text-purple-600 mt-2">${stats.projected.toLocaleString()}</p>
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Projected</p>
+                <p className="text-3xl font-bold text-slate-900 mt-2 tabular-nums">${stats.projected.toLocaleString()}</p>
               </div>
-              <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center group-hover:bg-purple-100 transition-colors">
                 <CreditCard className="w-5 h-5 text-purple-600" />
               </div>
             </div>
@@ -319,7 +340,7 @@ const Financials: React.FC = () => {
 
       {/* New: Revenue Breakdown Chart (Conditional for demo mode) */}
       {user?.isDemoMode && (
-        <div className="bg-white rounded-xl border border-slate-200 shadow-[0_4px_12px_rgba(0,0,0,0.08)] overflow-hidden border-t-4 border-t-blue-500">
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
           <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-blue-50/30">
             <div className="flex items-center gap-3">
               <TrendingUp className="w-6 h-6 text-blue-500" />
@@ -357,7 +378,7 @@ const Financials: React.FC = () => {
       )}
 
       {/* Room Details Table */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="p-6 border-b border-slate-100">
           <h3 className="font-bold text-slate-900">Room Details - {formatDate(selectedDate)}</h3>
         </div>
@@ -385,7 +406,7 @@ const Financials: React.FC = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4 text-right font-bold text-slate-900">
-                      ${t.amount.toLocaleString()}
+                      <span className="tabular-nums">${t.amount.toLocaleString()}</span>
                     </td>
                     <td className="px-6 py-4 text-right text-xs text-slate-400 uppercase font-bold">
                       {t.status}

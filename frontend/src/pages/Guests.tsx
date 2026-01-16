@@ -355,10 +355,10 @@ const Guests: React.FC = () => {
                                     className={`p-3 rounded-lg border cursor-pointer transition-all ${selectedGuest?.id === guest.id ? 'border-gold-500 bg-gold-50' : 'border-slate-100 hover:bg-slate-50'}`}
                                 >
                                     <div className="flex justify-between items-start">
-                                        <p className="font-medium text-slate-900">{guest.fullName}</p>
+                                        <p className={`font-semibold transition-colors ${selectedGuest?.id === guest.id ? 'text-gold-900' : 'text-slate-900'}`}>{guest.fullName}</p>
                                         <div className="flex gap-1">{guest.vipStatus && <Badge color="yellow">VIP</Badge>} {guest.doNotRent && <Badge color="red">DNR</Badge>}</div>
                                     </div>
-                                    <p className="text-xs text-slate-500">{guest.email}</p>
+                                    <p className={`text-xs transition-colors ${selectedGuest?.id === guest.id ? 'text-gold-600' : 'text-slate-500'}`}>{guest.email}</p>
                                 </div>
                             ))}
                             {filteredGuests.length === 0 && (
@@ -368,7 +368,7 @@ const Guests: React.FC = () => {
                     </div>
                 </Card>
 
-                <Card className="lg:col-span-2" title={selectedGuest ? `Guest: ${selectedGuest.fullName}` : 'Select a Guest'}>
+                <Card className="lg:col-span-2 overflow-hidden" title={selectedGuest ? `Guest: ${selectedGuest.fullName}` : 'Select a Guest'}>
                     {selectedGuest ? (
                         <div className="space-y-6">
                             <div className="flex border-b border-slate-100">
@@ -384,14 +384,14 @@ const Guests: React.FC = () => {
                                             <h4 className="font-bold text-gold-600 flex items-center gap-2"><MessageSquare className="w-4 h-4" /> AI Messaging Center</h4>
                                             <Button variant="ghost" size="sm" onClick={() => setShowAIChat(false)}>Back to Profile</Button>
                                         </div>
-                                        <div className="h-64 bg-slate-50 rounded-xl p-4 overflow-y-auto border border-slate-100 space-y-3">
-                                            <div className="bg-white p-3 rounded-lg shadow-sm max-w-[80%] text-sm">
+                                        <div className="h-80 bg-slate-50/50 rounded-2xl p-6 overflow-y-auto border border-slate-100 space-y-4">
+                                            <div className="bg-white p-4 rounded-2xl rounded-tl-none shadow-sm border border-slate-100 max-w-[85%] text-sm leading-relaxed text-slate-700">
                                                 Hello! I am your AI assistant. I can help you draft personalized welcome messages or handle guest inquiries for {selectedGuest.fullName}.
                                             </div>
-                                            <div className="bg-gold-500 text-white p-3 rounded-lg shadow-sm max-w-[80%] ml-auto text-sm">
+                                            <div className="bg-slate-900 text-white p-4 rounded-2xl rounded-tr-none shadow-md max-w-[85%] ml-auto text-sm leading-relaxed">
                                                 Draft a checkout reminder for tomorrow morning.
                                             </div>
-                                            <div className="bg-white p-3 rounded-lg shadow-sm max-w-[80%] text-sm border-l-4 border-gold-500">
+                                            <div className="bg-white p-4 rounded-2xl rounded-tl-none shadow-sm border border-slate-100 max-w-[85%] text-sm border-l-4 border-gold-500 leading-relaxed text-slate-700">
                                                 "Dear {selectedGuest.fullName.split(' ')[0]}, we hope you enjoyed your stay! Just a friendly reminder that checkout is at 11:00 AM tomorrow. Safe travels!"
                                             </div>
                                         </div>

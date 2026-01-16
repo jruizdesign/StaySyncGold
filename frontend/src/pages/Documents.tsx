@@ -1,25 +1,8 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Card, Button } from '../components/UIComponents';
-import { Image as ImageIcon, FileText, ShieldCheck, Search, Loader } from 'lucide-react';
+import { Image as ImageIcon, FileText, ShieldCheck, Search } from 'lucide-react';
 
 const Documents: React.FC = () => {
-    const [isUploading, setIsUploading] = useState(false);
-    const [uploadStatus, setUploadStatus] = useState<string | null>(null);
-
-    const handleSimulateUpload = () => {
-        setIsUploading(true);
-        setUploadStatus('AI is scanning document...');
-
-        setTimeout(() => {
-            setUploadStatus('Matching to Guest: Jason Smith...');
-            setTimeout(() => {
-                setIsUploading(false);
-                setUploadStatus('Successfully attached to profile!');
-                setTimeout(() => setUploadStatus(null), 3000);
-            }, 2000);
-        }, 2000);
-    };
-
     return (
         <div className="space-y-6 animate-fadeIn">
             <div className="flex justify-between items-center">
@@ -37,29 +20,13 @@ const Documents: React.FC = () => {
                 <Card className="lg:col-span-2" title="AI Processing Queue">
                     <div className="border-2 border-dashed border-slate-200 rounded-2xl p-16 text-center">
                         <div className="mx-auto w-20 h-20 bg-gold-50 rounded-full flex items-center justify-center mb-6">
-                            {isUploading ? (
-                                <Loader className="w-10 h-10 text-gold-600 animate-spin" />
-                            ) : (
-                                <ImageIcon className="w-10 h-10 text-gold-600" />
-                            )}
+                            <ImageIcon className="w-10 h-10 text-gold-600" />
                         </div>
                         <h3 className="text-xl font-bold text-slate-900">Drop guest IDs or receipts here</h3>
                         <p className="text-slate-500 max-w-sm mx-auto mt-3">
                             Our AI will automatically scan the content, extract details, and attach the file to the correct guest profile.
                         </p>
-                        <div className="mt-8 space-y-4">
-                            <Button
-                                variant="outline"
-                                size="lg"
-                                onClick={handleSimulateUpload}
-                                disabled={isUploading}
-                            >
-                                {isUploading ? 'Processing...' : 'Select Files to Upload'}
-                            </Button>
-                            {uploadStatus && (
-                                <p className="text-sm font-medium text-gold-600 animate-pulse">{uploadStatus}</p>
-                            )}
-                        </div>
+                        <Button className="mt-8" variant="outline" size="lg">Select Files to Upload</Button>
                     </div>
                 </Card>
 

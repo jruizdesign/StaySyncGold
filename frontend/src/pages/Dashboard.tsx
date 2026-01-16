@@ -2,18 +2,22 @@ import React from 'react';
 import { Card, Badge } from '../components/UIComponents';
 import { TrendingUp, Users, BedDouble, AlertCircle, DollarSign } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
+import { LiveActivityFeed } from '../components/LiveActivityFeed';
 
 import { useAuth } from '../context/AuthContext';
 
 const StatCard: React.FC<{ title: string, value: string, sub: string, icon: any, color: string }> = ({ title, value, sub, icon: Icon, color }) => (
-  <Card className="hover:shadow-md transition-shadow">
+  <Card className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
     <div className="flex items-start justify-between">
       <div>
-        <p className="text-sm font-medium text-slate-500">{title}</p>
-        <h3 className="text-2xl font-bold text-slate-900 mt-1">{value}</h3>
-        <p className={`text-xs mt-1 ${sub.includes('+') ? 'text-green-600' : 'text-slate-400'}`}>{sub}</p>
+        <p className="text-sm font-medium text-slate-500 tracking-wide uppercase">{title}</p>
+        <h3 className="text-3xl font-bold text-slate-900 mt-2 tracking-tight">{value}</h3>
+        <p className={`text-xs mt-2 font-medium flex items-center gap-1 ${sub.includes('+') ? 'text-emerald-600' : 'text-slate-400'}`}>
+          {sub.includes('+') && <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />}
+          {sub}
+        </p>
       </div>
-      <div className={`p-3 rounded-xl ${color} bg-opacity-10`}>
+      <div className={`p-3.5 rounded-xl ${color} bg-opacity-10 backdrop-blur-sm`}>
         <Icon className={`w-6 h-6 ${color.replace('bg-', 'text-')}`} />
       </div>
     </div>
@@ -110,23 +114,8 @@ const Dashboard: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card title="Recent Activity" className="lg:col-span-2">
-          <div className="space-y-4">
-            {user?.isDemoMode ? [1, 2, 3, 4].map((i) => (
-              <div key={i} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-500 font-bold">
-                    #{100 + i}
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-slate-900">Check-in Processed</p>
-                    <p className="text-xs text-slate-500">Guest: John Doe • Room 10{i}</p>
-                  </div>
-                </div>
-                <span className="text-xs text-slate-400">2 mins ago</span>
-              </div>
-            )) : <p className="text-slate-500 text-sm text-center py-8">No recent activity.</p>}
-          </div>
+        <Card title="Live System Feed" className="lg:col-span-2">
+          <LiveActivityFeed />
         </Card>
 
         <Card title="Urgent Attention">

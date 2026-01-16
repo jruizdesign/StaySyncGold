@@ -2,20 +2,20 @@ import React from 'react';
 import { LucideIcon, X } from 'lucide-react';
 
 export const Button: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'primary' | 'secondary' | 'danger' | 'outline' | 'ghost', size?: 'sm' | 'md' | 'lg', icon?: LucideIcon }> = ({ children, variant = 'primary', size = 'md', className = '', icon: Icon, ...props }) => {
-  const baseStyle = "inline-flex items-center justify-center rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed";
+  const baseStyle = "inline-flex items-center justify-center rounded-xl font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]";
 
   const sizes = {
-    sm: "px-3 py-1.5 text-sm",
-    md: "px-4 py-2",
-    lg: "px-6 py-3 text-lg"
+    sm: "px-3 py-1.5 text-xs",
+    md: "px-5 py-2.5 text-sm",
+    lg: "px-6 py-3 text-base"
   };
 
   const variants = {
-    primary: "bg-gold-500 hover:bg-gold-600 text-white focus:ring-gold-500",
-    secondary: "bg-slate-800 hover:bg-slate-900 text-white focus:ring-slate-800",
-    danger: "bg-red-500 hover:bg-red-600 text-white focus:ring-red-500",
-    outline: "border-2 border-slate-200 hover:border-gold-500 text-slate-600 hover:text-gold-600 focus:ring-gold-500",
-    ghost: "bg-transparent hover:bg-slate-100 text-slate-600"
+    primary: "bg-gradient-to-r from-gold-500 to-gold-600 text-white shadow-lg shadow-gold-500/30 hover:shadow-xl hover:shadow-gold-500/40 border border-transparent hover:-translate-y-0.5",
+    secondary: "bg-slate-800 text-white shadow-lg shadow-slate-800/20 hover:bg-slate-900 border border-transparent hover:-translate-y-0.5",
+    danger: "bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg shadow-red-500/30 hover:shadow-xl hover:shadow-red-500/40 border border-transparent hover:-translate-y-0.5",
+    outline: "bg-white border-2 border-slate-200 text-slate-700 hover:border-gold-500 hover:text-gold-600 shadow-sm hover:shadow-md",
+    ghost: "bg-transparent hover:bg-slate-100 text-slate-600 hover:text-slate-900"
   };
 
   return (
@@ -27,10 +27,10 @@ export const Button: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement> & { 
 };
 
 export const Card: React.FC<{ children: React.ReactNode, className?: string, title?: string, action?: React.ReactNode }> = ({ children, className = '', title, action }) => (
-  <div className={`bg-white rounded-xl shadow-sm border border-slate-100 p-6 ${className}`}>
+  <div className={`bg-white rounded-2xl shadow-sm border border-slate-100/60 p-6 transition-all duration-200 hover:shadow-md hover:border-slate-200/60 ${className}`}>
     {(title || action) && (
-      <div className="flex justify-between items-center mb-4">
-        {title && <h3 className="text-lg font-semibold text-slate-800">{title}</h3>}
+      <div className="flex justify-between items-center mb-6">
+        {title && <h3 className="text-lg font-bold text-slate-900 tracking-tight">{title}</h3>}
         {action && <div>{action}</div>}
       </div>
     )}
@@ -40,15 +40,15 @@ export const Card: React.FC<{ children: React.ReactNode, className?: string, tit
 
 export const Badge: React.FC<{ children: React.ReactNode, color?: 'green' | 'red' | 'yellow' | 'blue' | 'gray' | 'amber' }> = ({ children, color = 'gray' }) => {
   const colors = {
-    green: "bg-emerald-100 text-emerald-800",
-    red: "bg-rose-100 text-rose-800",
-    yellow: "bg-amber-100 text-amber-800",
-    amber: "bg-amber-100 text-amber-800", // Added amber alias
-    blue: "bg-blue-100 text-blue-800",
-    gray: "bg-slate-100 text-slate-800"
+    green: "bg-emerald-500/10 text-emerald-700 border border-emerald-500/20",
+    red: "bg-rose-500/10 text-rose-700 border border-rose-500/20",
+    yellow: "bg-amber-500/10 text-amber-700 border border-amber-500/20",
+    amber: "bg-amber-500/10 text-amber-700 border border-amber-500/20",
+    blue: "bg-blue-500/10 text-blue-700 border border-blue-500/20",
+    gray: "bg-slate-500/10 text-slate-700 border border-slate-500/20"
   };
   return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${colors[color]}`}>
+    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${colors[color]}`}>
       {children}
     </span>
   );

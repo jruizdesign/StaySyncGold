@@ -6,6 +6,7 @@ import Dashboard from './pages/Dashboard';
 import Reservations from './pages/Reservations';
 import Housekeeping from './pages/Housekeeping';
 import StaffKiosk from './pages/StaffKiosk';
+import ManagerTimeTracking from './pages/ManagerTimeTracking';
 import Staff from './pages/Staff';
 import Financials from './pages/Financials';
 import LandingPage from './pages/LandingPage';

@@ -736,7 +736,27 @@ const SystemLogs: React.FC = () => {
 
     useEffect(() => {
         fetchLogs();
-    }, [filterLevel]);
+
+        // Realtime listener for system logs
+        const channel = supabase
+            .channel('public:system_logs')
+            .on(
+                'postgres_changes',
+                {
+                    event: 'INSERT',
+                    schema: 'public',
+                    table: 'system_logs'
+                },
+                (payload) => {
+                    setLogs((currentLogs) => [payload.new, ...currentLogs].slice(0, 100));
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [filterLevel, user?.propertyId]);
 
     const fetchLogs = async () => {
         setLoading(true);
@@ -983,48 +1003,48 @@ const AdminSettings: React.FC = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 {/* Sidebar Navigation */}
-                <Card className="col-span-1 p-0 overflow-hidden">
-                    <nav className="flex flex-col">
+                <div className="col-span-1 space-y-2">
+                    <nav className="flex flex-col bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
                         {isAdmin && (
-                            <button onClick={() => setActiveTab('superadmin')} className={`flex items-center justify-between px-6 py-4 text-left border-l-4 transition-colors ${activeTab === 'superadmin' ? 'border-purple-500 bg-purple-50' : 'border-transparent hover:bg-slate-50'}`}>
+                            <button onClick={() => setActiveTab('superadmin')} className={`flex items-center justify-between px-6 py-4 text-left border-l-4 transition-all ${activeTab === 'superadmin' ? 'border-purple-500 bg-purple-50 text-purple-900' : 'border-transparent text-slate-600 hover:bg-slate-50'}`}>
                                 <div className="flex items-center gap-3"><ShieldCheck className="w-5 h-5" /> <span className="font-medium">Super Admin</span></div>
                             </button>
                         )}
-                        <button onClick={() => setActiveTab('property')} className={`flex items-center justify-between px-6 py-4 text-left border-l-4 transition-colors ${activeTab === 'property' ? 'border-gold-500 bg-gold-50' : 'border-transparent hover:bg-slate-50'}`}>
+                        <button onClick={() => setActiveTab('property')} className={`flex items-center justify-between px-6 py-4 text-left border-l-4 transition-all ${activeTab === 'property' ? 'border-gold-500 bg-gold-50 text-gold-900' : 'border-transparent text-slate-600 hover:bg-slate-50'}`}>
                             <div className="flex items-center gap-3"><Building className="w-5 h-5" /> <span className="font-medium">Property Details</span></div>
                         </button>
                         {isManagement && (
                             <>
-                                <button onClick={() => setActiveTab('users')} className={`flex items-center justify-between px-6 py-4 text-left border-l-4 transition-colors ${activeTab === 'users' ? 'border-gold-500 bg-gold-50' : 'border-transparent hover:bg-slate-50'}`}>
+                                <button onClick={() => setActiveTab('users')} className={`flex items-center justify-between px-6 py-4 text-left border-l-4 transition-all ${activeTab === 'users' ? 'border-gold-500 bg-gold-50 text-gold-900' : 'border-transparent text-slate-600 hover:bg-slate-50'}`}>
                                     <div className="flex items-center gap-3"><Users className="w-5 h-5" /> <span className="font-medium">Staff Members</span></div>
                                 </button>
-                                <button onClick={() => setActiveTab('rooms')} className={`flex items-center justify-between px-6 py-4 text-left border-l-4 transition-colors ${activeTab === 'rooms' ? 'border-gold-500 bg-gold-50' : 'border-transparent hover:bg-slate-50'}`}>
+                                <button onClick={() => setActiveTab('rooms')} className={`flex items-center justify-between px-6 py-4 text-left border-l-4 transition-all ${activeTab === 'rooms' ? 'border-gold-500 bg-gold-50 text-gold-900' : 'border-transparent text-slate-600 hover:bg-slate-50'}`}>
                                     <div className="flex items-center gap-3"><Layout className="w-5 h-5" /> <span className="font-medium">Rooms & Units</span></div>
                                 </button>
-                                <button onClick={() => setActiveTab('channel')} className={`flex items-center justify-between px-6 py-4 text-left border-l-4 transition-colors ${activeTab === 'channel' ? 'border-gold-500 bg-gold-50' : 'border-transparent hover:bg-slate-50'}`}>
+                                <button onClick={() => setActiveTab('channel')} className={`flex items-center justify-between px-6 py-4 text-left border-l-4 transition-all ${activeTab === 'channel' ? 'border-gold-500 bg-gold-50 text-gold-900' : 'border-transparent text-slate-600 hover:bg-slate-50'}`}>
                                     <div className="flex items-center gap-3"><Globe className="w-5 h-5" /> <span className="font-medium">Channel Manager</span></div>
                                 </button>
                             </>
                         )}
-                        <button onClick={() => setActiveTab('updates')} className={`flex items-center justify-between px-6 py-4 text-left border-l-4 transition-colors ${activeTab === 'updates' ? 'border-gold-500 bg-gold-50' : 'border-transparent hover:bg-slate-50'}`}>
+                        <button onClick={() => setActiveTab('updates')} className={`flex items-center justify-between px-6 py-4 text-left border-l-4 transition-all ${activeTab === 'updates' ? 'border-gold-500 bg-gold-50 text-gold-900' : 'border-transparent text-slate-600 hover:bg-slate-50'}`}>
                             <div className="flex items-center gap-3"><GitBranch className="w-5 h-5" /> <span className="font-medium">System Updates</span></div>
                         </button>
-                        <button onClick={() => setActiveTab('features')} className={`flex items-center justify-between px-6 py-4 text-left border-l-4 transition-colors ${activeTab === 'features' ? 'border-gold-500 bg-gold-50' : 'border-transparent hover:bg-slate-50'}`}>
+                        <button onClick={() => setActiveTab('features')} className={`flex items-center justify-between px-6 py-4 text-left border-l-4 transition-all ${activeTab === 'features' ? 'border-gold-500 bg-gold-50 text-gold-900' : 'border-transparent text-slate-600 hover:bg-slate-50'}`}>
                             <div className="flex items-center gap-3"><Users className="w-5 h-5" /> <span className="font-medium">Feature Requests</span></div>
                         </button>
                         {/* Database Inspector - STRICTLY ADMIN ONLY */}
                         {isAdmin && (
-                            <button onClick={() => setActiveTab('database')} className={`flex items-center justify-between px-6 py-4 text-left border-l-4 transition-colors ${activeTab === 'database' ? 'border-gold-500 bg-gold-50' : 'border-transparent hover:bg-slate-50'}`}>
+                            <button onClick={() => setActiveTab('database')} className={`flex items-center justify-between px-6 py-4 text-left border-l-4 transition-all ${activeTab === 'database' ? 'border-gold-500 bg-gold-50 text-gold-900' : 'border-transparent text-slate-600 hover:bg-slate-50'}`}>
                                 <div className="flex items-center gap-3"><Database className="w-5 h-5" /> <span className="font-medium">Data Inspector</span></div>
                             </button>
                         )}
                         {isAdmin && (
-                            <button onClick={() => setActiveTab('logs')} className={`flex items-center justify-between px-6 py-4 text-left border-l-4 transition-colors ${activeTab === 'logs' ? 'border-gold-500 bg-gold-50' : 'border-transparent hover:bg-slate-50'}`}>
+                            <button onClick={() => setActiveTab('logs')} className={`flex items-center justify-between px-6 py-4 text-left border-l-4 transition-all ${activeTab === 'logs' ? 'border-gold-500 bg-gold-50 text-gold-900' : 'border-transparent text-slate-600 hover:bg-slate-50'}`}>
                                 <div className="flex items-center gap-3"><ShieldCheck className="w-5 h-5" /> <span className="font-medium">System Logs</span></div>
                             </button>
                         )}
                     </nav>
-                </Card>
+                </div>
 
                 {/* Tab Content */}
                 <div className="col-span-1 md:col-span-3">

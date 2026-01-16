@@ -25,7 +25,32 @@ const Housekeeping: React.FC = () => {
 
   useEffect(() => {
     fetchRooms();
-  }, [user]);
+
+    if (!user?.propertyId) return;
+
+    // Subscribe to realtime room updates
+    const channel = supabase
+      .channel('schema-db-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'rooms',
+          filter: `property_id=eq.${user.propertyId}`,
+        },
+        (payload) => {
+          setRooms((currentRooms) =>
+            currentRooms.map((r) => (r.id === payload.new.id ? { ...r, ...payload.new } : r))
+          );
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, user?.propertyId]);
 
   const fetchRooms = async () => {
     setLoading(true);
@@ -145,11 +170,10 @@ const Housekeeping: React.FC = () => {
       {/* Room Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {filteredRooms.map(room => (
-          <div key={room.id} className="bg-white rounded-xl border border-slate-200 shadow-[0_2px_8px_rgba(0,0,0,0.04)] overflow-hidden hover:shadow-md transition-shadow">
-            {/* Card Header */}
+          <div key={room.id} className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 group overflow-hidden">
             <div className="p-5 flex justify-between items-start">
               <div className="flex items-start gap-4">
-                <div className="p-2.5 bg-slate-50 rounded-lg text-slate-500">
+                <div className="p-2.5 bg-slate-50 rounded-xl text-slate-400 group-hover:text-gold-500 transition-colors">
                   <BedDouble className="w-6 h-6" />
                 </div>
                 <div>
@@ -163,7 +187,7 @@ const Housekeeping: React.FC = () => {
 
             {/* Status Bar */}
             <div className="px-5 pb-5">
-              <div className={`w-full py-2.5 rounded-lg text-center font-bold text-sm border ${getStatusColor(room.status)}`}>
+              <div className={`w-full py-2 rounded-xl text-center font-bold text-xs uppercase tracking-wider border ${getStatusColor(room.status)}`}>
                 {getStatusDisplay(room.status)}
               </div>
             </div>
@@ -202,16 +226,18 @@ const Housekeeping: React.FC = () => {
         </button>
       </div>
 
-      {showWizard && (
-        <RoomSetupWizard
-          onClose={() => setShowWizard(false)}
-          onComplete={() => {
-            setShowWizard(false);
-            fetchRooms(); // Refresh the list
-          }}
-        />
-      )}
-    </div>
+      {
+        showWizard && (
+          <RoomSetupWizard
+            onClose={() => setShowWizard(false)}
+            onComplete={() => {
+              setShowWizard(false);
+              fetchRooms(); // Refresh the list
+            }}
+          />
+        )
+      }
+    </div >
   );
 };
 

@@ -103,3 +103,21 @@ export interface Invoice {
   createdAt: string;
   items: { description: string; amount: number }[];
 }
+
+export interface StaffShift {
+  id: string;
+  staff_id: string;
+  property_id: string;
+  clock_in: string;
+  clock_out?: string;
+  status: 'active' | 'on_break' | 'completed';
+  created_at: string;
+}
+
+export interface StaffBreak {
+  id: string;
+  shift_id: string;
+  start_time: string;
+  end_time?: string;
+  created_at: string;
+}
