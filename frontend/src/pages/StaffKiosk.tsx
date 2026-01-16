@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Button, Modal } from '../components/UIComponents';
 import StaffCard from '../components/StaffCard';
-import { Clock, LogOut, ArrowLeft, Loader, Coffee, Play, Pause, ChevronLeft } from 'lucide-react';
+import { Clock, LogOut, ArrowLeft, Loader, Coffee, Play, Pause, ChevronLeft, User } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -69,11 +69,20 @@ const StaffKiosk: React.FC = () => {
       const { data, error } = await supabase
         .from('staff')
         .select('*')
-        .eq('property_id', user.propertyId)
-        .order('name');
+        .eq('property_id', user.propertyId);
 
       if (error) throw error;
-      setStaffList(data || []);
+
+      // Map DB fields to UI type if needed
+      const mappedData = (data || []).map((s: any) => ({
+        ...s,
+        name: s.name || `${s.firstname || ''} ${s.last_name || ''}`.trim() || 'Unknown Staff'
+      }));
+
+      // Sort by name
+      mappedData.sort((a: Staff, b: Staff) => a.name.localeCompare(b.name));
+
+      setStaffList(mappedData);
     } catch (err) {
       console.error('Error fetching staff:', err);
     } finally {
@@ -332,19 +341,42 @@ const StaffKiosk: React.FC = () => {
       <div className="flex-1 p-8 overflow-y-auto">
         {view === 'grid' ? (
           <div className="max-w-6xl mx-auto">
-            <h2 className="text-2xl font-bold text-slate-900 mb-6">Who are you?</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {staffList.map(staff => (
-                <StaffCard
-                  key={staff.id}
-                  staff={staff}
-                  onClick={() => handleStaffClick(staff)}
-                  // In real app, fetch and pass actual status per card or via context. 
-                  // For now, idle default.
-                  status="idle"
-                />
-              ))}
+            <div className="flex flex-col md:flex-row justify-between items-end mb-8 gap-4">
+              <div>
+                <h2 className="text-3xl font-bold text-slate-900">Who are you?</h2>
+                <p className="text-slate-500 mt-1">Select your profile to clock in/out.</p>
+              </div>
+              <div className="bg-white px-6 py-2 rounded-xl shadow-sm border border-slate-100 flex items-center gap-3">
+                <Clock className="w-5 h-5 text-gold-500" />
+                <span className="text-xl font-mono font-bold text-slate-700">
+                  {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </span>
+              </div>
             </div>
+
+            {staffList.length === 0 ? (
+              <div className="text-center py-20 bg-white rounded-3xl border border-slate-100 shadow-sm">
+                <User className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+                <h3 className="text-xl font-bold text-slate-900">No Staff Members Found</h3>
+                <p className="text-slate-500 max-w-md mx-auto mt-2">
+                  There are no staff members associated with this property yet.
+                  Please go to the <Link to="/staff" className="text-gold-600 hover:text-gold-700 font-semibold">Staff Management</Link> page to add your team.
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {staffList.map(staff => (
+                  <StaffCard
+                    key={staff.id}
+                    staff={staff}
+                    onClick={() => handleStaffClick(staff)}
+                    // In real app, fetch and pass actual status per card or via context. 
+                    // For now, idle default.
+                    status="idle"
+                  />
+                ))}
+              </div>
+            )}
 
             <div className="mt-12 text-center opacity-50 hover:opacity-100 transition-opacity">
               <Link to="/" className="inline-flex items-center text-slate-400 hover:text-slate-600 font-medium transition-colors text-sm">
