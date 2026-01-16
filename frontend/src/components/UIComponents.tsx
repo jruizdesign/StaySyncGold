@@ -1,7 +1,7 @@
 import React from 'react';
 import { LucideIcon, X } from 'lucide-react';
 
-export const Button: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'primary' | 'secondary' | 'danger' | 'outline' | 'ghost', size?: 'sm' | 'md' | 'lg', icon?: LucideIcon }> = ({ children, variant = 'primary', size = 'md', className = '', icon: Icon, ...props }) => {
+export const Button: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'primary' | 'secondary' | 'danger' | 'outline' | 'ghost', size?: 'sm' | 'md' | 'lg', icon?: LucideIcon, as?: React.ElementType }> = ({ children, variant = 'primary', size = 'md', className = '', icon: Icon, as: Component = 'button', ...props }) => {
   const baseStyle = "inline-flex items-center justify-center rounded-xl font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]";
 
   const sizes = {
@@ -19,10 +19,10 @@ export const Button: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement> & { 
   };
 
   return (
-    <button className={`${baseStyle} ${sizes[size]} ${variants[variant]} ${className}`} {...props}>
+    <Component className={`${baseStyle} ${sizes[size]} ${variants[variant]} ${className}`} {...(props as any)}>
       {Icon && <Icon className={`mr-2 ${size === 'sm' ? 'w-3 h-3' : size === 'lg' ? 'w-5 h-5' : 'w-4 h-4'}`} />}
       {children}
-    </button>
+    </Component>
   );
 };
 
@@ -38,13 +38,14 @@ export const Card: React.FC<{ children: React.ReactNode, className?: string, tit
   </div>
 );
 
-export const Badge: React.FC<{ children: React.ReactNode, color?: 'green' | 'red' | 'yellow' | 'blue' | 'gray' | 'amber' }> = ({ children, color = 'gray' }) => {
+export const Badge: React.FC<{ children: React.ReactNode, color?: 'green' | 'red' | 'yellow' | 'blue' | 'gray' | 'amber' | 'purple' }> = ({ children, color = 'gray' }) => {
   const colors = {
     green: "bg-emerald-500/10 text-emerald-700 border border-emerald-500/20",
     red: "bg-rose-500/10 text-rose-700 border border-rose-500/20",
     yellow: "bg-amber-500/10 text-amber-700 border border-amber-500/20",
     amber: "bg-amber-500/10 text-amber-700 border border-amber-500/20",
     blue: "bg-blue-500/10 text-blue-700 border border-blue-500/20",
+    purple: "bg-purple-500/10 text-purple-700 border border-purple-500/20",
     gray: "bg-slate-500/10 text-slate-700 border border-slate-500/20"
   };
   return (

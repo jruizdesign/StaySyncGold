@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const crypto = require('crypto');
 const channexService = require('../../services/channexService');
 const db = require('../../config/database');
 
@@ -54,15 +55,21 @@ router.post('/verify', async (req, res) => {
             return res.status(400).json({ success: false, error: 'API Key and Property ID are required.' });
         }
 
-        // Simple verification check - try to fetch channels
+        // 1. Validate API Key first
+        const validation = await channexService.validateConnection(apiKey);
+        if (!validation.success) {
+            return res.status(401).json({ success: false, error: 'Invalid API Key: ' + validation.error });
+        }
+
+        // 2. Validate Property Access (by trying to fetch channels for it)
         const check = await channexService.getActiveChannels(apiKey, propertyMappingId);
 
-        if (check.success && Array.isArray(check.data)) {
+        if (check.success) {
             res.json({ success: true, count: check.data.length });
         } else {
             console.error('Channex Verify Failed:', check.error);
             // Even if success=true but data is weird, treat as fail
-            res.status(400).json({ success: false, error: check.error || 'Invalid response from Channex' });
+            res.status(400).json({ success: false, error: check.error || 'Property ID not found or no access' });
         }
     } catch (error) {
         console.error('Channex Verify Route Exception:', error);
@@ -103,7 +110,6 @@ router.get('/rooms', async (req, res) => {
 // POST /api/channex/mappings
 // Save room type mappings
 router.post('/mappings', async (req, res) => {
-    const crypto = require('crypto');
     try {
         const { property_id, mappings } = req.body;
 
@@ -214,9 +220,18 @@ router.post('/sync', async (req, res) => {
             return res.status(502).json({ error: 'Failed to fetch bookings from Channex', details: bookingRes.error });
         }
 
-        // 2. TODO: Process/Save bookings to local DB (Simplified for now, just logging count)
-        const bookingsCount = bookingRes.data.length;
-        console.log(`Scoped ${bookingsCount} bookings from Channex for property ${property_id}`);
+        // 2. Process Bookings (Log details to confirm connection)
+        const bookings = bookingRes.data;
+        const bookingsCount = bookings.length;
+
+        const summary = bookings.map(b => ({
+            id: b.id,
+            guest: b.attributes.customer?.name || 'Unknown',
+            status: b.attributes.status,
+            arrival: b.attributes.arrival_date
+        }));
+
+        console.log(`[Channex Sync] Fetched ${bookingsCount} bookings for property ${property_id}:`, summary);
 
         // 3. Update last_sync timestamp
         await db.query(

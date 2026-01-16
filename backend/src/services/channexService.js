@@ -5,22 +5,16 @@ class ChannexService {
         this.baseUrl = 'https://api.channex.io/api/v1';
     }
 
-    async getChannels(apiKey) {
+    // Validate the API Key by fetching the user's properties list
+    async validateConnection(apiKey) {
         try {
-            // Channex doesn't have a direct "my connected channels" endpoint on the user root easily,
-            // usually you fetch channels for a property.
-            // Assumption: User provides Property ID.
-            // API: GET /channels?filter[property_id]=XXX
-
-            // For this implementation, we will verify the token by fetching the user or properties list.
             const response = await axios.get(`${this.baseUrl}/properties`, {
                 headers: { 'user-api-key': apiKey }
             });
-
             return { success: true, data: response.data };
         } catch (error) {
-            console.error('Channex API Error:', error.response?.data || error.message);
-            return { success: false, error: error.response?.data?.errors || 'Failed to connect to Channex' };
+            const msg = error.response?.data?.errors?.[0]?.detail || error.message;
+            return { success: false, error: msg };
         }
     }
 
@@ -38,7 +32,8 @@ class ChannexService {
             return { success: true, data: response.data.data };
         } catch (error) {
             console.error('Channex Channels Error:', error);
-            return { success: false, error: error.message };
+            const msg = error.response?.data?.errors?.[0]?.detail || error.message;
+            return { success: false, error: msg };
         }
     }
     async getRoomTypes(apiKey, propertyId) {
@@ -50,7 +45,8 @@ class ChannexService {
             return { success: true, data: response.data.data };
         } catch (error) {
             console.error('Channex Room Types Error:', error);
-            return { success: false, error: error.message };
+            const msg = error.response?.data?.errors?.[0]?.detail || error.message;
+            return { success: false, error: msg };
         }
     }
 
@@ -67,7 +63,8 @@ class ChannexService {
             return { success: true, data: response.data.data };
         } catch (error) {
             console.error('Channex Fetch Bookings Error:', error);
-            return { success: false, error: error.message };
+            const msg = error.response?.data?.errors?.[0]?.detail || error.message;
+            return { success: false, error: msg };
         }
     }
 }

@@ -68,8 +68,29 @@ const DatabaseInspector: React.FC = () => {
         }
     };
 
+    const handleTestDb = async () => {
+        try {
+            const res = await fetch('/test-db');
+            const text = await res.text();
+            if (!text) throw new Error('Empty response from server');
+            const data = JSON.parse(text);
+            if (res.ok) {
+                alert(`Database Connected! Server Time: ${data.time}`);
+            } else {
+                alert(`Database Error: ${data.error}`);
+            }
+        } catch (e: any) {
+            alert('Failed to connect to backend: ' + e.message);
+        }
+    };
+
     return (
-        <Card title="Database Inspector (Scoped)" action={<Button variant="outline" onClick={fetchTableData}>Refresh</Button>}>
+        <Card title="Database Inspector (Scoped)" action={
+            <div className="flex gap-2">
+                <Button variant="outline" onClick={handleTestDb}>Test DB</Button>
+                <Button variant="outline" onClick={fetchTableData}>Refresh</Button>
+            </div>
+        }>
             <div className="mb-6 space-y-4">
                 {/* Admin Filter Controls */}
                 {user?.isAdmin && (
@@ -352,12 +373,20 @@ const ChannelManager: React.FC = () => {
             .select('*')
             .eq('property_id', user?.propertyId)
             .eq('channel_name', 'channex')
-            .single();
+            .limit(1);
 
-        if (data) {
-            setChannexConfig(data);
-            setApiToken(data.api_key || '');
-            setPropertyMappingId(data.property_mapping_id || '');
+        if (error) {
+            console.error("Error fetching channel config:", error);
+            if (error.code === '42P01') {
+                alert("Setup Required: The 'channel_settings' table is missing in Supabase. Please run the database migration.");
+            }
+        }
+
+        if (data && data.length > 0) {
+            const config = data[0];
+            setChannexConfig(config);
+            setApiToken(config.api_key || '');
+            setPropertyMappingId(config.property_mapping_id || '');
 
             // 2. Fetch Active Channels status from Channex via Backend Proxy
             await fetchActiveChannels(user?.propertyId || '');
@@ -373,7 +402,9 @@ const ChannelManager: React.FC = () => {
     const fetchActiveChannels = async (propertyId: string) => {
         try {
             const res = await fetch(`/api/channex/status?property_id=${propertyId}`);
-            const json = await res.json();
+            const text = await res.text();
+            if (!text) return; // Handle empty response gracefully
+            const json = JSON.parse(text);
             if (json.channels) {
                 setActiveChannels(json.channels);
             }
@@ -386,7 +417,8 @@ const ChannelManager: React.FC = () => {
         try {
             // A. Fetch Channex Rooms
             const channexRes = await fetch(`/api/channex/rooms?property_id=${propertyId}`);
-            const channexJson = await channexRes.json();
+            const channexText = await channexRes.text();
+            const channexJson = channexText ? JSON.parse(channexText) : {};
             if (channexJson.rooms) {
                 setChannexRooms(channexJson.rooms);
             }
@@ -407,13 +439,41 @@ const ChannelManager: React.FC = () => {
 
             // C. Fetch Existing Mappings
             const mapRes = await fetch(`/api/channex/mappings?property_id=${propertyId}`);
-            const mapJson = await mapRes.json();
+            const mapText = await mapRes.text();
+            const mapJson = mapText ? JSON.parse(mapText) : {};
             if (mapJson.mappings) {
                 setMappings(mapJson.mappings);
             }
 
         } catch (e) {
             console.error("Failed to fetch mapping data", e);
+        }
+    };
+
+    const handleTestConnection = async () => {
+        if (!apiToken || !propertyMappingId) {
+            alert('Please enter API Token and Property ID');
+            return;
+        }
+        setLoading(true);
+        try {
+            const res = await fetch('/api/channex/verify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ apiKey: apiToken, propertyMappingId })
+            });
+            const text = await res.text();
+            if (!text) throw new Error('Empty response from server');
+            const json = JSON.parse(text);
+            if (json.success) {
+                alert('Connection Successful! Found ' + json.count + ' active channels.');
+            } else {
+                alert('Connection Failed: ' + json.error);
+            }
+        } catch (e: any) {
+            alert('Error: ' + e.message);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -429,7 +489,9 @@ const ChannelManager: React.FC = () => {
                 body: JSON.stringify({ apiKey: apiToken, propertyMappingId })
             });
 
-            const verifyJson = await verifyRes.json();
+            const verifyText = await verifyRes.text();
+            if (!verifyText) throw new Error('Empty response from server');
+            const verifyJson = JSON.parse(verifyText);
             if (!verifyJson.success) {
                 alert(`Connection Failed: ${verifyJson.error}`);
                 setLoading(false);
@@ -472,7 +534,9 @@ const ChannelManager: React.FC = () => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ property_id: user?.propertyId })
             });
-            const json = await res.json();
+            const text = await res.text();
+            if (!text) throw new Error('Empty response from server');
+            const json = JSON.parse(text);
 
             if (json.success) {
                 alert(json.message);
@@ -501,7 +565,9 @@ const ChannelManager: React.FC = () => {
                 })
             });
 
-            const json = await res.json();
+            const text = await res.text();
+            if (!text) throw new Error('Empty response from server');
+            const json = JSON.parse(text);
             if (json.success) {
                 alert("Mappings saved successfully!");
             } else {
@@ -550,8 +616,11 @@ const ChannelManager: React.FC = () => {
 
                     <div className="flex justify-end gap-3 pt-4">
                         {channexConfig && <Button variant="ghost" onClick={() => setIsEditing(false)}>Cancel</Button>}
+                        <Button variant="outline" onClick={handleTestConnection} disabled={loading}>
+                            Test Connection
+                        </Button>
                         <Button onClick={handleSaveConfig} disabled={loading}>
-                            {loading ? 'Connecting...' : 'Connect to Channex'}
+                            {loading ? 'Saving...' : 'Save & Connect'}
                         </Button>
                     </div>
                 </div>
