@@ -28,6 +28,26 @@ const ShiftTimer: React.FC<{ startTime: string }> = ({ startTime }) => {
   return <h3 className="text-3xl font-bold text-slate-800">{duration}</h3>;
 };
 
+const LuminaClock: React.FC = () => {
+  const [time, setTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => setTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const hours = time.getHours().toString().padStart(2, '0');
+  const minutes = time.getMinutes().toString().padStart(2, '0');
+  const seconds = time.getSeconds().toString().padStart(2, '0');
+
+  return (
+    <>
+      <span className="text-white">{hours}:{minutes}</span>
+      <span className="text-3xl text-slate-500 font-bold self-end mb-2">:{seconds}</span>
+    </>
+  );
+};
+
 const RealtimeClock: React.FC = () => {
   const [time, setTime] = useState(new Date());
 
@@ -59,9 +79,47 @@ const StaffKiosk: React.FC = () => {
   const [currentShift, setCurrentShift] = useState<StaffShift | null>(null);
   const [view, setView] = useState<'grid' | 'personal'>('grid');
 
+  const [stats, setStats] = useState({ active: 0, onBreak: 0 });
+
   useEffect(() => {
     fetchStaff();
+    fetchStats();
+
+    // Refresh stats every minute
+    const interval = setInterval(fetchStats, 60000);
+    return () => clearInterval(interval);
   }, [user?.propertyId]);
+
+  const fetchStats = async () => {
+    if (!user?.propertyId) return;
+    try {
+      // Get active shifts (status='active')
+      const { count: activeCount, error: activeError } = await supabase
+        .from('staff_shifts')
+        .select('*', { count: 'exact', head: true })
+        .eq('property_id', user.propertyId)
+        .eq('status', 'active')
+        .is('clock_out', null);
+
+      // Get break shifts (status='on_break')
+      const { count: breakCount, error: breakError } = await supabase
+        .from('staff_shifts')
+        .select('*', { count: 'exact', head: true })
+        .eq('property_id', user.propertyId)
+        .eq('status', 'on_break')
+        .is('clock_out', null);
+
+      if (activeError) throw activeError;
+      if (breakError) throw breakError;
+
+      setStats({
+        active: activeCount || 0,
+        onBreak: breakCount || 0
+      });
+    } catch (err) {
+      console.error('Error fetching stats:', err);
+    }
+  };
 
   const fetchStaff = async () => {
     if (!user?.propertyId) return;
@@ -341,16 +399,56 @@ const StaffKiosk: React.FC = () => {
       <div className="flex-1 p-8 overflow-y-auto">
         {view === 'grid' ? (
           <div className="max-w-6xl mx-auto">
-            <div className="flex flex-col md:flex-row justify-between items-end mb-8 gap-4">
-              <div>
-                <h2 className="text-3xl font-bold text-slate-900">Who are you?</h2>
-                <p className="text-slate-500 mt-1">Select your profile to clock in/out.</p>
-              </div>
-              <div className="bg-white px-6 py-2 rounded-xl shadow-sm border border-slate-100 flex items-center gap-3">
-                <Clock className="w-5 h-5 text-gold-500" />
-                <span className="text-xl font-mono font-bold text-slate-700">
-                  {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </span>
+            {/* Lumina Kiosk Banner */}
+            <div className="bg-[#0B1120] rounded-3xl p-8 mb-10 text-white relative overflow-hidden shadow-2xl">
+              <div className="flex flex-col md:flex-row justify-between items-center gap-8 relative z-10">
+
+                {/* Left Side: Title & Stats */}
+                <div className="flex-1">
+                  <h1 className="text-4xl font-black tracking-tight mb-2">STAFF KIOSK</h1>
+                  <p className="text-slate-400 text-xs font-bold tracking-[0.2em] uppercase mb-8">
+                    Property Staff Verification Engine
+                  </p>
+
+                  <div className="flex gap-4">
+                    {/* Active Duty Stat */}
+                    <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4 min-w-[140px] backdrop-blur-sm">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Active Duty</p>
+                      <div className="flex items-center gap-3">
+                        <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                        <span className="text-2xl font-bold">
+                          {stats.active}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* On Break Stat */}
+                    <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4 min-w-[140px] backdrop-blur-sm">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">On Break</p>
+                      <div className="flex items-center gap-3">
+                        <div className="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]" />
+                        <span className="text-2xl font-bold">
+                          {stats.onBreak}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Side: Large Clock */}
+                <div className="text-right">
+                  <div className="font-mono text-8xl font-bold tracking-tighter leading-none flex items-baseline justify-end gap-2">
+                    {/* We can use the RealtimeClock component logic here or inline it for custom styling */}
+                    <LuminaClock />
+                  </div>
+                  <div className="flex items-center justify-end gap-2 mt-4 text-emerald-500/80">
+                    <div className="w-3 h-3 border-2 border-current rounded-[3px] flex items-center justify-center">
+                      <div className="w-1.5 h-2 bg-current rounded-t-[1px]" />
+                      {/* Simple lock icon representation or use Lucide */}
+                    </div>
+                    <span className="text-[10px] font-bold tracking-[0.2em] uppercase">Secure Terminal Verified</span>
+                  </div>
+                </div>
               </div>
             </div>
 
