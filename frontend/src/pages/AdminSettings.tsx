@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { Button, Card, Input, Select, Badge } from '../components/UIComponents';
 import { Settings, Database, Users, Building, ShieldCheck, Plus, Search, ChevronRight, Layout, Globe, Loader, GitBranch } from 'lucide-react';
-import { Property, ChannelSetting } from '../types';
+import { Property, ChannelSetting, ChannelMapping } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { CommitTracker } from '../components/CommitTracker';
 
@@ -331,12 +331,14 @@ const ChannelManager: React.FC = () => {
     const [propertyMappingId, setPropertyMappingId] = useState('');
     const [isEditing, setIsEditing] = useState(false);
 
-    // Mocked Downstream Channels (Fetched from Channex in real app)
-    const [activeChannels, setActiveChannels] = useState([
-        { name: 'Booking.com', status: 'Active', logo: Globe },
-        { name: 'Airbnb', status: 'Pending', logo: Globe },
-        { name: 'Expedia', status: 'Inactive', logo: Globe }
-    ]);
+    // Channels (Fetched from Channex)
+    const [activeChannels, setActiveChannels] = useState<any[]>([]);
+
+    // Mapping State
+    const [channexRooms, setChannexRooms] = useState<any[]>([]);
+    const [localRoomTypes, setLocalRoomTypes] = useState<string[]>([]);
+    const [mappings, setMappings] = useState<Record<string, string>>({}); // localType -> channexRoomId
+    const [savingMappings, setSavingMappings] = useState(false);
 
     useEffect(() => {
         if (user?.propertyId) fetchConfiguration();
@@ -344,6 +346,7 @@ const ChannelManager: React.FC = () => {
 
     const fetchConfiguration = async () => {
         setLoading(true);
+        // 1. Get Local DB Config
         const { data, error } = await supabase
             .from('channel_settings')
             .select('*')
@@ -355,53 +358,161 @@ const ChannelManager: React.FC = () => {
             setChannexConfig(data);
             setApiToken(data.api_key || '');
             setPropertyMappingId(data.property_mapping_id || '');
+
+            // 2. Fetch Active Channels status from Channex via Backend Proxy
+            await fetchActiveChannels(user?.propertyId || '');
+
+            // 3. Fetch Mapping Data
+            await fetchMappingData(user?.propertyId || '');
         } else {
-            setIsEditing(true); // Default to edit mode if no config
+            setIsEditing(true);
         }
         setLoading(false);
+    };
+
+    const fetchActiveChannels = async (propertyId: string) => {
+        try {
+            const res = await fetch(`/api/channex/status?property_id=${propertyId}`);
+            const json = await res.json();
+            if (json.channels) {
+                setActiveChannels(json.channels);
+            }
+        } catch (e) {
+            console.error("Failed to fetch Channex channels", e);
+        }
+    };
+
+    const fetchMappingData = async (propertyId: string) => {
+        try {
+            // A. Fetch Channex Rooms
+            const channexRes = await fetch(`/api/channex/rooms?property_id=${propertyId}`);
+            const channexJson = await channexRes.json();
+            if (channexJson.rooms) {
+                setChannexRooms(channexJson.rooms);
+            }
+
+            // B. Fetch Local Room Types (Distinct types from rooms table)
+            // Note: In a real app, you might have a dedicated 'room_types' table. 
+            // Here we assume we just distinct select from 'rooms' or use a hardcoded set if table is empty.
+            const { data: localRooms } = await supabase
+                .from('rooms')
+                .select('type')
+                .eq('property_id', propertyId);
+
+            if (localRooms) {
+                // Get unique types
+                const uniqueTypes = Array.from(new Set(localRooms.map(r => r.type)));
+                setLocalRoomTypes(uniqueTypes);
+            }
+
+            // C. Fetch Existing Mappings
+            const mapRes = await fetch(`/api/channex/mappings?property_id=${propertyId}`);
+            const mapJson = await mapRes.json();
+            if (mapJson.mappings) {
+                setMappings(mapJson.mappings);
+            }
+
+        } catch (e) {
+            console.error("Failed to fetch mapping data", e);
+        }
     };
 
     const handleSaveConfig = async () => {
         if (!user?.propertyId) return;
         setLoading(true);
 
-        const payload = {
-            property_id: user.propertyId,
-            channel_name: 'channex',
-            api_key: apiToken,
-            property_mapping_id: propertyMappingId,
-            is_active: true,
-            status: 'Connected',
-            last_sync: new Date().toISOString()
-        };
+        // Verify with Backend first
+        try {
+            const verifyRes = await fetch('/api/channex/verify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ apiKey: apiToken, propertyMappingId })
+            });
 
-        if (channexConfig?.id) {
-            await supabase.from('channel_settings').update(payload).eq('id', channexConfig.id);
-        } else {
-            await supabase.from('channel_settings').insert(payload);
+            const verifyJson = await verifyRes.json();
+            if (!verifyJson.success) {
+                alert(`Connection Failed: ${verifyJson.error}`);
+                setLoading(false);
+                return;
+            }
+
+            // Save to DB if verified
+            const payload = {
+                property_id: user.propertyId,
+                channel_name: 'channex',
+                api_key: apiToken,
+                property_mapping_id: propertyMappingId,
+                is_active: true,
+                status: 'Connected',
+                last_sync: new Date().toISOString()
+            };
+
+            if (channexConfig?.id) {
+                await supabase.from('channel_settings').update(payload).eq('id', channexConfig.id);
+            } else {
+                await supabase.from('channel_settings').insert(payload);
+            }
+
+            await fetchConfiguration();
+            setIsEditing(false);
+            alert(`Connected! Found ${verifyJson.count} active channels.`);
+
+        } catch (e: any) {
+            alert('Error saving configuration: ' + e.message);
+        } finally {
+            setLoading(false);
         }
-
-        await fetchConfiguration();
-        setIsEditing(false);
-        setLoading(false);
-        alert('Channex configuration saved!');
     };
 
     const handleSync = async () => {
         setSyncing(true);
-        // Simulate Channex Sync
-        setTimeout(async () => {
-            if (channexConfig) {
-                await supabase
-                    .from('channel_settings')
-                    .update({ last_sync: new Date().toISOString() })
-                    .eq('id', channexConfig.id);
-                fetchConfiguration();
+        try {
+            const res = await fetch('/api/channex/sync', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ property_id: user?.propertyId })
+            });
+            const json = await res.json();
+
+            if (json.success) {
+                alert(json.message);
+                await fetchConfiguration(); // Refresh timestamp in UI
+            } else {
+                alert('Sync failed: ' + json.error);
             }
-            setActiveChannels(prev => prev.map(c => ({ ...c, status: 'Active' }))); // Mock all active after sync
+        } catch (e: any) {
+            console.error(e);
+            alert('Sync error: ' + e.message);
+        } finally {
             setSyncing(false);
-            alert('Inventory synced with Channex successfully.');
-        }, 2000);
+        }
+    };
+
+    const handleSaveMappings = async () => {
+        if (!user?.propertyId) return;
+        setSavingMappings(true);
+        try {
+            const res = await fetch('/api/channex/mappings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    property_id: user.propertyId,
+                    mappings: mappings
+                })
+            });
+
+            const json = await res.json();
+            if (json.success) {
+                alert("Mappings saved successfully!");
+            } else {
+                alert("Failed to save mappings: " + json.error);
+            }
+        } catch (e: any) {
+            console.error(e);
+            alert("Error saving mappings: " + e.message);
+        } finally {
+            setSavingMappings(false);
+        }
     };
 
     if (loading && !channexConfig && !isEditing) return <div className="p-4"><Loader className="animate-spin" /></div>;
@@ -428,7 +539,7 @@ const ChannelManager: React.FC = () => {
                         value={apiToken}
                         onChange={e => setApiToken(e.target.value)}
                         type="password"
-                        placeholder="e.g. your_api_token"
+                        placeholder="e.g. uB/MonlYXk..."
                     />
                     <Input
                         label="Channex Property ID"
@@ -445,30 +556,103 @@ const ChannelManager: React.FC = () => {
                     </div>
                 </div>
             ) : (
-                <div className="space-y-6">
-                    {/* Status Card */}
-                    <div className="bg-green-50 border border-green-200 rounded-xl p-6 flex justify-between items-center">
-                        <div>
-                            <div className="flex items-center gap-2 mb-1">
-                                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                                <h3 className="font-bold text-green-900 text-lg">System Online</h3>
+                <div className="space-y-8">
+                    {/* Status Section */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="bg-green-50 border border-green-200 rounded-xl p-6">
+                            <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center gap-2">
+                                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                                    <h3 className="font-bold text-green-900">System Online</h3>
+                                </div>
+                                <Button size="sm" variant="ghost" className="text-green-700 hover:bg-green-100 h-8" onClick={() => setIsEditing(true)}>
+                                    Edit Config
+                                </Button>
                             </div>
-                            <p className="text-green-700 text-sm">
-                                Connected to Channex Property: <strong>{channexConfig.property_mapping_id}</strong>
+                            <p className="text-green-700 text-sm mb-1">
+                                Property ID: <span className="font-mono bg-green-100 px-1 rounded">{channexConfig.property_mapping_id}</span>
                             </p>
-                            <p className="text-green-600 text-xs mt-1">Last Synced: {new Date(channexConfig.last_sync || '').toLocaleString()}</p>
+                            <p className="text-green-600 text-xs">Last Synced: {new Date(channexConfig.last_sync || '').toLocaleString()}</p>
                         </div>
-                        <Button variant="outline" className="bg-white border-green-200 text-green-700 hover:bg-green-50" onClick={() => setIsEditing(true)}>
-                            Edit Config
-                        </Button>
+
+                        {/* Summary Stats */}
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="bg-slate-50 border border-slate-100 p-4 rounded-xl text-center">
+                                <p className="text-slate-500 text-xs uppercase font-bold tracking-wider">Active Channels</p>
+                                <p className="text-2xl font-bold text-slate-800">{activeChannels.filter(c => c.status === 'Active').length}</p>
+                            </div>
+                            <div className="bg-slate-50 border border-slate-100 p-4 rounded-xl text-center">
+                                <p className="text-slate-500 text-xs uppercase font-bold tracking-wider">Mapped Rooms</p>
+                                <p className="text-2xl font-bold text-slate-800">{Object.keys(mappings).length}/{localRoomTypes.length}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Room Mapping Section */}
+                    <div>
+                        <h4 className="font-semibold text-slate-800 mb-4 flex items-center gap-2">
+                            <span className="w-6 h-6 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center text-xs">1</span>
+                            Room Type Mapping
+                        </h4>
+                        <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
+                            <table className="w-full text-sm text-left">
+                                <thead className="bg-slate-50 border-b border-slate-200 text-slate-500">
+                                    <tr>
+                                        <th className="px-4 py-3 font-medium">Local Room Type</th>
+                                        <th className="px-4 py-3 font-medium">Channex Room Type</th>
+                                        <th className="px-4 py-3 font-medium text-right">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100">
+                                    {localRoomTypes.length === 0 ? (
+                                        <tr><td colSpan={3} className="p-4 text-center text-slate-400">No local rooms found. Create rooms in Room Wizard first.</td></tr>
+                                    ) : (
+                                        localRoomTypes.map(localType => (
+                                            <tr key={localType} className="hover:bg-slate-50">
+                                                <td className="px-4 py-3 font-medium text-slate-700">{localType}</td>
+                                                <td className="px-4 py-3">
+                                                    <select
+                                                        className="w-full max-w-xs p-2 border border-slate-300 rounded-md text-sm focus:ring-2 focus:ring-purple-200 focus:border-purple-400 outline-none"
+                                                        value={mappings[localType] || ''}
+                                                        onChange={(e) => setMappings(prev => ({ ...prev, [localType]: e.target.value }))}
+                                                    >
+                                                        <option value="">-- Select Channex Room --</option>
+                                                        {channexRooms.map((cr: any) => (
+                                                            <option key={cr.id} value={cr.id}>{cr.attributes.title} ({cr.id})</option>
+                                                        ))}
+                                                    </select>
+                                                </td>
+                                                <td className="px-4 py-3 text-right">
+                                                    {mappings[localType] ? (
+                                                        <span className="text-xs text-green-600 font-medium bg-green-50 px-2 py-1 rounded-full">Mapped</span>
+                                                    ) : (
+                                                        <span className="text-xs text-slate-400 bg-slate-100 px-2 py-1 rounded-full">Unmapped</span>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
+                            {localRoomTypes.length > 0 && (
+                                <div className="p-4 bg-slate-50 border-t border-slate-200 flex justify-end">
+                                    <Button onClick={handleSaveMappings} disabled={savingMappings}>
+                                        {savingMappings ? 'Saving Mappings...' : 'Save Mappings'}
+                                    </Button>
+                                </div>
+                            )}
+                        </div>
                     </div>
 
                     {/* Active Channels Grid */}
                     <div>
-                        <h4 className="font-semibold text-slate-800 mb-4">Active Distribution Channels</h4>
+                        <h4 className="font-semibold text-slate-800 mb-4 flex items-center gap-2">
+                            <span className="w-6 h-6 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center text-xs">2</span>
+                            Active Distribution Channels
+                        </h4>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             {activeChannels.map(c => (
-                                <div key={c.name} className="p-4 border border-slate-200 rounded-lg flex items-center justify-between bg-white shadow-sm">
+                                <div key={c.name} className="p-4 border border-slate-200 rounded-lg flex items-center justify-between bg-white shadow-sm hover:shadow-md transition-shadow">
                                     <div className="flex items-center gap-3">
                                         <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-500">
                                             <Globe className="w-5 h-5" />
@@ -480,7 +664,7 @@ const ChannelManager: React.FC = () => {
                                             </p>
                                         </div>
                                     </div>
-                                    <div className="h-2 w-2 rounded-full bg-slate-300" />
+                                    {c.status === 'Active' && <Badge color="green">Live</Badge>}
                                 </div>
                             ))}
                         </div>
