@@ -276,7 +276,9 @@ const StaffKiosk: React.FC = () => {
     </div>
   );
 
-  if (loading) return <div className="min-h-screen bg-slate-100 flex items-center justify-center"><Loader className="w-8 h-8 animate-spin text-slate-400" /></div>;
+  if (loading) {
+    return <div className="min-h-screen bg-slate-100 flex items-center justify-center"><Loader className="w-8 h-8 animate-spin text-slate-400" /></div>;
+  }
 
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col">
@@ -313,12 +315,11 @@ const StaffKiosk: React.FC = () => {
                 />
               ))}
             </div>
-            </div>
-            
+
             <div className="mt-12 text-center opacity-50 hover:opacity-100 transition-opacity">
-               <Link to="/" className="inline-flex items-center text-slate-400 hover:text-slate-600 font-medium transition-colors text-sm">
-                 Manager Access
-               </Link>
+              <Link to="/" className="inline-flex items-center text-slate-400 hover:text-slate-600 font-medium transition-colors text-sm">
+                Manager Access
+              </Link>
             </div>
           </div>
         ) : (
