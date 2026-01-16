@@ -34,7 +34,7 @@ const DatabaseInspector: React.FC = () => {
             const mapped: Property[] = data.map((p: any) => ({
                 id: p.id,
                 name: p.name,
-                address: p.address,
+                location: p.location,
                 createdAt: p.created_at,
                 demo_mode: p.demo_mode
             }));
@@ -247,7 +247,7 @@ const RoomWizard: React.FC = () => {
     const { user } = useAuth();
     const [roomNumber, setRoomNumber] = useState('');
     const [type, setType] = useState('King Suite');
-    const [price, setPrice] = useState('200');
+    const [price_per_night, setPrice] = useState('200');
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState('');
 
@@ -262,7 +262,7 @@ const RoomWizard: React.FC = () => {
                 property_id: user.propertyId,
                 number: roomNumber,
                 type: type,
-                price_per_night: parseFloat(price),
+                price_per_night: parseFloat(price_per_night),
                 status: 'Clean' // Default
             });
 
@@ -303,7 +303,7 @@ const RoomWizard: React.FC = () => {
                     <Input
                         label="Rate ($)"
                         type="number"
-                        value={price}
+                        value={price_per_night}
                         onChange={(e) => setPrice(e.target.value)}
                     />
                 </div>
@@ -414,7 +414,7 @@ const PropertyManagement: React.FC = () => {
     const [formData, setFormData] = useState({
         name: '',
         phone: '',
-        address: '',
+        location: '',
         timezone: 'Pacific Time (PT)'
     });
 
@@ -434,7 +434,7 @@ const PropertyManagement: React.FC = () => {
             setFormData({
                 name: data.name || '',
                 phone: data.phone || '+1 (555) 123-4567',
-                address: data.address || '123 Luxury Blvd, Metropolis',
+                location: data.location || '123 Luxury Blvd, Metropolis',
                 timezone: 'Pacific Time (PT)' // Default or fetch if column exists
             });
         }
@@ -450,7 +450,7 @@ const PropertyManagement: React.FC = () => {
                 .update({
                     name: formData.name,
                     phone: formData.phone,
-                    address: formData.address
+                    location: formData.location
                     // timezone is likely local-only or needs a column
                 })
                 .eq('id', user.propertyId);
@@ -529,9 +529,9 @@ const PropertyManagement: React.FC = () => {
                         onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                     />
                     <Input
-                        label="Address"
-                        value={formData.address}
-                        onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                        label="Location/Address"
+                        value={formData.location}
+                        onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                     />
                     <Select
                         label="Time Zone"
