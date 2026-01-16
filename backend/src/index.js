@@ -1,6 +1,7 @@
 const express = require('express');
 const db = require('./config/database');
 require('dotenv').config();
+const helmet = require('helmet');
 
 const reservationsRouter = require('./api/routes/reservations');
 const paymentsRouter = require('./api/routes/payments');
@@ -18,6 +19,24 @@ const app = express();
 const port = process.env.PORT || 5000;
 
 app.use(express.json());
+
+// Security Headers
+app.use(helmet({
+  strictTransportSecurity: {
+    maxAge: 31536000,
+    includeSubDomains: true,
+  },
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "https://trusted.cdn.com"],
+      objectSrc: ["'none'"],
+    },
+  },
+  xFrameOptions: { action: "sameorigin" },
+  xContentTypeOptions: true,
+  referrerPolicy: { policy: "no-referrer-when-downgrade" },
+}));
 
 app.use('/api/reservations', reservationsRouter);
 app.use('/api/payments', paymentsRouter);

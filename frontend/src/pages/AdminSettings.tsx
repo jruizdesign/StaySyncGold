@@ -383,6 +383,7 @@ const ChannelManager: React.FC = () => {
         }
 
         if (data && data.length > 0) {
+            `f`
             const config = data[0];
             setChannexConfig(config);
             setApiToken(config.api_key || '');
