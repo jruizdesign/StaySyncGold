@@ -28,6 +28,26 @@ const ShiftTimer: React.FC<{ startTime: string }> = ({ startTime }) => {
   return <h3 className="text-3xl font-bold text-slate-800">{duration}</h3>;
 };
 
+const RealtimeClock: React.FC = () => {
+  const [time, setTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => setTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  return (
+    <div className="flex flex-col items-center justify-center p-6 bg-slate-900 rounded-2xl text-white shadow-lg border border-slate-700">
+      <h2 className="text-5xl font-mono font-bold tracking-wider text-gold-500">
+        {time.toLocaleTimeString([], { hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+      </h2>
+      <p className="text-slate-400 mt-2 font-medium uppercase tracking-widest text-sm">
+        {time.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}
+      </p>
+    </div>
+  );
+};
+
 const StaffKiosk: React.FC = () => {
   const { user } = useAuth();
   const [staffList, setStaffList] = useState<Staff[]>([]);
@@ -202,74 +222,84 @@ const StaffKiosk: React.FC = () => {
   };
 
   const renderPersonalDashboard = () => (
-    <div className="max-w-4xl mx-auto w-full animate-fadeIn pb-20">
+    <div className="max-w-6xl mx-auto w-full animate-fadeIn pb-20">
       <button onClick={() => setView('grid')} className="mb-6 flex items-center text-slate-500 hover:text-slate-900 transition-colors">
         <ChevronLeft className="w-5 h-5" /> Back to Staff List
       </button>
 
-      <div className="bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-100">
-        <div className="bg-slate-900 p-8 text-white relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-32 bg-gold-500 rounded-full blur-3xl opacity-10 translate-x-1/3 -translate-y-1/3"></div>
-          <div className="relative z-10 flex items-center gap-6">
-            <div className="w-20 h-20 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center text-3xl font-bold border border-white/20">
-              {selectedStaff?.name.charAt(0)}
-            </div>
-            <div>
-              <h1 className="text-3xl font-bold">Hello, {selectedStaff?.name.split(' ')[0]}</h1>
-              <p className="text-slate-400 mt-1">{selectedStaff?.role}</p>
-            </div>
-            <div className="ml-auto text-right">
-              <p className="text-sm text-slate-400 font-medium uppercase tracking-wider">Current Status</p>
-              <div className={`mt-2 inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-bold ${!currentShift ? 'bg-slate-800 text-slate-400' :
-                currentShift.status === 'active' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' :
-                  'bg-amber-500/20 text-amber-400 border border-amber-500/30'
-                }`}>
-                <div className={`w-2 h-2 rounded-full ${!currentShift ? 'bg-slate-500' :
-                  currentShift.status === 'active' ? 'bg-emerald-500 animate-pulse' :
-                    'bg-amber-500 animate-pulse'
-                  }`} />
-                {!currentShift ? 'Off Duty' : currentShift.status === 'active' ? 'Active' : 'On Break'}
-              </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Left Column: Identity & Time */}
+        <div className="space-y-6">
+          <div className="bg-white rounded-3xl p-1 shadow-xl shadow-slate-200/50">
+            {selectedStaff && (
+              <StaffCard
+                staff={selectedStaff}
+                onClick={() => { }} // No-op for display
+                status={currentShift ? currentShift.status as any : 'idle'}
+              />
+            )}
+          </div>
+
+          <RealtimeClock />
+
+          <div className="bg-white rounded-2xl p-6 shadow-md border border-slate-100">
+            <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-2">Current Status</h3>
+            <div className={`p-4 rounded-xl flex items-center gap-3 ${!currentShift ? 'bg-slate-100 text-slate-500' :
+              currentShift.status === 'active' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' :
+                'bg-amber-50 text-amber-600 border border-amber-100'
+              }`}>
+              <div className={`w-3 h-3 rounded-full ${!currentShift ? 'bg-slate-400' :
+                currentShift.status === 'active' ? 'bg-emerald-500 animate-pulse' :
+                  'bg-amber-500 animate-pulse'
+                }`} />
+              <span className="font-bold text-lg">
+                {!currentShift ? 'Off Duty' : currentShift.status === 'active' ? 'Active Shift' : 'On Break'}
+              </span>
             </div>
           </div>
         </div>
 
-        <div className="p-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Clock In / Out */}
-            {!currentShift ? (
-              <button onClick={handleClockIn} className="col-span-1 md:col-span-3 py-10 bg-emerald-500 hover:bg-emerald-600 active:scale-[0.99] text-white rounded-2xl flex flex-col items-center justify-center gap-3 transition-all shadow-lg shadow-emerald-500/30 hover:shadow-xl hover:shadow-emerald-500/40">
-                <Clock className="w-10 h-10" />
-                <span className="text-2xl font-bold">Start Shift</span>
-              </button>
-            ) : (
-              <>
-                <button
-                  onClick={() => handleBreak(currentShift.status === 'active')}
-                  className={`py-8 rounded-2xl flex flex-col items-center justify-center gap-3 transition-all shadow-lg active:scale-[0.99] ${currentShift.status === 'active'
-                    ? 'bg-amber-500 hover:bg-amber-600 text-white shadow-amber-500/30'
-                    : 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-emerald-500/30'
-                    }`}
-                >
-                  {currentShift.status === 'active' ? <Coffee className="w-8 h-8" /> : <Play className="w-8 h-8" />}
-                  <span className="text-xl font-bold">{currentShift.status === 'active' ? 'Start Break' : 'End Break'}</span>
+        {/* Right Column: Actions */}
+        <div className="space-y-6">
+          <div className="bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-100 h-full flex flex-col">
+            <div className="p-8 flex-1 flex flex-col justify-center">
+              {!currentShift ? (
+                <button onClick={handleClockIn} className="w-full py-12 bg-emerald-500 hover:bg-emerald-600 active:scale-[0.99] text-white rounded-2xl flex flex-col items-center justify-center gap-4 transition-all shadow-lg shadow-emerald-500/30 hover:shadow-xl hover:shadow-emerald-500/40">
+                  <Clock className="w-16 h-16" />
+                  <div className="text-center">
+                    <span className="block text-3xl font-bold">Start Shift</span>
+                    <span className="text-emerald-100">Record accurate start time</span>
+                  </div>
                 </button>
+              ) : (
+                <div className="space-y-4">
+                  <button
+                    onClick={() => handleBreak(currentShift.status === 'active')}
+                    className={`w-full py-8 rounded-2xl flex flex-col items-center justify-center gap-3 transition-all shadow-lg active:scale-[0.99] ${currentShift.status === 'active'
+                      ? 'bg-amber-500 hover:bg-amber-600 text-white shadow-amber-500/30'
+                      : 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-emerald-500/30'
+                      }`}
+                  >
+                    {currentShift.status === 'active' ? <Coffee className="w-10 h-10" /> : <Play className="w-10 h-10" />}
+                    <span className="text-2xl font-bold">{currentShift.status === 'active' ? 'Start Break' : 'End Break'}</span>
+                  </button>
 
-                <button
-                  onClick={handleClockOut}
-                  className="py-8 bg-rose-500 hover:bg-rose-600 active:scale-[0.99] text-white rounded-2xl flex flex-col items-center justify-center gap-3 transition-all shadow-lg shadow-rose-500/30 hover:shadow-xl hover:shadow-rose-500/40"
-                >
-                  <LogOut className="w-8 h-8" />
-                  <span className="text-xl font-bold">End Shift</span>
-                </button>
+                  <button
+                    onClick={handleClockOut}
+                    className="w-full py-8 bg-rose-500 hover:bg-rose-600 active:scale-[0.99] text-white rounded-2xl flex flex-col items-center justify-center gap-3 transition-all shadow-lg shadow-rose-500/30 hover:shadow-xl hover:shadow-rose-500/40"
+                  >
+                    <LogOut className="w-10 h-10" />
+                    <span className="text-2xl font-bold">End Shift</span>
+                  </button>
 
-                {/* Stats Card */}
-                <Card className="flex flex-col justify-center items-center bg-slate-50 border-none shadow-inner">
-                  <p className="text-slate-500 text-sm font-medium uppercase tracking-wider mb-1">Shift Duration</p>
-                  <ShiftTimer startTime={currentShift.clock_in} />
-                </Card>
-              </>
-            )}
+                  {/* Stats Card */}
+                  <Card className="flex flex-col justify-center items-center bg-slate-50 border-none shadow-inner py-6 mt-4">
+                    <p className="text-slate-500 text-sm font-medium uppercase tracking-wider mb-1">Shift Duration</p>
+                    <ShiftTimer startTime={currentShift.clock_in} />
+                  </Card>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
