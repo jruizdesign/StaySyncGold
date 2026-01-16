@@ -4,6 +4,7 @@ import { Plus, Wand2, BedDouble, AlertCircle, Loader } from 'lucide-react';
 import { RoomStatus, Room } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
+import RoomSetupWizard from '../components/RoomSetupWizard';
 
 const Housekeeping: React.FC = () => {
   const { user } = useAuth();
@@ -11,6 +12,7 @@ const Housekeeping: React.FC = () => {
   const [filter, setFilter] = useState('ALL');
   const [rooms, setRooms] = useState<Room[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showWizard, setShowWizard] = useState(false);
 
   const filters = [
     { label: 'ALL', value: 'ALL' },
@@ -113,7 +115,7 @@ const Housekeeping: React.FC = () => {
           <p className="text-slate-500 text-sm mt-1">Inventory and housekeeping status</p>
         </div>
         <div className="flex items-center gap-3">
-          <button onClick={() => navigate('/admin?tab=rooms')} className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors shadow-sm shadow-purple-200">
+          <button onClick={() => setShowWizard(true)} className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors shadow-sm shadow-purple-200">
             <Wand2 className="w-4 h-4" />
             Run Setup Wizard
           </button>
@@ -195,10 +197,20 @@ const Housekeeping: React.FC = () => {
 
       {/* FAB for demo */}
       <div className="fixed bottom-8 right-8">
-        <button onClick={() => navigate('/admin?tab=rooms')} className="w-14 h-14 bg-purple-600 text-white rounded-full shadow-lg shadow-purple-500/30 flex items-center justify-center hover:scale-105 transition-transform">
+        <button onClick={() => setShowWizard(true)} className="w-14 h-14 bg-purple-600 text-white rounded-full shadow-lg shadow-purple-500/30 flex items-center justify-center hover:scale-105 transition-transform">
           <Wand2 className="w-6 h-6" />
         </button>
       </div>
+
+      {showWizard && (
+        <RoomSetupWizard
+          onClose={() => setShowWizard(false)}
+          onComplete={() => {
+            setShowWizard(false);
+            fetchRooms(); // Refresh the list
+          }}
+        />
+      )}
     </div>
   );
 };
