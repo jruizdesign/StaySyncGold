@@ -47,15 +47,26 @@ router.get('/status', async (req, res) => {
 // POST /api/channex/verify
 // Verify API Key and Property ID before saving
 router.post('/verify', async (req, res) => {
-    const { apiKey, propertyMappingId } = req.body;
+    try {
+        const { apiKey, propertyMappingId } = req.body;
 
-    // Simple verification check - try to fetch channels
-    const check = await channexService.getActiveChannels(apiKey, propertyMappingId);
+        if (!apiKey || !propertyMappingId) {
+            return res.status(400).json({ success: false, error: 'API Key and Property ID are required.' });
+        }
 
-    if (check.success) {
-        res.json({ success: true, count: check.data.length });
-    } else {
-        res.status(400).json({ success: false, error: check.error });
+        // Simple verification check - try to fetch channels
+        const check = await channexService.getActiveChannels(apiKey, propertyMappingId);
+
+        if (check.success && Array.isArray(check.data)) {
+            res.json({ success: true, count: check.data.length });
+        } else {
+            console.error('Channex Verify Failed:', check.error);
+            // Even if success=true but data is weird, treat as fail
+            res.status(400).json({ success: false, error: check.error || 'Invalid response from Channex' });
+        }
+    } catch (error) {
+        console.error('Channex Verify Route Exception:', error);
+        res.status(500).json({ success: false, error: 'Internal Server Error during verification' });
     }
 });
 
