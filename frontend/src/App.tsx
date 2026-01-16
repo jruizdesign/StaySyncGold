@@ -18,6 +18,7 @@ import DigitalSolutions from './pages/DigitalSolutions';
 // Placeholder components for brevity
 import Guests from './pages/Guests';
 import Maintenance from './pages/Maintenance';
+import ProtectedRoute from './components/ProtectedRoute';
 
 const App: React.FC = () => {
   return (
@@ -27,19 +28,23 @@ const App: React.FC = () => {
           <Routes>
             <Route path="/" element={<LandingPage />} />
             <Route path="/landing" element={<LandingPage />} />
-            <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/login" element={<Login />} />
-            <Route path="/admin" element={<AdminSettings />} />
-            <Route path="/reservations" element={<Reservations />} />
-            <Route path="/guests" element={<Guests />} />
-            <Route path="/housekeeping" element={<Housekeeping />} />
-            <Route path="/maintenance" element={<Maintenance />} />
-            <Route path="/staff" element={<Staff />} />
-            <Route path="/financials" element={<Financials />} />
-            <Route path="/kiosk" element={<StaffKiosk />} />
+
+            {/* Public Landing Pages */}
             <Route path="/it-security" element={<ITSecurity />} />
             <Route path="/digital-solutions" element={<DigitalSolutions />} />
-            <Route path="/time-tracking" element={<ManagerTimeTracking />} />
+
+            {/* Protected Routes */}
+            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/admin" element={<ProtectedRoute><AdminSettings /></ProtectedRoute>} />
+            <Route path="/reservations" element={<ProtectedRoute><Reservations /></ProtectedRoute>} />
+            <Route path="/guests" element={<ProtectedRoute><Guests /></ProtectedRoute>} />
+            <Route path="/housekeeping" element={<ProtectedRoute><Housekeeping /></ProtectedRoute>} />
+            <Route path="/maintenance" element={<ProtectedRoute><Maintenance /></ProtectedRoute>} />
+            <Route path="/staff" element={<ProtectedRoute><Staff /></ProtectedRoute>} />
+            <Route path="/financials" element={<ProtectedRoute><Financials /></ProtectedRoute>} />
+            <Route path="/kiosk" element={<ProtectedRoute><StaffKiosk /></ProtectedRoute>} />
+            <Route path="/time-tracking" element={<ProtectedRoute><ManagerTimeTracking /></ProtectedRoute>} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Layout>
