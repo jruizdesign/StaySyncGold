@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Wand2, Calculator, Save, CheckCircle, AlertCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { logger } from '../lib/logger';
 import { useAuth } from '../context/AuthContext';
 import { RoomStatus } from '../types';
 
@@ -49,7 +50,6 @@ const RoomSetupWizard: React.FC<RoomSetupWizardProps> = ({ onClose, onComplete }
             const roomsToInsert = generatedRooms.map(room => ({
                 ...room,
                 property_id: user.propertyId,
-                created_by: user.id
             }));
 
             const { error } = await supabase
@@ -58,9 +58,24 @@ const RoomSetupWizard: React.FC<RoomSetupWizardProps> = ({ onClose, onComplete }
 
             if (error) throw error;
 
+            logger.info(`Room Wizard: Created ${roomsToInsert.length} rooms`, {
+                type: 'INVENTORY',
+                event: 'BULK_CREATE_ROOMS',
+                user_id: user.id,
+                property_id: user.propertyId,
+                details: { count: roomsToInsert.length, config }
+            });
+
             onComplete();
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error creating rooms:', error);
+            logger.error('Room Wizard failed', {
+                type: 'INVENTORY',
+                event: 'BULK_CREATE_FAILED',
+                user_id: user.id,
+                property_id: user.propertyId,
+                details: { error: error.message }
+            });
             alert('Failed to create rooms. Please try again.');
         } finally {
             setLoading(false);

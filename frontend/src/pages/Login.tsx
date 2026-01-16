@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
 import { Hotel, Mail, Lock, Loader2, AlertCircle, Check } from 'lucide-react';
 import { Button, Input } from '../components/UIComponents';
+import { logger } from '../lib/logger';
 
 const Login: React.FC = () => {
     const [email, setEmail] = useState('');
@@ -28,8 +29,14 @@ const Login: React.FC = () => {
 
             if (authError) throw authError;
 
+            // Log successful login
+            // Note: We don't have the user object fully populated here yet, but we have the email.
+            // Ideally validation happens after, but for now we log the attempt.
+            logger.info(`User logged in: ${email}`, { type: 'AUTH', event: 'LOGIN_SUCCESS', details: { email } });
+
             navigate('/dashboard');
         } catch (err: any) {
+            logger.warn(`Login failed for ${email}`, { type: 'AUTH', event: 'LOGIN_FAILED', details: { email, error: err.message } });
             setError(err.message || 'Failed to sign in');
             setLoading(false);
         }

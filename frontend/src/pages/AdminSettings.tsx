@@ -728,6 +728,210 @@ const UserAssignment: React.FC<UserAssignmentProps> = ({ properties }) => {
     );
 }
 
+const SystemLogs: React.FC = () => {
+    const { user } = useAuth();
+    const [logs, setLogs] = useState<any[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [filterLevel, setFilterLevel] = useState('ALL');
+
+    useEffect(() => {
+        fetchLogs();
+    }, [filterLevel]);
+
+    const fetchLogs = async () => {
+        setLoading(true);
+        let query = supabase.from('system_logs').select('*').order('created_at', { ascending: false }).limit(100);
+
+        if (filterLevel !== 'ALL') {
+            query = query.eq('level', filterLevel);
+        }
+
+        // Scope logs if strictly not a super admin (though this component should only be visible to admins)
+        if (!user?.isAdmin && user?.propertyId) {
+            query = query.eq('property_id', user.propertyId);
+        }
+
+        const { data } = await query;
+        if (data) setLogs(data);
+        setLoading(false);
+    };
+
+    const getLevelColor = (level: string) => {
+        switch (level) {
+            case 'CRITICAL': return 'bg-red-100 text-red-800 border-red-200';
+            case 'ERROR': return 'bg-orange-100 text-orange-800 border-orange-200';
+            case 'WARNING': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+            default: return 'bg-slate-100 text-slate-800 border-slate-200';
+        }
+    };
+
+    return (
+        <Card title="System Logs & Audits" action={
+            <div className="flex gap-2">
+                <select
+                    className="text-sm border-slate-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                    value={filterLevel}
+                    onChange={(e) => setFilterLevel(e.target.value)}
+                >
+                    <option value="ALL">All Levels</option>
+                    <option value="INFO">Info</option>
+                    <option value="WARNING">Warning</option>
+                    <option value="ERROR">Error</option>
+                    <option value="CRITICAL">Critical</option>
+                </select>
+                <Button variant="outline" onClick={fetchLogs} disabled={loading}>{loading ? 'Refreshing...' : 'Refresh'}</Button>
+            </div>
+        }>
+            <div className="overflow-x-auto">
+                <table className="w-full text-sm text-left">
+                    <thead className="text-xs text-slate-500 uppercase bg-slate-50 border-b border-slate-200">
+                        <tr>
+                            <th className="px-6 py-3">Timestamp</th>
+                            <th className="px-6 py-3">Level</th>
+                            <th className="px-6 py-3">Event</th>
+                            <th className="px-6 py-3">Message</th>
+                            <th className="px-6 py-3">Details</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                        {logs.map((log) => (
+                            <tr key={log.id} className="hover:bg-slate-50">
+                                <td className="px-6 py-4 whitespace-nowrap text-slate-500 font-mono text-xs">
+                                    {new Date(log.created_at).toLocaleString()}
+                                </td>
+                                <td className="px-6 py-4">
+                                    <span className={`px-2 py-1 rounded-full text-xs font-semibold border ${getLevelColor(log.level)}`}>
+                                        {log.level}
+                                    </span>
+                                </td>
+                                <td className="px-6 py-4 font-medium text-slate-700">{log.event || log.type}</td>
+                                <td className="px-6 py-4 text-slate-600">{log.message}</td>
+                                <td className="px-6 py-4 text-xs text-slate-400 font-mono max-w-xs truncate">
+                                    {JSON.stringify(log.details)}
+                                </td>
+                            </tr>
+                        ))}
+                        {logs.length === 0 && (
+                            <tr>
+                                <td colSpan={5} className="px-6 py-8 text-center text-slate-500">No logs found.</td>
+                            </tr>
+                        )}
+                    </tbody>
+                </table>
+            </div>
+        </Card>
+    );
+};
+
+const FeatureRequests: React.FC = () => {
+    const { user } = useAuth();
+    const [title, setTitle] = useState('');
+    const [description, setDescription] = useState('');
+    const [priority, setPriority] = useState('Low');
+    const [loading, setLoading] = useState(false);
+    const [requests, setRequests] = useState<any[]>([]);
+
+    useEffect(() => {
+        fetchRequests();
+    }, []);
+
+    const fetchRequests = async () => {
+        const { data } = await supabase.from('feature_requests').select('*').order('created_at', { ascending: false });
+        if (data) setRequests(data);
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setLoading(true);
+        const { error } = await supabase.from('feature_requests').insert([{
+            user_id: user?.id,
+            property_id: user?.propertyId,
+            title,
+            description,
+            priority
+        }]);
+
+        if (error) {
+            alert('Error submitting request: ' + error.message);
+        } else {
+            alert('Feature request submitted successfully!');
+            setTitle('');
+            setDescription('');
+            fetchRequests();
+        }
+        setLoading(false);
+    };
+
+    return (
+        <Card title="Feature Requests & Feedback">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Submission Form */}
+                <div className="lg:col-span-1 space-y-6">
+                    <div>
+                        <h3 className="font-semibold text-slate-800 mb-2">Submit a Request</h3>
+                        <p className="text-sm text-slate-500 mb-4">Help us improve StaySync by suggesting new features or reporting issues.</p>
+                        <form onSubmit={handleSubmit} className="space-y-4">
+                            <Input label="Title" value={title} onChange={e => setTitle(e.target.value)} placeholder="e.g. Dark Mode" required />
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Priority</label>
+                                <select className="w-full p-2 border rounded-md" value={priority} onChange={e => setPriority(e.target.value)}>
+                                    <option>Low</option>
+                                    <option>Medium</option>
+                                    <option>High</option>
+                                    <option>Critical</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Description</label>
+                                <textarea
+                                    className="w-full p-2 border border-slate-300 rounded-md h-32 focus:ring-purple-500 focus:border-purple-500"
+                                    value={description}
+                                    onChange={e => setDescription(e.target.value)}
+                                    required
+                                    placeholder="Describe the feature..."
+                                />
+                            </div>
+                            <Button type="submit" disabled={loading}>{loading ? 'Submitting...' : 'Submit Request'}</Button>
+                        </form>
+                    </div>
+                </div>
+
+                {/* List of Requests */}
+                <div className="lg:col-span-2">
+                    <h3 className="font-semibold text-slate-800 mb-4">Recent Requests</h3>
+                    <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
+                        {requests.map(req => (
+                            <div key={req.id} className="p-4 bg-slate-50 rounded-lg border border-slate-100 hover:border-purple-100 transition-colors">
+                                <div className="flex justify-between items-start">
+                                    <div>
+                                        <h4 className="font-bold text-slate-900">{req.title}</h4>
+                                        <p className="text-sm text-slate-600 mt-1">{req.description}</p>
+                                        <div className="flex items-center gap-2 mt-3 text-xs text-slate-400">
+                                            <span>{new Date(req.created_at).toLocaleDateString()}</span>
+                                            <span>•</span>
+                                            <span className={`px-2 py-0.5 rounded-full ${req.priority === 'Critical' ? 'bg-red-100 text-red-700' :
+                                                req.priority === 'High' ? 'bg-orange-100 text-orange-700' :
+                                                    'bg-blue-100 text-blue-700'
+                                                }`}>{req.priority}</span>
+                                        </div>
+                                    </div>
+                                    <Badge color={req.status === 'Completed' ? 'green' : req.status === 'Planned' ? 'purple' : 'gray'}>
+                                        {req.status}
+                                    </Badge>
+                                </div>
+                            </div>
+                        ))}
+                        {requests.length === 0 && <p className="text-center text-slate-500 py-8">No requests yet. Be the first!</p>}
+                    </div>
+                </div>
+            </div>
+        </Card>
+    );
+};
+
+// Import logger to log 'Admin Page Viewed' (Example usage, though we handle this in useEffect) 
+import { logger } from '../lib/logger';
+
 const AdminSettings: React.FC = () => {
     const { user } = useAuth(); // Global Auth
 
@@ -738,15 +942,27 @@ const AdminSettings: React.FC = () => {
     const isManager = !!user?.isManager;
     const isManagement = isManager || isAdmin; // Managers and Admins can see property settings
 
-    const [activeTab, setActiveTab] = useState<'database' | 'users' | 'property' | 'rooms' | 'channel' | 'superadmin' | 'updates'>('property');
+    const [activeTab, setActiveTab] = useState<'database' | 'users' | 'property' | 'rooms' | 'channel' | 'superadmin' | 'updates' | 'features' | 'logs'>('property');
     const [searchParams] = useSearchParams();
 
     useEffect(() => {
         const tab = searchParams.get('tab');
-        if (tab && ['database', 'users', 'property', 'rooms', 'channel', 'superadmin', 'updates'].includes(tab)) {
+        if (tab && ['database', 'users', 'property', 'rooms', 'channel', 'superadmin', 'updates', 'features', 'logs'].includes(tab)) {
             setActiveTab(tab as any);
         }
     }, [searchParams]);
+
+    // Log access
+    useEffect(() => {
+        if (user) {
+            logger.info('User accessed Admin Settings', {
+                type: 'NAVIGATION',
+                event: 'PAGE_VIEW',
+                user_id: user.id,
+                property_id: user.propertyId
+            });
+        }
+    }, [user]);
 
     return (
         <div className="space-y-6 animate-fadeIn transition-all duration-500">
@@ -793,24 +1009,34 @@ const AdminSettings: React.FC = () => {
                         <button onClick={() => setActiveTab('updates')} className={`flex items-center justify-between px-6 py-4 text-left border-l-4 transition-colors ${activeTab === 'updates' ? 'border-gold-500 bg-gold-50' : 'border-transparent hover:bg-slate-50'}`}>
                             <div className="flex items-center gap-3"><GitBranch className="w-5 h-5" /> <span className="font-medium">System Updates</span></div>
                         </button>
+                        <button onClick={() => setActiveTab('features')} className={`flex items-center justify-between px-6 py-4 text-left border-l-4 transition-colors ${activeTab === 'features' ? 'border-gold-500 bg-gold-50' : 'border-transparent hover:bg-slate-50'}`}>
+                            <div className="flex items-center gap-3"><Users className="w-5 h-5" /> <span className="font-medium">Feature Requests</span></div>
+                        </button>
                         {/* Database Inspector - STRICTLY ADMIN ONLY */}
                         {isAdmin && (
                             <button onClick={() => setActiveTab('database')} className={`flex items-center justify-between px-6 py-4 text-left border-l-4 transition-colors ${activeTab === 'database' ? 'border-gold-500 bg-gold-50' : 'border-transparent hover:bg-slate-50'}`}>
                                 <div className="flex items-center gap-3"><Database className="w-5 h-5" /> <span className="font-medium">Data Inspector</span></div>
                             </button>
                         )}
+                        {isAdmin && (
+                            <button onClick={() => setActiveTab('logs')} className={`flex items-center justify-between px-6 py-4 text-left border-l-4 transition-colors ${activeTab === 'logs' ? 'border-gold-500 bg-gold-50' : 'border-transparent hover:bg-slate-50'}`}>
+                                <div className="flex items-center gap-3"><ShieldCheck className="w-5 h-5" /> <span className="font-medium">System Logs</span></div>
+                            </button>
+                        )}
                     </nav>
                 </Card>
 
-                {/* Main Content Area */}
+                {/* Tab Content */}
                 <div className="col-span-1 md:col-span-3">
-                    {activeTab === 'database' && <DatabaseInspector />}
+                    {activeTab === 'property' && <PropertyManagement />}
                     {activeTab === 'users' && <UserManagement />}
                     {activeTab === 'rooms' && <RoomWizard />}
                     {activeTab === 'channel' && <ChannelManager />}
-                    {activeTab === 'property' && <PropertyManagement />}
-                    {activeTab === 'updates' && <CommitTracker />}
                     {activeTab === 'superadmin' && isAdmin && <SuperAdminConsole />}
+                    {activeTab === 'database' && isAdmin && <DatabaseInspector />}
+                    {activeTab === 'updates' && <CommitTracker />}
+                    {activeTab === 'features' && <FeatureRequests />}
+                    {activeTab === 'logs' && isAdmin && <SystemLogs />}
                 </div>
             </div>
         </div>
