@@ -140,9 +140,8 @@ const RoomSetupWizard: React.FC<RoomSetupWizardProps> = ({ onClose, onComplete }
                                         value={config.startNumber}
                                         onChange={e => setConfig({ ...config, startNumber: parseInt(e.target.value) || 101 })}
                                         className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all"
-                                        helperText="e.g. 101 for Floor 1, 201 for Floor 2"
                                     />
-                                    <p className="text-xs text-slate-400 mt-1">Starting number for the first floor</p>
+                                    <p className="text-xs text-slate-400 mt-1">Starting number for the first floor (e.g. 101 for Floor 1)</p>
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>

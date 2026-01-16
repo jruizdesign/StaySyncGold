@@ -121,3 +121,22 @@ export interface StaffBreak {
   end_time?: string;
   created_at: string;
 }
+
+export interface ChannelSetting {
+  id: string;
+  property_id: string;
+  channel_name: string;
+  api_key?: string;
+  property_mapping_id?: string;
+  is_active: boolean;
+  last_sync?: string;
+  status: string;
+  created_at: string;
+}
+
+export interface ChannelMapping {
+  id: string;
+  channel_setting_id: string;
+  local_room_type?: string;
+  channel_room_id?: string;
+}

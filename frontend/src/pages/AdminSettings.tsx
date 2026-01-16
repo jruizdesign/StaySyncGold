@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { Button, Card, Input, Select, Badge } from '../components/UIComponents';
 import { Settings, Database, Users, Building, ShieldCheck, Plus, Search, ChevronRight, Layout, Globe, Loader, GitBranch } from 'lucide-react';
-import { Property } from '../types';
+import { Property, ChannelSetting } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { CommitTracker } from '../components/CommitTracker';
 
@@ -321,86 +321,175 @@ const RoomWizard: React.FC = () => {
 };
 
 const ChannelManager: React.FC = () => {
-    const [channels, setChannels] = useState([
-        { name: 'Booking.com', connected: true, lastSync: '2 mins ago', status: 'Healthy' },
-        { name: 'Expedia', connected: true, lastSync: '15 mins ago', status: 'Healthy' },
-        { name: 'Airbnb', connected: false, lastSync: 'Never', status: 'Disconnected' },
-        { name: 'Direct Website', connected: true, lastSync: 'Just now', status: 'Live' }
-    ]);
-
+    const { user } = useAuth();
+    const [channexConfig, setChannexConfig] = useState<ChannelSetting | null>(null);
+    const [loading, setLoading] = useState(false);
     const [syncing, setSyncing] = useState(false);
 
-    const toggleChannel = (index: number) => {
-        const newChannels = [...channels];
-        newChannels[index].connected = !newChannels[index].connected;
-        if (newChannels[index].connected) {
-            newChannels[index].lastSync = 'Syncing...';
-            newChannels[index].status = 'Initializing';
-            setTimeout(() => {
-                setChannels(prev => {
-                    const up = [...prev];
-                    up[index].lastSync = 'Just now';
-                    up[index].status = 'Healthy';
-                    return up;
-                });
-            }, 2000);
+    // Form State
+    const [apiToken, setApiToken] = useState('');
+    const [propertyMappingId, setPropertyMappingId] = useState('');
+    const [isEditing, setIsEditing] = useState(false);
+
+    // Mocked Downstream Channels (Fetched from Channex in real app)
+    const [activeChannels, setActiveChannels] = useState([
+        { name: 'Booking.com', status: 'Active', logo: Globe },
+        { name: 'Airbnb', status: 'Pending', logo: Globe },
+        { name: 'Expedia', status: 'Inactive', logo: Globe }
+    ]);
+
+    useEffect(() => {
+        if (user?.propertyId) fetchConfiguration();
+    }, [user?.propertyId]);
+
+    const fetchConfiguration = async () => {
+        setLoading(true);
+        const { data, error } = await supabase
+            .from('channel_settings')
+            .select('*')
+            .eq('property_id', user?.propertyId)
+            .eq('channel_name', 'channex')
+            .single();
+
+        if (data) {
+            setChannexConfig(data);
+            setApiToken(data.api_key || '');
+            setPropertyMappingId(data.property_mapping_id || '');
         } else {
-            newChannels[index].status = 'Disconnected';
+            setIsEditing(true); // Default to edit mode if no config
         }
-        setChannels(newChannels);
+        setLoading(false);
     };
 
-    const handleSyncAll = () => {
-        setSyncing(true);
-        setTimeout(() => {
-            setChannels(channels.map(c => c.connected ? { ...c, lastSync: 'Just now', status: 'Healthy' } : c));
-            setSyncing(false);
-            alert('All channels synced successfully.');
-        }, 1500);
+    const handleSaveConfig = async () => {
+        if (!user?.propertyId) return;
+        setLoading(true);
+
+        const payload = {
+            property_id: user.propertyId,
+            channel_name: 'channex',
+            api_key: apiToken,
+            property_mapping_id: propertyMappingId,
+            is_active: true,
+            status: 'Connected',
+            last_sync: new Date().toISOString()
+        };
+
+        if (channexConfig?.id) {
+            await supabase.from('channel_settings').update(payload).eq('id', channexConfig.id);
+        } else {
+            await supabase.from('channel_settings').insert(payload);
+        }
+
+        await fetchConfiguration();
+        setIsEditing(false);
+        setLoading(false);
+        alert('Channex configuration saved!');
     };
+
+    const handleSync = async () => {
+        setSyncing(true);
+        // Simulate Channex Sync
+        setTimeout(async () => {
+            if (channexConfig) {
+                await supabase
+                    .from('channel_settings')
+                    .update({ last_sync: new Date().toISOString() })
+                    .eq('id', channexConfig.id);
+                fetchConfiguration();
+            }
+            setActiveChannels(prev => prev.map(c => ({ ...c, status: 'Active' }))); // Mock all active after sync
+            setSyncing(false);
+            alert('Inventory synced with Channex successfully.');
+        }, 2000);
+    };
+
+    if (loading && !channexConfig && !isEditing) return <div className="p-4"><Loader className="animate-spin" /></div>;
 
     return (
-        <Card title="Channel Manager" action={
-            <Button variant="outline" icon={Globe} onClick={handleSyncAll} disabled={syncing}>
-                {syncing ? 'Syncing...' : 'Sync All'}
-            </Button>
+        <Card title="Channel Manager (via Channex.io)" action={
+            channexConfig?.is_active && (
+                <Button variant="outline" icon={Globe} onClick={handleSync} disabled={syncing}>
+                    {syncing ? 'Syncing...' : 'Force Sync'}
+                </Button>
+            )
         }>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {channels.map((channel, idx) => (
-                    <div key={channel.name} className={`p-4 border rounded-xl flex items-center justify-between transition-colors ${channel.connected ? 'border-slate-200 bg-white' : 'border-slate-100 bg-slate-50 opacity-75'}`}>
-                        <div className="flex items-center gap-3">
-                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${channel.connected ? 'bg-blue-50 text-blue-500' : 'bg-slate-100 text-slate-400'}`}>
-                                <Globe className="w-5 h-5" />
-                            </div>
-                            <div>
-                                <p className="font-bold text-slate-900">{channel.name}</p>
-                                <p className={`text-xs ${channel.connected ? 'text-green-600' : 'text-slate-400'}`}>
-                                    {channel.connected ? `● ${channel.status} · ${channel.lastSync}` : 'Disconnected'}
-                                </p>
-                            </div>
-                        </div>
-                        <button
-                            onClick={() => toggleChannel(idx)}
-                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gold-500 ${channel.connected ? 'bg-gold-500' : 'bg-slate-300'}`}
-                        >
-                            <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${channel.connected ? 'translate-x-6' : 'translate-x-1'}`} />
-                        </button>
+            {!channexConfig || isEditing ? (
+                <div className="space-y-4 max-w-xl mx-auto py-4">
+                    <div className="bg-blue-50 p-4 rounded-lg border border-blue-100 mb-6">
+                        <h4 className="font-semibold text-blue-900 mb-1">Connect to Channex</h4>
+                        <p className="text-sm text-blue-700">
+                            Enter your Channex.io API Token and Property ID to enable synchronization.
+                        </p>
                     </div>
-                ))}
-            </div>
 
-            <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-100">
-                <div className="flex items-start gap-3">
-                    <ShieldCheck className="w-5 h-5 text-blue-600 mt-0.5" />
+                    <Input
+                        label="Channex API Token"
+                        value={apiToken}
+                        onChange={e => setApiToken(e.target.value)}
+                        type="password"
+                        placeholder="e.g. your_api_token"
+                    />
+                    <Input
+                        label="Channex Property ID"
+                        value={propertyMappingId}
+                        onChange={e => setPropertyMappingId(e.target.value)}
+                        placeholder="e.g. property_xyz"
+                    />
+
+                    <div className="flex justify-end gap-3 pt-4">
+                        {channexConfig && <Button variant="ghost" onClick={() => setIsEditing(false)}>Cancel</Button>}
+                        <Button onClick={handleSaveConfig} disabled={loading}>
+                            {loading ? 'Connecting...' : 'Connect to Channex'}
+                        </Button>
+                    </div>
+                </div>
+            ) : (
+                <div className="space-y-6">
+                    {/* Status Card */}
+                    <div className="bg-green-50 border border-green-200 rounded-xl p-6 flex justify-between items-center">
+                        <div>
+                            <div className="flex items-center gap-2 mb-1">
+                                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                                <h3 className="font-bold text-green-900 text-lg">System Online</h3>
+                            </div>
+                            <p className="text-green-700 text-sm">
+                                Connected to Channex Property: <strong>{channexConfig.property_mapping_id}</strong>
+                            </p>
+                            <p className="text-green-600 text-xs mt-1">Last Synced: {new Date(channexConfig.last_sync || '').toLocaleString()}</p>
+                        </div>
+                        <Button variant="outline" className="bg-white border-green-200 text-green-700 hover:bg-green-50" onClick={() => setIsEditing(true)}>
+                            Edit Config
+                        </Button>
+                    </div>
+
+                    {/* Active Channels Grid */}
                     <div>
-                        <h4 className="font-semibold text-blue-900 text-sm">Channel Optimization Active</h4>
-                        <p className="text-sm text-blue-700 mt-1">
-                            Your rates are automatically adjusted across all connected channels based on occupancy rules.
-                            Next scheduled sync: <strong>14:00</strong>.
+                        <h4 className="font-semibold text-slate-800 mb-4">Active Distribution Channels</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            {activeChannels.map(c => (
+                                <div key={c.name} className="p-4 border border-slate-200 rounded-lg flex items-center justify-between bg-white shadow-sm">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-500">
+                                            <Globe className="w-5 h-5" />
+                                        </div>
+                                        <div>
+                                            <p className="font-medium text-slate-900">{c.name}</p>
+                                            <p className={`text-xs ${c.status === 'Active' ? 'text-green-600' : 'text-slate-400'}`}>
+                                                ● {c.status}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="h-2 w-2 rounded-full bg-slate-300" />
+                                </div>
+                            ))}
+                        </div>
+                        <p className="text-xs text-slate-400 mt-4 text-center">
+                            Manage individual channel connections and mappings directly in your <a href="#" className="underline hover:text-slate-600">Channex Dashboard</a>.
                         </p>
                     </div>
                 </div>
-            </div>
+            )}
         </Card>
     );
 };
