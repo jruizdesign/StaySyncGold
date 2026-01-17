@@ -28,6 +28,34 @@ const StatCard: React.FC<{ title: string, value: string, sub: string, icon: any,
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
 
+  // AI Insights State
+  const [aiInsights, setAiInsights] = React.useState<any>(null);
+  const [loadingInsights, setLoadingInsights] = React.useState(true);
+
+  React.useEffect(() => {
+    const fetchInsights = async () => {
+      // Only fetch if we have a property ID
+      if (!user?.propertyId) return;
+
+      try {
+        setLoadingInsights(true);
+        const { getPropertyInsights } = await import('../services/aiService');
+        const data = await getPropertyInsights(user.propertyId);
+        setAiInsights(data);
+      } catch (err) {
+        console.error('Failed to fetch AI insights:', err);
+      } finally {
+        setLoadingInsights(false);
+      }
+    };
+
+    fetchInsights();
+
+    // Refresh every 5 minutes
+    const interval = setInterval(fetchInsights, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [user?.propertyId]);
+
   // Mock Data - Only shown in Demo Mode
   const mockData = [
     { name: 'Mon', revenue: 4000, occupancy: 65 },
@@ -74,81 +102,119 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* AI Intel Card */}
-      <AIInsightCard
-        onAction={() => window.location.href = '/maintenance'} // Simple navigation for now
-      />
+  // AI Insights State
+      const [aiInsights, setAiInsights] = React.useState<any>(null);
+        const [loadingInsights, setLoadingInsights] = React.useState(true);
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard title="Total Revenue" value={stats.revenue} sub={stats.revenueSub} icon={DollarSign} color="bg-emerald-500 text-emerald-600" />
-        <StatCard title="Occupancy Rate" value={stats.occupancy} sub={stats.occupancySub} icon={TrendingUp} color="bg-blue-500 text-blue-600" />
-        <StatCard title="Check-Ins Today" value={stats.checkins} sub={stats.checkinsSub} icon={Users} color="bg-gold-500 text-gold-600" />
-        <StatCard title="Rooms Cleaning" value={stats.cleaning} sub={stats.cleaningSub} icon={BedDouble} color="bg-rose-500 text-rose-600" />
-      </div>
+  React.useEffect(() => {
+    const fetchInsights = async () => {
+      // Only fetch if we have a property ID
+      if (!user?.propertyId) return;
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card title="Weekly Revenue Overview">
-          <div className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={displayData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748b' }} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b' }} />
-                <Tooltip
-                  cursor={{ fill: '#f1f5f9' }}
-                  contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                />
-                <Bar dataKey="revenue" fill="#f1b016" radius={[4, 4, 0, 0]} barSize={40} />
-              </BarChart>
-            </ResponsiveContainer>
+        try {
+          setLoadingInsights(true);
+        const {getPropertyInsights} = await import('../services/aiService');
+        const data = await getPropertyInsights(user.propertyId);
+        setAiInsights(data);
+      } catch (err) {
+          console.error('Failed to fetch AI insights:', err);
+      } finally {
+          setLoadingInsights(false);
+      }
+    };
+
+        fetchInsights();
+
+        // Refresh every 5 minutes
+        const interval = setInterval(fetchInsights, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [user?.propertyId]);
+
+        return (
+        <div className="space-y-6">
+          {/* AI Intel Card */}
+          <AIInsightCard
+            title={aiInsights?.title}
+            subtitle={aiInsights?.subtitle}
+            message={aiInsights?.message}
+            actionLabel={aiInsights?.actionLabel}
+            variant={aiInsights?.variant || 'default'}
+            loading={loadingInsights}
+            error={aiInsights?.error}
+            timestamp={aiInsights?.generatedAt}
+            onAction={() => window.location.href = '/maintenance'} // Navigate based on context in future
+          />
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <StatCard title="Total Revenue" value={stats.revenue} sub={stats.revenueSub} icon={DollarSign} color="bg-emerald-500 text-emerald-600" />
+            <StatCard title="Occupancy Rate" value={stats.occupancy} sub={stats.occupancySub} icon={TrendingUp} color="bg-blue-500 text-blue-600" />
+            <StatCard title="Check-Ins Today" value={stats.checkins} sub={stats.checkinsSub} icon={Users} color="bg-gold-500 text-gold-600" />
+            <StatCard title="Rooms Cleaning" value={stats.cleaning} sub={stats.cleaningSub} icon={BedDouble} color="bg-rose-500 text-rose-600" />
           </div>
-        </Card>
 
-        <Card title="Occupancy Trends">
-          <div className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={displayData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748b' }} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b' }} />
-                <Tooltip />
-                <Line type="monotone" dataKey="occupancy" stroke="#0f172a" strokeWidth={3} dot={{ r: 4, fill: '#0f172a' }} activeDot={{ r: 6 }} />
-              </LineChart>
-            </ResponsiveContainer>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card title="Weekly Revenue Overview">
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={displayData}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748b' }} dy={10} />
+                    <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b' }} />
+                    <Tooltip
+                      cursor={{ fill: '#f1f5f9' }}
+                      contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                    />
+                    <Bar dataKey="revenue" fill="#f1b016" radius={[4, 4, 0, 0]} barSize={40} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </Card>
+
+            <Card title="Occupancy Trends">
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={displayData}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748b' }} dy={10} />
+                    <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b' }} />
+                    <Tooltip />
+                    <Line type="monotone" dataKey="occupancy" stroke="#0f172a" strokeWidth={3} dot={{ r: 4, fill: '#0f172a' }} activeDot={{ r: 6 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </Card>
           </div>
-        </Card>
-      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card title="Live System Feed" className="lg:col-span-2">
-          <LiveActivityFeed />
-        </Card>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <Card title="Live System Feed" className="lg:col-span-2">
+              <LiveActivityFeed />
+            </Card>
 
-        <Card title="Urgent Attention">
-          <div className="space-y-4">
-            {user?.isDemoMode ? (
-              <>
-                <div className="flex items-start gap-3">
-                  <AlertCircle className="w-5 h-5 text-red-500 mt-0.5" />
-                  <div>
-                    <p className="text-sm font-medium text-slate-900">Room 304 - Maintenance</p>
-                    <p className="text-xs text-slate-500 mt-1">AC Failure reported by guest. Priority: High</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <AlertCircle className="w-5 h-5 text-amber-500 mt-0.5" />
-                  <div>
-                    <p className="text-sm font-medium text-slate-900">Staff Shortage</p>
-                    <p className="text-xs text-slate-500 mt-1">2 Housekeepers called in sick today.</p>
-                  </div>
-                </div>
-              </>
-            ) : <p className="text-slate-500 text-sm text-center py-8">No urgent alerts.</p>}
+            <Card title="Urgent Attention">
+              <div className="space-y-4">
+                {user?.isDemoMode ? (
+                  <>
+                    <div className="flex items-start gap-3">
+                      <AlertCircle className="w-5 h-5 text-red-500 mt-0.5" />
+                      <div>
+                        <p className="text-sm font-medium text-slate-900">Room 304 - Maintenance</p>
+                        <p className="text-xs text-slate-500 mt-1">AC Failure reported by guest. Priority: High</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <AlertCircle className="w-5 h-5 text-amber-500 mt-0.5" />
+                      <div>
+                        <p className="text-sm font-medium text-slate-900">Staff Shortage</p>
+                        <p className="text-xs text-slate-500 mt-1">2 Housekeepers called in sick today.</p>
+                      </div>
+                    </div>
+                  </>
+                ) : <p className="text-slate-500 text-sm text-center py-8">No urgent alerts.</p>}
+              </div>
+            </Card>
           </div>
-        </Card>
-      </div>
-    </div>
-  );
+        </div>
+        );
 };
 
-export default Dashboard;
+        export default Dashboard;
