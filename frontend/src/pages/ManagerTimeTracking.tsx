@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { Card, Button, Input, Modal } from '../components/UIComponents';
-import { Clock, Calendar, ChevronLeft, ChevronRight, Edit2, Search, Filter } from 'lucide-react';
+import { Clock, Calendar, ChevronLeft, ChevronRight, Edit2, User } from 'lucide-react';
 import { StaffShift } from '../types';
 
 interface AttendanceLog {
