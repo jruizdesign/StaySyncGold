@@ -3,6 +3,7 @@ const router = express.Router();
 const crypto = require('crypto');
 const channexService = require('../../services/channexService');
 const db = require('../../config/database');
+const supabase = require('../../config/supabase');
 
 // GET /api/channex/status
 // Fetch status of channels for the current property
@@ -11,17 +12,19 @@ router.get('/status', async (req, res) => {
         const { property_id } = req.query;
         if (!property_id) return res.status(400).json({ error: 'Property ID required' });
 
-        // 1. Get API Key from DB
-        const result = await db.query(
-            "SELECT api_key, property_mapping_id FROM channel_settings WHERE property_id = $1 AND channel_name = 'channex'",
-            [property_id]
-        );
+        // 1. Get API Key from Supabase
+        const { data: settings, error: dbError } = await supabase
+            .from('channel_settings')
+            .select('api_key, property_mapping_id')
+            .eq('property_id', property_id)
+            .eq('channel_name', 'channex')
+            .single();
 
-        if (result.rows.length === 0) {
+        if (dbError || !settings) {
             return res.json({ connected: false, channels: [] });
         }
 
-        const { api_key, property_mapping_id } = result.rows[0];
+        const { api_key, property_mapping_id } = settings;
 
         // 2. Call Channex
         const channexResponse = await channexService.getActiveChannels(api_key, property_mapping_id);
