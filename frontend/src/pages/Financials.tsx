@@ -29,7 +29,7 @@ const Financials: React.FC = () => {
 
   const fetchBookings = async () => {
     try {
-      const res = await fetch(`/api/channex/bookings?property_id=${propertyId}`);
+      const res = await fetch(`/api/reports/ledger?property_id=${propertyId}`);
       const data = await res.json();
       if (data.success) {
         setBookings(data.bookings);

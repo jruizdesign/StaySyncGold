@@ -55,7 +55,27 @@ const getDailyRoomCosts = async (req, res, next) => {
   }
 };
 
+// @desc    Get booking ledger (unified)
+// @route   GET /api/reports/ledger
+// @access  Private (Admin, Manager)
+const getBookingLedger = async (req, res, next) => {
+  try {
+    const { property_id } = req.query;
+    if (!property_id) return res.status(400).json({ error: 'Property ID required' });
+
+    const result = await db.query(
+      "SELECT * FROM bookings WHERE property_id = $1 ORDER BY arrival_date DESC",
+      [property_id]
+    );
+
+    res.json({ success: true, bookings: result.rows });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 module.exports = {
   getFinancialReport,
   getDailyRoomCosts,
+  getBookingLedger,
 };
