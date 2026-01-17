@@ -1,5 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
+
 const getAIClient = () => {
   const apiKey = import.meta.env.VITE_GEMINI_API_KEY as string;
   if (!apiKey) {
@@ -33,3 +35,42 @@ export const generateSmartResponse = async (userPrompt: string, context: string)
     return "Sorry, I encountered an error communicating with the AI service.";
   }
 };
+
+export interface AIInsights {
+  title: string;
+  subtitle: string;
+  message: string;
+  actionLabel: string;
+  variant: 'success' | 'alert' | 'default';
+  generatedAt: string;
+  error?: boolean;
+}
+
+/**
+ * Fetch AI-generated insights for a property from backend
+ */
+export async function getPropertyInsights(propertyId: string): Promise<AIInsights> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/ai/insights/${propertyId}`);
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch insights: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error fetching AI insights:', error);
+
+    // Return fallback insights on error
+    return {
+      title: 'System Status Check',
+      subtitle: 'OPERATIONAL OVERVIEW',
+      message: 'Unable to generate AI insights at this time. All systems operational.',
+      actionLabel: 'Review dashboard metrics',
+      variant: 'default',
+      generatedAt: new Date().toISOString(),
+      error: true
+    };
+  }
+}
