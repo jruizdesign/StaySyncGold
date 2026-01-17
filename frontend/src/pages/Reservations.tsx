@@ -70,7 +70,7 @@ const Reservations: React.FC = () => {
           checkIn: folder.check_in,
           checkOut: folder.check_out,
           status: folder.status as ReservationStatus,
-          totalAmount: 0, // Placeholder as schema might not have this yet
+          totalAmount: folder.total_amount || 0, // Placeholder as schema might not have this yet
           guestName: folder.guests ? `${folder.guests.first_name} ${folder.guests.last_name}` : 'Unknown Guest',
           roomNumber: folder.rooms ? folder.rooms.number : 'N/A'
         }));
@@ -139,7 +139,8 @@ const Reservations: React.FC = () => {
           room_id: bookingForm.roomId,
           check_in: bookingForm.checkIn,
           check_out: bookingForm.checkOut,
-          status: 'Confirmed'
+          status: 'Confirmed',
+          total_amount: await calculateTotalAmount(bookingForm.roomId, bookingForm.checkIn, bookingForm.checkOut)
         });
 
       if (resError) throw resError;
@@ -155,6 +156,84 @@ const Reservations: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const calculateTotalAmount = async (roomId: string, checkIn: string, checkOut: string) => {
+    // 1. Get Room Type
+    const room = rooms.find(r => r.id === roomId);
+    if (!room) return 0;
+
+    // 2. Fetch Rates for Date Range
+    const { data: ratesData } = await supabase
+      .from('room_rates')
+      .select('*')
+      .eq('property_id', user?.propertyId)
+      .eq('room_type', room.type)
+      .gte('date', checkIn)
+      .lt('date', checkOut); // Check-out day is not charged
+
+    // 3. Calculate Daily Sum
+    let total = 0;
+    const start = new Date(checkIn);
+    const end = new Date(checkOut);
+
+    for (let d = new Date(start); d < end; d.setDate(d.getDate() + 1)) {
+      const dateStr = d.toISOString().split('T')[0];
+      const rate = ratesData?.find(r => r.date === dateStr);
+      // Fallback to base rate (assuming 100 if unknown for now, ideally room.price)
+      // We should add price to room table, but for now let's use a safe default or 0
+      total += rate ? Number(rate.price) : 100;
+    }
+    return total;
+  };
+
+  const calculateRevenueStats = () => {
+    if (rooms.length === 0) return { adr: 0, occupancy: 0, revpar: 0 };
+
+    const startOfMonth = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth(), 1);
+    const endOfMonth = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 0);
+    const daysInMonth = endOfMonth.getDate();
+    const totalRoomNightsAvailable = rooms.length * daysInMonth;
+
+    let totalRevenue = 0;
+    let totalBookedNights = 0;
+
+    // Simple estimation based on reservations in this month
+    // Note: This is a frontend-side approximation. For production, use a dedicated backend query.
+    reservations.forEach(res => {
+      // Check overlap with current month
+      const checkIn = new Date(res.checkIn);
+      const checkOut = new Date(res.checkOut);
+
+      // If completely outside, skip
+      if (checkOut <= startOfMonth || checkIn > endOfMonth) return;
+
+      // Calculate overlapping nights
+      const overlapStart = checkIn < startOfMonth ? startOfMonth : checkIn;
+      const overlapEnd = checkOut > endOfMonth ? endOfMonth : checkOut; // logic slightly off for check-out day, usually check-out day is not "stayed"
+
+      // Fix: check-out day exclusion
+      const effectiveEnd = checkOut > endOfMonth ? endOfMonth : new Date(checkOut.getTime() - 86400000);
+      if (effectiveEnd < overlapStart) return;
+
+      const nights = Math.ceil((Math.min(checkOut.getTime(), endOfMonth.getTime() + 86400000) - Math.max(checkIn.getTime(), startOfMonth.getTime())) / (1000 * 60 * 60 * 24));
+      // Ensure positive
+      const validNights = Math.max(0, nights);
+
+      // Revenue allocation (pro-rated) - VERY simplified
+      // Assuming linear distribution of totalAmount
+      const totalStayNights = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
+      const dailyRate = res.totalAmount / (totalStayNights || 1);
+
+      totalBookedNights += validNights;
+      totalRevenue += (dailyRate * validNights);
+    });
+
+    const adr = totalBookedNights > 0 ? totalRevenue / totalBookedNights : 0;
+    const occupancy = (totalBookedNights / totalRoomNightsAvailable) * 100;
+    const revpar = totalRevenue / totalRoomNightsAvailable;
+
+    return { adr, occupancy, revpar };
   };
 
   const fetchRates = async () => {
@@ -481,6 +560,25 @@ const Reservations: React.FC = () => {
                 </div>
               </div>
 
+              {/* Revenue Stats Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Card className="p-4 bg-white border-none shadow-sm">
+                  <div className="text-sm text-slate-500 font-medium">Occupancy</div>
+                  <div className="text-2xl font-bold text-slate-900">{calculateRevenueStats().occupancy.toFixed(1)}%</div>
+                  <div className="text-xs text-green-600 mt-1">Target: 75%</div>
+                </Card>
+                <Card className="p-4 bg-white border-none shadow-sm">
+                  <div className="text-sm text-slate-500 font-medium">ADR (Average Daily Rate)</div>
+                  <div className="text-2xl font-bold text-slate-900">${calculateRevenueStats().adr.toFixed(2)}</div>
+                  <div className="text-xs text-slate-400 mt-1">vs Last Month</div>
+                </Card>
+                <Card className="p-4 bg-white border-none shadow-sm">
+                  <div className="text-sm text-slate-500 font-medium">RevPAR</div>
+                  <div className="text-2xl font-bold text-slate-900">${calculateRevenueStats().revpar.toFixed(2)}</div>
+                  <div className="text-xs text-blue-600 mt-1">Revenue Per Available Room</div>
+                </Card>
+              </div>
+
               <Card className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
@@ -524,8 +622,9 @@ const Reservations: React.FC = () => {
             </div>
           )}
         </>
-      )}
-    </div>
+      )
+      }
+    </div >
   );
 };
 

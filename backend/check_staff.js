@@ -24,6 +24,28 @@ async function checkData() {
         } catch (e) {
             console.log("Error checking tables:", e.message);
         }
+
+        console.log('\n--- Reservations Table Check ---');
+        // Inspect reservations table for total_amount
+        try {
+            const reservationsResult = await pool.query('SELECT * FROM reservations LIMIT 1');
+            const reservations = reservationsResult.rows;
+
+            if (reservations.length === 0) {
+                console.log('Reservations table: No rows found, cannot infer columns easily without schema inspection query');
+            } else {
+                const columns = Object.keys(reservations[0]);
+                console.log('Reservations table columns sample:', columns);
+                if (columns.includes('total_amount')) {
+                    console.log('Reservations table contains "total_amount" column.');
+                } else {
+                    console.log('Reservations table does NOT contain "total_amount" column.');
+                }
+            }
+        } catch (e) {
+            console.error('Error fetching reservations:', e.message);
+        }
+
         console.log('--- Properties ---');
         const props = await pool.query('SELECT id, name FROM properties');
         console.log(props.rows);
