@@ -2,7 +2,7 @@ const axios = require('axios');
 
 class ChannexService {
     constructor() {
-        this.baseUrl = 'https://api.channex.io/api/v1';
+        this.baseUrl = 'https://app.channex.io/api/v1';
     }
 
     // Validate the API Key by fetching the user's properties list
