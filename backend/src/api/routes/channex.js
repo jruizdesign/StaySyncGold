@@ -207,6 +207,30 @@ router.get('/mappings', async (req, res) => {
     }
 });
 
+// GET /api/channex/sync
+// Fetch last sync timestamp
+router.get('/sync', async (req, res) => {
+    try {
+        const { property_id } = req.query;
+        if (!property_id) return res.status(400).json({ error: 'Property ID required' });
+
+        const result = await db.query(
+            "SELECT last_sync FROM channel_settings WHERE property_id = $1 AND channel_name = 'channex'",
+            [property_id]
+        );
+
+        if (result.rows.length === 0) {
+            return res.json({ success: true, last_sync: null });
+        }
+
+        res.json({ success: true, last_sync: result.rows[0].last_sync });
+
+    } catch (error) {
+        console.error('Channex Sync Status Error:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
 // POST /api/channex/sync
 // Trigger a manual sync (currently pulls bookings)
 router.post('/sync', async (req, res) => {
@@ -541,4 +565,3 @@ router.post('/mcp/sync-complete', async (req, res) => {
 });
 
 module.exports = router;
-
