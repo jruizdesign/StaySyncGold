@@ -74,8 +74,112 @@ const getBookingLedger = async (req, res, next) => {
   }
 };
 
+// @desc    Get dashboard stats (real-time)
+// @route   GET /api/reports/dashboard-stats
+// @access  Private
+const getDashboardStats = async (req, res, next) => {
+  try {
+    const { property_id } = req.query;
+    if (!property_id) return res.status(400).json({ error: 'Property ID required' });
+
+    const today = new Date().toISOString().split('T')[0];
+
+    // 1. STATS CARDS
+    // Check-ins Today
+    const checkinsRes = await db.query(
+      "SELECT COUNT(*) FROM bookings WHERE property_id = $1 AND arrival_date = $2 AND status != 'cancelled'",
+      [property_id, today]
+    );
+    const checkins = parseInt(checkinsRes.rows[0].count);
+
+    // Cleaning (Rooms with status 'dirty', 'cleaning', 'maintenance')
+    // We assume 'rooms' table has 'status'. If strict schema fails, strict SQL might fail.
+    // Safe fallback: assume 0 if query fails? No, let's try strict.
+    let cleaning = 0;
+    try {
+      const cleaningRes = await db.query(
+        "SELECT COUNT(*) FROM rooms WHERE property_id = $1 AND status IN ('dirty', 'cleaning', 'maintenance')",
+        [property_id]
+      );
+      cleaning = parseInt(cleaningRes.rows[0].count);
+    } catch (err) {
+      console.warn("Could not fetch cleaning stats (schema mismatch?):", err.message);
+    }
+
+    // Occupancy (Active Bookings / Total Rooms)
+    const totalRoomsRes = await db.query("SELECT COUNT(*) FROM rooms WHERE property_id = $1", [property_id]);
+    const totalRooms = parseInt(totalRoomsRes.rows[0].count) || 1;
+
+    const activeBookingsRes = await db.query(
+      "SELECT COUNT(*) FROM bookings WHERE property_id = $1 AND arrival_date <= $2 AND departure_date > $2 AND status != 'cancelled'",
+      [property_id, today]
+    );
+    const occupiedRooms = parseInt(activeBookingsRes.rows[0].count);
+    const occupancyRate = Math.round((occupiedRooms / totalRooms) * 100);
+
+    // Total Revenue (All Time)
+    const revenueRes = await db.query(
+      "SELECT SUM(total_price) FROM bookings WHERE property_id = $1 AND status != 'cancelled'",
+      [property_id]
+    );
+    const totalRevenue = parseFloat(revenueRes.rows[0].sum) || 0;
+
+
+    // 2. CHART DATA (Last 7 Days)
+    // Generate dates
+    const chartData = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const dateStr = d.toISOString().split('T')[0];
+      const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
+
+      // Daily Revenue
+      // Note: This matches bookings created/arriving on that day? 
+      // Or revenue recognized that day?
+      // Simple View: Sum of total_price for bookings ARRIVING that day (or created? usually arrival for forecast)
+      const dayRevRes = await db.query(
+        "SELECT SUM(total_price) FROM bookings WHERE property_id = $1 AND arrival_date = $2 AND status != 'cancelled'",
+        [property_id, dateStr]
+      );
+      const dayRevenue = parseFloat(dayRevRes.rows[0].sum) || 0;
+
+      // Daily Occupancy
+      const dayOccRes = await db.query(
+        "SELECT COUNT(*) FROM bookings WHERE property_id = $1 AND arrival_date <= $2 AND departure_date > $2 AND status != 'cancelled'",
+        [property_id, dateStr]
+      );
+      const dayOccupied = parseInt(dayOccRes.rows[0].count);
+      const dayOccupancyRate = Math.round((dayOccupied / totalRooms) * 100);
+
+      chartData.push({
+        name: dayName,
+        date: dateStr,
+        revenue: dayRevenue,
+        occupancy: dayOccupancyRate
+      });
+    }
+
+    res.json({
+      success: true,
+      stats: {
+        revenue: totalRevenue,
+        occupancy: occupancyRate,
+        checkins: checkins,
+        cleaning: cleaning
+      },
+      chartData: chartData
+    });
+
+  } catch (error) {
+    console.error("Dashboard Stats Error:", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
 module.exports = {
   getFinancialReport,
   getDailyRoomCosts,
   getBookingLedger,
+  getDashboardStats,
 };

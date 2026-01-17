@@ -56,8 +56,45 @@ const Dashboard: React.FC = () => {
     return () => clearInterval(interval);
   }, [user?.propertyId]);
 
-  // Mock Data - Only shown in Demo Mode
+  // Data Fetching
+  const [statsData, setStatsData] = React.useState<any>(null);
+  const [loadingStats, setLoadingStats] = React.useState(true);
+
+  React.useEffect(() => {
+    const fetchStats = async () => {
+      if (!user?.propertyId) return;
+      try {
+        setLoadingStats(true); // Don't block UI entirely, maybe show spinner in cards
+        const res = await fetch(`/api/reports/dashboard-stats?property_id=${user.propertyId}`);
+        const data = await res.json();
+        if (data.success) {
+          setStatsData(data);
+        }
+      } catch (error) {
+        console.error("Error fetching dashboard stats:", error);
+      } finally {
+        setLoadingStats(false);
+      }
+    };
+
+    // Initial fetch
+    fetchStats();
+
+    // Refresh every minute
+    const interval = setInterval(fetchStats, 60000);
+    return () => clearInterval(interval);
+  }, [user?.propertyId]);
+
+  // Mock Data (Demo Mode Fallback)
   const mockData = [
+    { name: 'Mon', revenue: 4000, occupancy: 65 },
+    { name: 'Tue', revenue: 3000, occupancy: 55 },
+    // ... rest of mock data can stay if we want fallback, but let's simplify
+  ];
+
+  // Determine Display Data
+  // If demo mode, use Hardcoded Mock. If Real, use API data.
+  const chartData = user?.isDemoMode ? [
     { name: 'Mon', revenue: 4000, occupancy: 65 },
     { name: 'Tue', revenue: 3000, occupancy: 55 },
     { name: 'Wed', revenue: 2000, occupancy: 45 },
@@ -65,21 +102,8 @@ const Dashboard: React.FC = () => {
     { name: 'Fri', revenue: 5890, occupancy: 85 },
     { name: 'Sat', revenue: 6390, occupancy: 95 },
     { name: 'Sun', revenue: 5490, occupancy: 80 },
-  ];
+  ] : (statsData?.chartData || []);
 
-  const emptyData = [
-    { name: 'Mon', revenue: 0, occupancy: 0 },
-    { name: 'Tue', revenue: 0, occupancy: 0 },
-    { name: 'Wed', revenue: 0, occupancy: 0 },
-    { name: 'Thu', revenue: 0, occupancy: 0 },
-    { name: 'Fri', revenue: 0, occupancy: 0 },
-    { name: 'Sat', revenue: 0, occupancy: 0 },
-    { name: 'Sun', revenue: 0, occupancy: 0 },
-  ];
-
-  const displayData = user?.isDemoMode ? mockData : emptyData;
-
-  // Stats Fallback
   const stats = user?.isDemoMode ? {
     revenue: "$24,592",
     revenueSub: "+12% from last week",
@@ -90,14 +114,14 @@ const Dashboard: React.FC = () => {
     cleaning: "8",
     cleaningSub: "3 pending inspection"
   } : {
-    revenue: "$0",
-    revenueSub: "No data",
-    occupancy: "0%",
-    occupancySub: "No data",
-    checkins: "0",
-    checkinsSub: "No arrivals",
-    cleaning: "0",
-    cleaningSub: "No tasks"
+    revenue: `$${statsData?.stats?.revenue?.toLocaleString() || '0'}`,
+    revenueSub: "Total Revenue", // API doesn't return sub-text yet
+    occupancy: `${statsData?.stats?.occupancy || 0}%`,
+    occupancySub: "Current Occupancy",
+    checkins: `${statsData?.stats?.checkins || 0}`,
+    checkinsSub: "Arrivals Today",
+    cleaning: `${statsData?.stats?.cleaning || 0}`,
+    cleaningSub: "Active Tasks"
   };
 
   return (
@@ -127,7 +151,7 @@ const Dashboard: React.FC = () => {
         <Card title="Weekly Revenue Overview">
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={displayData}>
+              <BarChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748b' }} dy={10} />
                 <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b' }} />
@@ -144,7 +168,7 @@ const Dashboard: React.FC = () => {
         <Card title="Occupancy Trends">
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={displayData}>
+              <LineChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748b' }} dy={10} />
                 <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b' }} />
