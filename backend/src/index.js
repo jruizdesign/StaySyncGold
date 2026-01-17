@@ -15,6 +15,10 @@ const adminRouter = require('./api/routes/admin');
 const usersRouter = require('./api/routes/users');
 const channexRouter = require('./api/routes/channex');
 const aiRouter = require('./api/routes/ai');
+const accountingRouter = require('./api/routes/accounting');
+
+// ...
+
 
 const cors = require('cors');
 
@@ -86,6 +90,7 @@ app.use('/api/admin', adminRouter);
 app.use('/api/users', usersRouter);
 app.use('/api/channex', channexRouter);
 app.use('/api/ai', aiRouter);
+app.use('/api/accounting', accountingRouter);
 
 app.get('/', (req, res) => {
   res.send('Welcome to the StaySyncGold API!');

@@ -44,6 +44,7 @@ const App: React.FC = () => {
             <Route path="/maintenance" element={<ProtectedRoute><Maintenance /></ProtectedRoute>} />
             <Route path="/staff" element={<ProtectedRoute><Staff /></ProtectedRoute>} />
             <Route path="/financials" element={<ProtectedRoute><Financials /></ProtectedRoute>} />
+            <Route path="/accounting" element={<ProtectedRoute><Accounting /></ProtectedRoute>} />
             <Route path="/kiosk" element={<ProtectedRoute><StaffKiosk /></ProtectedRoute>} />
             <Route path="/time-tracking" element={<ProtectedRoute><ManagerTimeTracking /></ProtectedRoute>} />
             <Route path="/channel-manager" element={<ProtectedRoute><ChannelManager /></ProtectedRoute>} />

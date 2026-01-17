@@ -104,6 +104,42 @@ function buildPropertyContext(data) {
     return parts.join('\n');
 }
 
+/**
+ * Generate Financial Briefing using Gemini 3 Flash
+ * @param {Object} dailyData - Daily financial data
+ * @returns {Promise<string>} - The briefing text
+ */
+async function generateFinancialBriefing(dailyData) {
+    try {
+        // User requested 'gemini-3.0-flash-001' specifically for this feature
+        // Note: If 3.0 is not valid, this will fail. Fallback handling recommended but complying with request.
+        const model = genAI.getGenerativeModel({ model: 'gemini-3.0-flash-001' });
+
+        const prompt = `
+            You are a specialized Financial Analyst for a Hotel Manager.
+            Analyze the following daily financial data and provide a strictly formatted EXECUTIVE BRIEFING.
+            
+            DATA:
+            ${JSON.stringify(dailyData, null, 2)}
+            
+            OUTPUT FORMAT:
+            - **Financial Health**: [1 sentence summary]
+            - **Critical Action**: [The single most important debt to collect today]
+            - **Risk Alert**: [Any red flags, e.g. high balance in-house or low projected revenue]
+            
+            Keep it concise, professional, and actionable. Do not use markdown headers other than bold keys.
+        `;
+
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        return response.text();
+    } catch (error) {
+        console.error("AI Financial Briefing Error:", error);
+        return "Unable to generate financial briefing. AI Service Unavailable.";
+    }
+}
+
 module.exports = {
-    generatePropertyInsights
+    generatePropertyInsights,
+    generateFinancialBriefing
 };
