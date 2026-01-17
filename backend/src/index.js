@@ -26,9 +26,33 @@ const port = process.env.PORT || 5000;
 app.use(express.json());
 
 // CORS Configuration
-const clientOrigin = process.env.CLIENT_ORIGIN || 'http://localhost:3001';
+// CORS Configuration
+const allowedOrigins = [
+  process.env.CLIENT_ORIGIN || 'http://localhost:3001',
+  'https://www.staysync.space',
+  'https://staysync.space'
+];
+
 app.use(cors({
-  origin: clientOrigin,
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+
+    // Check if origin is in the allowed list
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      return callback(null, true);
+    }
+
+    // Allow Vercel preview deployments (regex match)
+    // Matches https://any-subdomain.vercel.app
+    const vercelPreviewPattern = /^https:\/\/.*\.vercel\.app$/;
+    if (vercelPreviewPattern.test(origin)) {
+      return callback(null, true);
+    }
+
+    const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+    return callback(new Error(msg), false);
+  },
   credentials: true,
 }));
 
