@@ -16,10 +16,21 @@ const usersRouter = require('./api/routes/users');
 const channexRouter = require('./api/routes/channex');
 const aiRouter = require('./api/routes/ai');
 
+const cors = require('cors');
+
+// ... other imports
+
 const app = express();
 const port = process.env.PORT || 5000;
 
 app.use(express.json());
+
+// CORS Configuration
+const clientOrigin = process.env.CLIENT_ORIGIN || 'http://localhost:3001';
+app.use(cors({
+  origin: clientOrigin,
+  credentials: true,
+}));
 
 // Security Headers
 app.use(helmet({
