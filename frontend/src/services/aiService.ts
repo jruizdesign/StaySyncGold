@@ -18,7 +18,7 @@ export const generateSmartResponse = async (userPrompt: string, context: string)
 
   try {
     const response = await client.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-3-flash',
       contents: `System: You are an AI assistant for a hotel PMS called StaySyncGold. 
       Use the following context to answer the user's question concisely.
       
