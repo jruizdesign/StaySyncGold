@@ -15,11 +15,26 @@ export const MOCK_ROOMS: Room[] = Array.from({ length: 20 }, (_, i) => ({
 }));
 
 export const MOCK_GUESTS: Guest[] = [
-  { id: 'g1', fullName: 'Alice Johnson', email: 'alice@example.com', phone: '555-0101', vipStatus: true, notes: 'Prefers quiet rooms.', lastStay: '2023-12-01' },
-  { id: 'g2', fullName: 'Bob Smith', email: 'bob@example.com', phone: '555-0102', vipStatus: false, notes: '', lastStay: '2024-01-15' },
-  { id: 'g3', fullName: 'Charlie Davis', email: 'charlie@example.com', phone: '555-0103', vipStatus: false, notes: 'Late check-in.' },
-  { id: 'g4', fullName: 'Diana Prince', email: 'diana@example.com', phone: '555-0104', vipStatus: true, notes: 'Needs extra pillows.', lastStay: '2024-02-20' },
-  { id: 'g5', fullName: 'Ethan Hunt', email: 'ethan@example.com', phone: '555-0105', vipStatus: true, notes: 'Security detail required.', lastStay: '2023-10-10' },
+  {
+    id: 'g1', fullName: 'Alice Johnson', email: 'alice@example.com', phone: '555-0101', vipStatus: true, notes: 'Prefers quiet rooms.', lastStay: '2023-12-01',
+    propertyId: ''
+  },
+  {
+    id: 'g2', fullName: 'Bob Smith', email: 'bob@example.com', phone: '555-0102', vipStatus: false, notes: '', lastStay: '2024-01-15',
+    propertyId: ''
+  },
+  {
+    id: 'g3', fullName: 'Charlie Davis', email: 'charlie@example.com', phone: '555-0103', vipStatus: false, notes: 'Late check-in.',
+    propertyId: ''
+  },
+  {
+    id: 'g4', fullName: 'Diana Prince', email: 'diana@example.com', phone: '555-0104', vipStatus: true, notes: 'Needs extra pillows.', lastStay: '2024-02-20',
+    propertyId: ''
+  },
+  {
+    id: 'g5', fullName: 'Ethan Hunt', email: 'ethan@example.com', phone: '555-0105', vipStatus: true, notes: 'Security detail required.', lastStay: '2023-10-10',
+    propertyId: ''
+  },
 ];
 
 export const MOCK_RESERVATIONS: Reservation[] = [
@@ -34,10 +49,10 @@ export const MOCK_MAINTENANCE: MaintenanceRequest[] = [
 ];
 
 export const MOCK_STAFF: Staff[] = [
-  { id: 's1', name: 'Sarah Connor', role: 'Manager', status: 'Active', shiftStart: '08:00 AM' },
-  { id: 's2', name: 'Kyle Reese', role: 'Maintenance', status: 'Active', shiftStart: '09:00 AM' },
-  { id: 's3', name: 'T-800', role: 'Housekeeping', status: 'Off Duty' },
-  { id: 's4', name: 'John Doe', role: 'Front Desk', status: 'Active', shiftStart: '07:00 AM' },
+  { id: 's1', property_id: 'demo-property', firstname: 'Sarah', last_name: 'Connor', role: 'Manager', status: 'active', pin: '1234', pin_code: '1234' },
+  { id: 's2', property_id: 'demo-property', firstname: 'Kyle', last_name: 'Reese', role: 'Maintenance', status: 'active', pin: '2345', pin_code: '2345' },
+  { id: 's3', property_id: 'demo-property', firstname: 'T', last_name: '800', role: 'Housekeeping', status: 'inactive', pin: '3456', pin_code: '3456' },
+  { id: 's4', property_id: 'demo-property', firstname: 'John', last_name: 'Doe', role: 'Front Desk', status: 'active', pin: '4567', pin_code: '4567' },
 ];
 
 export const MOCK_TRANSACTIONS: Transaction[] = [

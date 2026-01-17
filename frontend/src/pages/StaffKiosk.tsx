@@ -138,7 +138,7 @@ const StaffKiosk: React.FC = () => {
       }));
 
       // Sort by name
-      mappedData.sort((a: Staff, b: Staff) => a.name.localeCompare(b.name));
+      mappedData.sort((a: Staff, b: Staff) => (a.name || '').localeCompare(b.name || ''));
 
       setStaffList(mappedData);
     } catch (err) {

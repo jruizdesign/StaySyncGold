@@ -67,6 +67,7 @@ export interface Staff {
   status: 'active' | 'inactive'; // Employment status
   email?: string;
   pin: string;
+  pin_code: string;
   avatar_url?: string;
 }
 
