@@ -14,6 +14,7 @@ import Login from './pages/Login';
 import AdminSettings from './pages/AdminSettings';
 import ITSecurity from './pages/ITSecurity';
 import DigitalSolutions from './pages/DigitalSolutions';
+import ChannelManager from './pages/ChannelManager';
 
 // Placeholder components for brevity
 import Guests from './pages/Guests';
@@ -45,6 +46,7 @@ const App: React.FC = () => {
             <Route path="/financials" element={<ProtectedRoute><Financials /></ProtectedRoute>} />
             <Route path="/kiosk" element={<ProtectedRoute><StaffKiosk /></ProtectedRoute>} />
             <Route path="/time-tracking" element={<ProtectedRoute><ManagerTimeTracking /></ProtectedRoute>} />
+            <Route path="/channel-manager" element={<ProtectedRoute><ChannelManager /></ProtectedRoute>} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Layout>

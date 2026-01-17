@@ -247,4 +247,286 @@ router.post('/sync', async (req, res) => {
     }
 });
 
+// ========== MCP-SPECIFIC ROUTES ==========
+// These routes are designed to work with the Channex MCP server
+
+// POST /api/channex/mcp/property/sync
+// Prepare property data for MCP sync
+router.post('/mcp/property/sync', async (req, res) => {
+    try {
+        const { property_id } = req.body;
+        if (!property_id) return res.status(400).json({ error: 'Property ID required' });
+
+        // Get property details from Supabase
+        const propertyResult = await db.query(
+            "SELECT * FROM properties WHERE id = $1",
+            [property_id]
+        );
+
+        if (propertyResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Property not found' });
+        }
+
+        const property = propertyResult.rows[0];
+
+        // Get API key
+        const settingResult = await db.query(
+            "SELECT api_key, channex_property_id FROM channel_settings WHERE property_id = $1 AND channel_name = 'channex'",
+            [property_id]
+        );
+
+        if (settingResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Channex not configured for this property' });
+        }
+
+        const { api_key, channex_property_id } = settingResult.rows[0];
+
+        // Return property data for MCP sync
+        res.json({
+            success: true,
+            message: 'Property data ready for MCP sync',
+            property: {
+                id: property.id,
+                name: property.name || property.location,
+                address: property.location,
+                channexPropertyId: channex_property_id
+            },
+            requiresMcpSync: true
+        });
+
+    } catch (error) {
+        console.error('MCP Property Sync Error:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+// POST /api/channex/mcp/property/save-id
+// Save Channex property ID after successful MCP sync
+router.post('/mcp/property/save-id', async (req, res) => {
+    try {
+        const { property_id, channex_property_id } = req.body;
+
+        if (!property_id || !channex_property_id) {
+            return res.status(400).json({ error: 'Property ID and Channex Property ID are required' });
+        }
+
+        await db.query(
+            "UPDATE channel_settings SET channex_property_id = $1, last_sync = NOW() WHERE property_id = $2 AND channel_name = 'channex'",
+            [channex_property_id, property_id]
+        );
+
+        res.json({
+            success: true,
+            message: 'Channex property ID saved successfully'
+        });
+
+    } catch (error) {
+        console.error('Save Property ID Error:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+// GET /api/channex/mcp/room-types/local
+// Get local room types for mapping
+router.get('/mcp/room-types/local', async (req, res) => {
+    try {
+        const { property_id } = req.query;
+        if (!property_id) return res.status(400).json({ error: 'Property ID required' });
+
+        const result = await db.query(
+            "SELECT DISTINCT type FROM rooms WHERE property_id = $1",
+            [property_id]
+        );
+
+        const roomTypes = result.rows.map(row => row.type);
+
+        res.json({
+            success: true,
+            roomTypes
+        });
+
+    } catch (error) {
+        console.error('Get Local Room Types Error:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+// POST /api/channex/mcp/mappings/save
+// Save room type mapping with Channex IDs
+router.post('/mcp/mappings/save', async (req, res) => {
+    try {
+        const { property_id, local_room_type, channex_room_type_id, channex_rate_plan_id } = req.body;
+
+        if (!property_id || !local_room_type || !channex_room_type_id) {
+            return res.status(400).json({
+                error: 'Property ID, local room type, and Channex room type ID are required'
+            });
+        }
+
+        // Get channel setting ID
+        const settingResult = await db.query(
+            "SELECT id FROM channel_settings WHERE property_id = $1 AND channel_name = 'channex'",
+            [property_id]
+        );
+
+        if (settingResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Channel settings not found' });
+        }
+
+        const channel_setting_id = settingResult.rows[0].id;
+
+        // Check if mapping exists
+        const existing = await db.query(
+            "SELECT id FROM channel_mappings WHERE channel_setting_id = $1 AND local_room_type = $2",
+            [channel_setting_id, local_room_type]
+        );
+
+        if (existing.rows.length > 0) {
+            // Update existing mapping
+            await db.query(
+                "UPDATE channel_mappings SET channex_room_type_id = $1, channex_rate_plan_id = $2 WHERE id = $3",
+                [channex_room_type_id, channex_rate_plan_id, existing.rows[0].id]
+            );
+        } else {
+            // Create new mapping
+            await db.query(
+                "INSERT INTO channel_mappings (id, channel_setting_id, local_room_type, channex_room_type_id, channex_rate_plan_id) VALUES ($1, $2, $3, $4, $5)",
+                [crypto.randomUUID(), channel_setting_id, local_room_type, channex_room_type_id, channex_rate_plan_id]
+            );
+        }
+
+        res.json({
+            success: true,
+            message: 'Room mapping saved successfully'
+        });
+
+    } catch (error) {
+        console.error('Save MCP Mapping Error:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+// GET /api/channex/mcp/mappings
+// Get room mappings with Channex IDs
+router.get('/mcp/mappings', async (req, res) => {
+    try {
+        const { property_id } = req.query;
+        if (!property_id) return res.status(400).json({ error: 'Property ID required' });
+
+        const settingResult = await db.query(
+            "SELECT id FROM channel_settings WHERE property_id = $1 AND channel_name = 'channex'",
+            [property_id]
+        );
+
+        if (settingResult.rows.length === 0) {
+            return res.json({ success: true, mappings: [] });
+        }
+
+        const channel_setting_id = settingResult.rows[0].id;
+
+        const mappings = await db.query(
+            "SELECT local_room_type, channel_room_id, channex_room_type_id, channex_rate_plan_id FROM channel_mappings WHERE channel_setting_id = $1",
+            [channel_setting_id]
+        );
+
+        res.json({
+            success: true,
+            mappings: mappings.rows
+        });
+
+    } catch (error) {
+        console.error('Get MCP Mappings Error:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+// POST /api/channex/mcp/ari/prepare
+// Prepare ARI data for MCP sync
+router.post('/mcp/ari/prepare', async (req, res) => {
+    try {
+        const { property_id, start_date, end_date, room_types } = req.body;
+
+        if (!property_id || !start_date || !end_date) {
+            return res.status(400).json({
+                error: 'Property ID, start date, and end date are required'
+            });
+        }
+
+        // Get Channex property ID
+        const settingResult = await db.query(
+            "SELECT channex_property_id FROM channel_settings WHERE property_id = $1 AND channel_name = 'channex'",
+            [property_id]
+        );
+
+        if (settingResult.rows.length === 0 || !settingResult.rows[0].channex_property_id) {
+            return res.status(400).json({
+                error: 'Property not synced to Channex. Please sync property first.'
+            });
+        }
+
+        const channex_property_id = settingResult.rows[0].channex_property_id;
+
+        // Get room mappings
+        const mappingResult = await db.query(
+            `SELECT cm.local_room_type, cm.channex_room_type_id, cm.channex_rate_plan_id 
+             FROM channel_mappings cm
+             JOIN channel_settings cs ON cm.channel_setting_id = cs.id
+             WHERE cs.property_id = $1 AND cs.channel_name = 'channex'`,
+            [property_id]
+        );
+
+        // Get rates from room_rates table
+        const ratesResult = await db.query(
+            `SELECT room_type, date, price 
+             FROM room_rates 
+             WHERE property_id = $1 
+             AND date >= $2 
+             AND date <= $3
+             ORDER BY date`,
+            [property_id, start_date, end_date]
+        );
+
+        res.json({
+            success: true,
+            message: 'ARI data ready for MCP sync',
+            data: {
+                channexPropertyId: channex_property_id,
+                startDate: start_date,
+                endDate: end_date,
+                mappings: mappingResult.rows,
+                rates: ratesResult.rows
+            },
+            requiresMcpSync: true
+        });
+
+    } catch (error) {
+        console.error('Prepare ARI Error:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+// POST /api/channex/mcp/sync-complete
+// Mark sync as complete
+router.post('/mcp/sync-complete', async (req, res) => {
+    try {
+        const { property_id } = req.body;
+        if (!property_id) return res.status(400).json({ error: 'Property ID required' });
+
+        await db.query(
+            "UPDATE channel_settings SET last_sync = NOW() WHERE property_id = $1 AND channel_name = 'channex'",
+            [property_id]
+        );
+
+        res.json({
+            success: true,
+            message: 'Sync timestamp updated'
+        });
+
+    } catch (error) {
+        console.error('Sync Complete Error:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
 module.exports = router;
+
