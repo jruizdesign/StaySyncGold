@@ -87,16 +87,18 @@ router.get('/rooms', async (req, res) => {
         const { property_id } = req.query;
         if (!property_id) return res.status(400).json({ error: 'Property ID required' });
 
-        const result = await db.query(
-            "SELECT api_key, property_mapping_id FROM channel_settings WHERE property_id = $1 AND channel_name = 'channex'",
-            [property_id]
-        );
+        const { data: settings, error: dbError } = await supabase
+            .from('channel_settings')
+            .select('api_key, property_mapping_id')
+            .eq('property_id', property_id)
+            .eq('channel_name', 'channex')
+            .single();
 
-        if (result.rows.length === 0) {
+        if (dbError || !settings) {
             return res.status(404).json({ error: 'Channex not connected' });
         }
 
-        const { api_key, property_mapping_id } = result.rows[0];
+        const { api_key, property_mapping_id } = settings;
         const response = await channexService.getRoomTypes(api_key, property_mapping_id);
 
         if (response.success) {
@@ -168,25 +170,32 @@ router.get('/mappings', async (req, res) => {
         const { property_id } = req.query;
         if (!property_id) return res.status(400).json({ error: 'Property ID required' });
 
-        const settingResult = await db.query(
-            "SELECT id FROM channel_settings WHERE property_id = $1 AND channel_name = 'channex'",
-            [property_id]
-        );
+        const { data: settings, error: settingError } = await supabase
+            .from('channel_settings')
+            .select('id')
+            .eq('property_id', property_id)
+            .eq('channel_name', 'channex')
+            .single();
 
-        if (settingResult.rows.length === 0) {
+        if (settingError || !settings) {
             return res.status(404).json({ error: 'Channel settings not found' });
         }
 
-        const channel_setting_id = settingResult.rows[0].id;
+        const channel_setting_id = settings.id;
 
-        const mappings = await db.query(
-            "SELECT local_room_type, channel_room_id FROM channel_mappings WHERE channel_setting_id = $1",
-            [channel_setting_id]
-        );
+        const { data: mappings, error: mappingsError } = await supabase
+            .from('channel_mappings')
+            .select('local_room_type, channel_room_id')
+            .eq('channel_setting_id', channel_setting_id);
+
+        if (mappingsError) {
+            console.error('Mappings query error:', mappingsError);
+            return res.status(500).json({ error: 'Failed to fetch mappings' });
+        }
 
         // Transform to simplified object: { [localType]: channelRoomId }
         const mappingObj = {};
-        mappings.rows.forEach(row => {
+        (mappings || []).forEach(row => {
             mappingObj[row.local_room_type] = row.channel_room_id;
         });
 

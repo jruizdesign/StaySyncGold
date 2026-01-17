@@ -7,6 +7,48 @@ import ChannexPropertySync from '../components/ChannexPropertySync';
 import ChannexRoomMapping from '../components/ChannexRoomMapping';
 import ChannexARIManager from '../components/ChannexARIManager';
 
+// Error Boundary to catch ARI Manager rendering errors
+interface ErrorBoundaryProps {
+    children: React.ReactNode;
+}
+
+interface ErrorBoundaryState {
+    hasError: boolean;
+    error: Error | null;
+}
+
+class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+    constructor(props: ErrorBoundaryProps) {
+        super(props);
+        this.state = { hasError: false, error: null };
+    }
+
+    static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+        return { hasError: true, error };
+    }
+
+    componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+        console.error('[ErrorBoundary] Caught error in ARI Manager:', error, errorInfo);
+    }
+
+    render() {
+        if (this.state.hasError) {
+            return (
+                <Card className="p-6 bg-red-50 border-red-200">
+                    <div className="text-red-900">
+                        <h3 className="text-lg font-semibold mb-2">⚠️ ARI Manager Error</h3>
+                        <p className="text-sm mb-2">The ARI Manager component failed to render:</p>
+                        <pre className="text-xs bg-red-100 p-3 rounded overflow-auto">
+                            {this.state.error?.message || 'Unknown error'}
+                        </pre>
+                        <p className="text-xs mt-2 text-red-700">Check browser console for details</p>
+                    </div>
+                </Card>
+            );
+        }
+        return this.props.children;
+    }
+}
 
 interface ChannelSetting {
     id: string;
@@ -137,9 +179,11 @@ const ChannelManager: React.FC = () => {
             />
 
             {/* ARI Manager Component */}
-            <ChannexARIManager
-                propertyId={user?.propertyId || 'cb3b3bf3-b34b-4062-a4fe-a588a7c684fb'}
-            />
+            <ErrorBoundary>
+                <ChannexARIManager
+                    propertyId={user?.propertyId || 'cb3b3bf3-b34b-4062-a4fe-a588a7c684fb'}
+                />
+            </ErrorBoundary>
 
             {/* Instructions Card */}
             <Card className="p-6 bg-blue-50 border-blue-200">
