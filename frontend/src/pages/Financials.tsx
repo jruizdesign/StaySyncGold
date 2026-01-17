@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useAuth } from '../context/AuthContext';
 
 interface Booking {
   id: string;
@@ -13,16 +14,18 @@ interface Booking {
 }
 
 const Financials: React.FC = () => {
+  const { user } = useAuth();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // TODO: Replace this with your actual property ID from context/auth
-  const propertyId = "cb3b3bf3-b34b-4062-a4fe-a588a7c684fb";
+  const propertyId = user?.propertyId;
 
   useEffect(() => {
-    fetchBookings();
-  }, []);
+    if (propertyId) {
+      fetchBookings();
+    }
+  }, [propertyId]);
 
   const fetchBookings = async () => {
     try {
