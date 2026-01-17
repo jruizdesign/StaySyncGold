@@ -7,10 +7,29 @@ import { supabase } from '../lib/supabase';
 
 const Reservations: React.FC = () => {
   const { user } = useAuth();
-  const [view, setView] = useState<'list' | 'calendar'>('list');
+  const [view, setView] = useState<'list' | 'calendar' | 'rates'>('list');
   const [searchTerm, setSearchTerm] = useState('');
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Rates & Revenue State
+  const [roomTypes, setRoomTypes] = useState<string[]>([]);
+  const [rates, setRates] = useState<any[]>([]);
+  const [selectedMonth, setSelectedMonth] = useState(new Date());
+
+  // Timeline State
+  const [rooms, setRooms] = useState<any[]>([]);
+
+  // Booking Modal State
+  const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
+  const [bookingForm, setBookingForm] = useState({
+    guestId: '',
+    roomId: '',
+    checkIn: '',
+    checkOut: '',
+    guestName: '', // For now simple text or we can implement search later
+    notes: ''
+  });
 
   useEffect(() => {
     if (user) {
@@ -64,6 +83,147 @@ const Reservations: React.FC = () => {
     }
   };
 
+  const fetchRooms = async () => {
+    if (!user?.propertyId) return;
+    try {
+      const { data, error } = await supabase
+        .from('rooms')
+        .select('*')
+        .eq('property_id', user.propertyId)
+        .order('number');
+
+      if (data) setRooms(data);
+    } catch (e) {
+      console.error('Error fetching rooms', e);
+    }
+  };
+
+  useEffect(() => {
+    if (user) fetchRooms();
+  }, [user]);
+
+  const handleCreateBooking = async () => {
+    if (!user?.propertyId || !bookingForm.guestName || !bookingForm.roomId || !bookingForm.checkIn || !bookingForm.checkOut) {
+      alert("Please fill all fields");
+      return;
+    }
+    setLoading(true);
+    try {
+      // 1. Create Guest if not checking existing (keeping simple for now: always create new or we need a guest picker)
+      // For MVP: Create guest implicitly or just use form name
+      let guest_id = bookingForm.guestId;
+
+      if (!guest_id) {
+        const { data: newGuest, error: guestError } = await supabase
+          .from('guests')
+          .insert({
+            property_id: user.propertyId,
+            first_name: bookingForm.guestName.split(' ')[0],
+            last_name: bookingForm.guestName.split(' ').slice(1).join(' ') || '.',
+            email: 'placeholder@email.com', // Placeholder
+            phone: ''
+          })
+          .select()
+          .single();
+
+        if (guestError) throw guestError;
+        guest_id = newGuest.id;
+      }
+
+      // 2. Create Reservation
+      const { error: resError } = await supabase
+        .from('reservations')
+        .insert({
+          property_id: user.propertyId,
+          guest_id: guest_id,
+          room_id: bookingForm.roomId,
+          check_in: bookingForm.checkIn,
+          check_out: bookingForm.checkOut,
+          status: 'Confirmed'
+        });
+
+      if (resError) throw resError;
+
+      setIsBookingModalOpen(false);
+      fetchReservations();
+      // Reset form
+      setBookingForm({ guestId: '', roomId: '', checkIn: '', checkOut: '', guestName: '', notes: '' });
+
+    } catch (err: any) {
+      console.error("Booking Error:", err);
+      alert("Failed to create booking: " + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchRates = async () => {
+    if (!user?.propertyId) return;
+
+    const startOfMonth = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth(), 1);
+    const endOfMonth = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 0);
+
+    try {
+      // Get unique room types from rooms table
+      const { data: rooms } = await supabase
+        .from('rooms')
+        .select('type')
+        .eq('property_id', user.propertyId);
+
+      if (rooms) {
+        const types = Array.from(new Set(rooms.map(r => r.type)));
+        setRoomTypes(types);
+      }
+
+      // Get rates for this month
+      const { data: ratesData } = await supabase
+        .from('room_rates')
+        .select('*')
+        .eq('property_id', user.propertyId)
+        .gte('date', startOfMonth.toISOString())
+        .lte('date', endOfMonth.toISOString());
+
+      setRates(ratesData || []);
+    } catch (err) {
+      console.error('Error fetching rates:', err);
+    }
+  };
+
+  const handleRateChange = async (roomType: string, date: Date, price: string) => {
+    if (!user?.propertyId) return;
+    const dateStr = date.toISOString().split('T')[0];
+    const numericPrice = parseFloat(price);
+    if (isNaN(numericPrice)) return;
+
+    try {
+      // Check if rate exists
+      const existing = rates.find(r => r.room_type === roomType && r.date === dateStr);
+
+      if (existing) {
+        await supabase
+          .from('room_rates')
+          .update({ price: numericPrice })
+          .eq('id', existing.id);
+      } else {
+        await supabase
+          .from('room_rates')
+          .insert({
+            property_id: user.propertyId,
+            room_type: roomType,
+            date: dateStr,
+            price: numericPrice
+          });
+      }
+      await fetchRates(); // Refresh
+    } catch (err) {
+      console.error('Error saving rate:', err);
+    }
+  };
+
+  useEffect(() => {
+    if (view === 'rates') fetchRates();
+  }, [view, selectedMonth, user?.propertyId]);
+
   const filteredReservations = reservations.filter(r =>
     r.guestName.toLowerCase().includes(searchTerm.toLowerCase()) ||
     r.roomNumber.includes(searchTerm)
@@ -96,18 +256,26 @@ const Reservations: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="flex items-center gap-2 bg-white p-1 rounded-lg border border-slate-200">
-          <button
-            onClick={() => setView('list')}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${view === 'list' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-50'}`}
-          >
-            List View
-          </button>
-          <button
-            onClick={() => setView('calendar')}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${view === 'calendar' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-50'}`}
-          >
-            Calendar
-          </button>
+          <div className="flex items-center gap-2 bg-white p-1 rounded-lg border border-slate-200">
+            <button
+              onClick={() => setView('list')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${view === 'list' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-50'}`}
+            >
+              List View
+            </button>
+            <button
+              onClick={() => setView('calendar')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${view === 'calendar' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-50'}`}
+            >
+              Calendar
+            </button>
+            <button
+              onClick={() => setView('rates')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${view === 'rates' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-50'}`}
+            >
+              Rates & Revenue
+            </button>
+          </div>
         </div>
         <div className="flex gap-2 w-full sm:w-auto">
           <div className="relative flex-1 sm:w-64">
@@ -120,9 +288,54 @@ const Reservations: React.FC = () => {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <Button icon={Plus}>New Booking</Button>
+          <Button icon={Plus} onClick={() => setIsBookingModalOpen(true)}>New Booking</Button>
         </div>
       </div>
+
+      {isBookingModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white p-6 rounded-lg w-96 shadow-xl">
+            <h3 className="text-lg font-bold mb-4">New Reservation</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700">Guest Name</label>
+                <Input
+                  value={bookingForm.guestName}
+                  onChange={(e) => setBookingForm({ ...bookingForm, guestName: e.target.value })}
+                  placeholder="John Doe"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700">Room</label>
+                <select
+                  className="w-full p-2 border rounded-lg"
+                  value={bookingForm.roomId}
+                  onChange={(e) => setBookingForm({ ...bookingForm, roomId: e.target.value })}
+                >
+                  <option value="">Select Room</option>
+                  {rooms.map(room => (
+                    <option key={room.id} value={room.id}>{room.number} - {room.type}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">Check In</label>
+                  <Input type="date" value={bookingForm.checkIn} onChange={(e) => setBookingForm({ ...bookingForm, checkIn: e.target.value })} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">Check Out</label>
+                  <Input type="date" value={bookingForm.checkOut} onChange={(e) => setBookingForm({ ...bookingForm, checkOut: e.target.value })} />
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 mt-4">
+                <Button variant="ghost" onClick={() => setIsBookingModalOpen(false)}>Cancel</Button>
+                <Button onClick={handleCreateBooking}>Confirm Booking</Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {view === 'list' ? (
         <Card className="overflow-hidden !p-0">
@@ -171,14 +384,146 @@ const Reservations: React.FC = () => {
             </table>
           </div>
         </Card>
-      ) : (
-        <Card className="h-[600px] flex items-center justify-center text-slate-400 bg-slate-50 border-dashed">
-          <div className="text-center">
-            <CalendarIcon className="w-12 h-12 mx-auto mb-4 opacity-50" />
-            <h3 className="text-lg font-medium text-slate-900">Calendar View</h3>
-            <p>Visual timeline implementation would go here.</p>
+      ) : view === 'calendar' ? (
+        <Card className="overflow-x-auto">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-bold">Timeline & Availability</h2>
+            <div className="flex gap-2">
+              <Button variant="ghost" onClick={() => setSelectedMonth(new Date(selectedMonth.setMonth(selectedMonth.getMonth() - 1)))}>Prev</Button>
+              <span className="font-bold flex items-center px-4">{selectedMonth.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}</span>
+              <Button variant="ghost" onClick={() => setSelectedMonth(new Date(selectedMonth.setMonth(selectedMonth.getMonth() + 1)))}>Next</Button>
+            </div>
+          </div>
+          <div className="min-w-[800px]">
+            <div className="grid grid-cols-[100px_1fr] border-b">
+              <div className="p-2 font-bold bg-slate-50 border-r">Room</div>
+              <div className="grid" style={{ gridTemplateColumns: `repeat(${new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 0).getDate()}, minmax(40px, 1fr))` }}>
+                {Array.from({ length: new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 0).getDate() }, (_, i) => i + 1).map(day => (
+                  <div key={day} className="text-center text-xs p-1 border-l text-slate-500">
+                    {day}
+                    <div className="font-mono">{new Date(selectedMonth.getFullYear(), selectedMonth.getMonth(), day).toLocaleDateString(undefined, { weekday: 'narrow' })}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            {/* We need distinct rooms, not filtering by room types only. Fetching rooms is needed or we can map from available reservations if full list not available, but ideally we show all rooms.
+                For now, let's assume we can derive rooms from reservations or roomTypes derived earlier. But roomTypes are just types.
+                We should validly fetch rooms. I'll add rooms fetching to the effect.
+            */}
+            <div className="divide-y relative">
+              {rooms.map(room => (
+                <div key={room.id} className="grid grid-cols-[100px_1fr] hover:bg-slate-50 relative group">
+                  <div className="p-3 font-medium bg-white border-r text-sm truncate sticky left-0 z-10 flex flex-col justify-center">
+                    <span>Room {room.number}</span>
+                    <span className="text-xs text-slate-400">{room.type}</span>
+                  </div>
+                  <div className="grid relative" style={{ gridTemplateColumns: `repeat(${new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 0).getDate()}, 1fr)` }}>
+                    {/* Grid Lines */}
+                    {Array.from({ length: new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 0).getDate() }, (_, i) => i + 1).map(day => (
+                      <div key={day} className="border-l h-12"></div>
+                    ))}
+
+                    {/* Reservations Bars */}
+                    {reservations
+                      .filter(res => res.roomId === room.id)
+                      .map(res => {
+                        const startOfMonth = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth(), 1);
+                        const endOfMonth = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 0);
+                        const checkIn = new Date(res.checkIn);
+                        const checkOut = new Date(res.checkOut);
+
+                        // Check overlap
+                        if (checkOut <= startOfMonth || checkIn > endOfMonth) return null;
+
+                        // Calculate Grid Position
+                        // Start Day: Max(1, checkIn date)
+                        const startDay = checkIn < startOfMonth ? 1 : checkIn.getDate();
+
+                        // Duration: Min(endOfMonth, checkOut) - Start
+                        const endDay = checkOut > endOfMonth ? endOfMonth.getDate() : checkOut.getDate();
+                        const span = Math.max(1, endDay - startDay); // at least 1 day block? or checkOut is day AFTER last night? Usually hotel checkOut is day after.
+                        // if checkIn 1st, checkOut 2nd -> 1 night. Span should reflect nights? or visual block?
+                        // Visual block from CheckIn Day start to CheckOut Day start.
+
+                        return (
+                          <div
+                            key={res.id}
+                            className="absolute top-1 bottom-1 bg-blue-500 rounded text-white text-xs flex items-center px-2 truncate shadow-sm z-0 hover:z-20 hover:shadow-md transition-all cursor-pointer border border-blue-600"
+                            style={{
+                              gridColumnStart: startDay,
+                              gridColumnEnd: `span ${span}`,
+                              left: '2px',
+                              right: '2px'
+                            }}
+                            title={`${res.guestName} (${res.status})`}
+                          >
+                            {res.guestName}
+                          </div>
+                        );
+                      })
+                    }
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </Card>
+      ) : (
+        <>
+          {view === 'rates' && (
+            <div className="space-y-6">
+              <div className="flex justify-between items-center">
+                <h2 className="text-xl font-bold">Revenue Management</h2>
+                <div className="flex gap-2">
+                  <Button variant="ghost" onClick={() => setSelectedMonth(new Date(selectedMonth.setMonth(selectedMonth.getMonth() - 1)))}>Prev</Button>
+                  <span className="font-bold flex items-center px-4">{selectedMonth.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}</span>
+                  <Button variant="ghost" onClick={() => setSelectedMonth(new Date(selectedMonth.setMonth(selectedMonth.getMonth() + 1)))}>Next</Button>
+                </div>
+              </div>
+
+              <Card className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr>
+                      <th className="p-3 text-left bg-slate-50 sticky left-0 z-10 border-b">Room Type</th>
+                      {Array.from({ length: new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 0).getDate() }, (_, i) => i + 1).map(day => (
+                        <th key={day} className="p-2 min-w-[60px] text-center bg-slate-50 border-b border-l text-xs text-slate-500 font-mono">
+                          {day}
+                          <br />
+                          {new Date(selectedMonth.getFullYear(), selectedMonth.getMonth(), day).toLocaleDateString(undefined, { weekday: 'narrow' })}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {roomTypes.map(type => (
+                      <tr key={type} className="hover:bg-slate-50/50">
+                        <td className="p-3 font-bold text-slate-700 sticky left-0 bg-white border-r z-10 shadow-sm">{type}</td>
+                        {Array.from({ length: new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 0).getDate() }, (_, i) => i + 1).map(day => {
+                          const date = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth(), day);
+                          const dateStr = date.toISOString().split('T')[0];
+                          const rate = rates.find(r => r.room_type === type && r.date === dateStr);
+
+                          return (
+                            <td key={day} className="p-0 border-r border-b relative">
+                              <input
+                                type="number"
+                                className="w-full h-full p-2 text-center bg-transparent focus:bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-emerald-500 transition-colors"
+                                placeholder="-"
+                                defaultValue={rate?.price}
+                                onBlur={(e) => handleRateChange(type, date, e.target.value)}
+                              />
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </Card>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

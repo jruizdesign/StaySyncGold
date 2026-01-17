@@ -17,6 +17,13 @@ const pool = new Pool(config);
 
 async function checkData() {
     try {
+        console.log('\n--- Pricing Tables Check ---');
+        try {
+            const rates = await pool.query("SELECT table_name FROM information_schema.tables WHERE table_name LIKE '%rate%' OR table_name LIKE '%price%'");
+            console.table(rates.rows);
+        } catch (e) {
+            console.log("Error checking tables:", e.message);
+        }
         console.log('--- Properties ---');
         const props = await pool.query('SELECT id, name FROM properties');
         console.log(props.rows);

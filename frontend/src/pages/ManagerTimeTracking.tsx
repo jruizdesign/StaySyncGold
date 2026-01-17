@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { Card, Button, Input, Modal } from '../components/UIComponents';
 import { Clock, Calendar, ChevronLeft, ChevronRight, Edit2, User } from 'lucide-react';
-import { StaffShift } from '../types';
+import { StaffShift, Staff } from '../types';
 
 interface AttendanceLog {
     id: string;
@@ -18,13 +18,24 @@ interface AttendanceLog {
 
 const ManagerTimeTracking: React.FC = () => {
     const { user } = useAuth();
-    const [view, setView] = useState<'roster' | 'logs'>('logs');
+
     const [logs, setLogs] = useState<AttendanceLog[]>([]);
     const [loading, setLoading] = useState(true);
     const [currentDate, setCurrentDate] = useState(new Date());
+    const [view, setView] = useState<'roster' | 'logs'>('roster'); // Defaulting to roster for dev flow
 
     // Staff Roster State
-    const [staffList, setStaffList] = useState<any[]>([]);
+    const [staffList, setStaffList] = useState<Staff[]>([]);
+    const [editingStaff, setEditingStaff] = useState<Staff | null>(null);
+    const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
+    const [staffForm, setStaffForm] = useState({
+        firstname: '',
+        last_name: '',
+        email: '',
+        role: 'Front Desk',
+        pin: '',
+        status: 'active'
+    });
 
     // Edit Modal State
     const [editingLog, setEditingLog] = useState<AttendanceLog | null>(null);
@@ -197,6 +208,80 @@ const ManagerTimeTracking: React.FC = () => {
         }
     };
 
+    // --- Staff Management Logic ---
+
+    const openAddStaffModal = () => {
+        setEditingStaff(null);
+        setStaffForm({
+            firstname: '',
+            last_name: '',
+            email: '',
+            role: 'Front Desk',
+            pin: '', // Default empty
+            status: 'active'
+        });
+        setIsStaffModalOpen(true);
+    };
+
+    const openEditStaffModal = (staff: Staff) => {
+        setEditingStaff(staff);
+        setStaffForm({
+            firstname: staff.firstname,
+            last_name: staff.last_name,
+            email: staff.email || '',
+            role: staff.role as any,
+            pin: staff.pin || '',
+            status: staff.status as any
+        });
+        setIsStaffModalOpen(true);
+    };
+
+    const handleSaveStaff = async () => {
+        if (!user?.propertyId) return;
+        if (!staffForm.firstname || !staffForm.last_name || !staffForm.pin) {
+            alert('Please fill in Name and PIN');
+            return;
+        }
+
+        try {
+            if (editingStaff) {
+                // Update
+                const { error } = await supabase
+                    .from('staff')
+                    .update({
+                        firstname: staffForm.firstname,
+                        last_name: staffForm.last_name,
+                        email: staffForm.email,
+                        role: staffForm.role,
+                        pin: staffForm.pin,
+                        status: staffForm.status
+                    })
+                    .eq('id', editingStaff.id);
+                if (error) throw error;
+            } else {
+                // Create
+                const { error } = await supabase
+                    .from('staff')
+                    .insert({
+                        property_id: user.propertyId,
+                        firstname: staffForm.firstname,
+                        last_name: staffForm.last_name,
+                        email: staffForm.email,
+                        role: staffForm.role,
+                        pin: staffForm.pin,
+                        status: staffForm.status
+                    });
+                if (error) throw error;
+            }
+
+            setIsStaffModalOpen(false);
+            fetchStaff();
+        } catch (err) {
+            console.error('Error saving staff:', err);
+            alert('Failed to save staff');
+        }
+    };
+
     const formatDate = (date: Date) => {
         return date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
     };
@@ -221,10 +306,7 @@ const ManagerTimeTracking: React.FC = () => {
                 </div>
                 <Button
                     className="bg-emerald-500 hover:bg-emerald-600 text-white gap-2"
-                    onClick={() => {
-                        // Future: Open Add Staff Modal
-                        alert('Add Staff functionality coming soon');
-                    }}
+                    onClick={openAddStaffModal}
                 >
                     + Add Staff Member
                 </Button>
@@ -365,18 +447,19 @@ const ManagerTimeTracking: React.FC = () => {
                                             </td>
                                             <td className="px-6 py-4">
                                                 <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${staff.status === 'active' ? 'bg-green-100 text-green-800' :
-                                                        staff.status === 'on_break' ? 'bg-amber-100 text-amber-800' :
-                                                            'bg-slate-100 text-slate-800'
+                                                    'bg-slate-100 text-slate-800'
                                                     }`}>
-                                                    {staff.status === 'active' ? 'On Duty' :
-                                                        staff.status === 'on_break' ? 'On Break' : 'Off Duty'}
+                                                    {staff.status === 'active' ? 'Active' : 'Inactive'}
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 text-sm text-slate-500">
                                                 {staff.email || 'N/A'}
                                             </td>
                                             <td className="px-6 py-4 text-right">
-                                                <button className="p-2 rounded-full hover:bg-slate-100 text-slate-400 hover:text-emerald-600 transition-colors">
+                                                <button
+                                                    onClick={() => openEditStaffModal(staff)}
+                                                    className="p-2 rounded-full hover:bg-slate-100 text-slate-400 hover:text-emerald-600 transition-colors"
+                                                >
                                                     <Edit2 className="w-4 h-4" />
                                                 </button>
                                             </td>
@@ -389,7 +472,7 @@ const ManagerTimeTracking: React.FC = () => {
                 </div>
             )}
 
-            {/* Edit Modal */}
+            {/* Edit Attendance Log Modal */}
             <Modal isOpen={!!editingLog} onClose={() => setEditingLog(null)} title="Edit Attendance Log">
                 <div className="p-4 pt-0">
                     <p className="mb-4 text-sm text-slate-500">
@@ -407,6 +490,80 @@ const ManagerTimeTracking: React.FC = () => {
                     <div className="flex gap-3 justify-end">
                         <Button variant="ghost" onClick={() => setEditingLog(null)}>Cancel</Button>
                         <Button onClick={saveEdit}>Save Changes</Button>
+                    </div>
+                </div>
+            </Modal>
+
+            {/* Add/Edit Staff Modal */}
+            <Modal isOpen={isStaffModalOpen} onClose={() => setIsStaffModalOpen(false)} title={editingStaff ? "Edit Staff Member" : "Add Staff Member"}>
+                <div className="p-4 pt-0 space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                        <Input
+                            label="First Name"
+                            value={staffForm.firstname}
+                            onChange={(e) => setStaffForm({ ...staffForm, firstname: e.target.value })}
+                            placeholder="e.g. John"
+                        />
+                        <Input
+                            label="Last Name"
+                            value={staffForm.last_name}
+                            onChange={(e) => setStaffForm({ ...staffForm, last_name: e.target.value })}
+                            placeholder="e.g. Doe"
+                        />
+                    </div>
+
+                    <Input
+                        label="Email Address (Optional)"
+                        value={staffForm.email}
+                        onChange={(e) => setStaffForm({ ...staffForm, email: e.target.value })}
+                        placeholder="john.doe@example.com"
+                    />
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-1">Role</label>
+                            <select
+                                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none bg-white"
+                                value={staffForm.role}
+                                onChange={(e) => setStaffForm({ ...staffForm, role: e.target.value as any })}
+                            >
+                                <option value="Front Desk">Front Desk</option>
+                                <option value="Housekeeping">Housekeeping</option>
+                                <option value="Maintenance">Maintenance</option>
+                                <option value="Manager">Manager</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-1">Status</label>
+                            <select
+                                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none bg-white"
+                                value={staffForm.status}
+                                onChange={(e) => setStaffForm({ ...staffForm, status: e.target.value as any })}
+                            >
+                                <option value="active">Active</option>
+                                <option value="inactive">Inactive</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div className="pt-4 border-t border-slate-100">
+                        <label className="block text-sm font-bold text-slate-900 mb-2">Kiosk Access PIN</label>
+                        <p className="text-xs text-slate-500 mb-2">Used for clocking in/out on the staff kiosk.</p>
+                        <Input
+                            type="text"
+                            maxLength={4}
+                            placeholder="0000"
+                            value={staffForm.pin}
+                            onChange={(e) => setStaffForm({ ...staffForm, pin: e.target.value.replace(/\D/g, '').slice(0, 4) })}
+                            className="text-center text-2xl tracking-[0.5em] font-mono font-bold"
+                        />
+                    </div>
+
+                    <div className="flex gap-3 justify-end mt-8">
+                        <Button variant="ghost" onClick={() => setIsStaffModalOpen(false)}>Cancel</Button>
+                        <Button onClick={handleSaveStaff} className="bg-emerald-500 hover:bg-emerald-600 text-white">
+                            {editingStaff ? 'Update Staff' : 'Create Staff'}
+                        </Button>
                     </div>
                 </div>
             </Modal>
