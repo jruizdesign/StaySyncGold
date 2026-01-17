@@ -70,7 +70,8 @@ const DatabaseInspector: React.FC = () => {
 
     const handleTestDb = async () => {
         try {
-            const res = await fetch('/test-db');
+            const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+            const res = await fetch(`${API_BASE_URL}/test-db`);
             const text = await res.text();
             if (!text) throw new Error('Empty response from server');
             const data = JSON.parse(text);
@@ -401,7 +402,8 @@ const ChannelManager: React.FC = () => {
 
     const fetchActiveChannels = async (propertyId: string) => {
         try {
-            const res = await fetch(`/api/channex/status?property_id=${propertyId}`);
+            const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+            const res = await fetch(`${API_BASE_URL}/api/channex/status?property_id=${propertyId}`);
             const text = await res.text();
             if (!text) return; // Handle empty response gracefully
             const json = JSON.parse(text);
@@ -415,8 +417,9 @@ const ChannelManager: React.FC = () => {
 
     const fetchMappingData = async (propertyId: string) => {
         try {
+            const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
             // A. Fetch Channex Rooms
-            const channexRes = await fetch(`/api/channex/rooms?property_id=${propertyId}`);
+            const channexRes = await fetch(`${API_BASE_URL}/api/channex/rooms?property_id=${propertyId}`);
             const channexText = await channexRes.text();
             const channexJson = channexText ? JSON.parse(channexText) : {};
             if (channexJson.rooms) {
@@ -438,7 +441,7 @@ const ChannelManager: React.FC = () => {
             }
 
             // C. Fetch Existing Mappings
-            const mapRes = await fetch(`/api/channex/mappings?property_id=${propertyId}`);
+            const mapRes = await fetch(`${API_BASE_URL}/api/channex/mappings?property_id=${propertyId}`);
             const mapText = await mapRes.text();
             const mapJson = mapText ? JSON.parse(mapText) : {};
             if (mapJson.mappings) {
@@ -457,7 +460,8 @@ const ChannelManager: React.FC = () => {
         }
         setLoading(true);
         try {
-            const res = await fetch('/api/channex/verify', {
+            const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+            const res = await fetch(`${API_BASE_URL}/api/channex/verify`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ apiKey: apiToken, propertyMappingId })
@@ -483,7 +487,8 @@ const ChannelManager: React.FC = () => {
 
         // Verify with Backend first
         try {
-            const verifyRes = await fetch('/api/channex/verify', {
+            const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+            const verifyRes = await fetch(`${API_BASE_URL}/api/channex/verify`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ apiKey: apiToken, propertyMappingId })
@@ -529,7 +534,8 @@ const ChannelManager: React.FC = () => {
     const handleSync = async () => {
         setSyncing(true);
         try {
-            const res = await fetch('/api/channex/sync', {
+            const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+            const res = await fetch(`${API_BASE_URL}/api/channex/sync`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ property_id: user?.propertyId })
@@ -556,7 +562,8 @@ const ChannelManager: React.FC = () => {
         if (!user?.propertyId) return;
         setSavingMappings(true);
         try {
-            const res = await fetch('/api/channex/mappings', {
+            const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+            const res = await fetch(`${API_BASE_URL}/api/channex/mappings`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
