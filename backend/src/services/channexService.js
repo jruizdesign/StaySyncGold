@@ -31,7 +31,7 @@ class ChannexService {
             // Channex returns: { data: [ { attributes: { title: "Booking.com", is_active: true } } ] }
             return { success: true, data: response.data.data || [] };
         } catch (error) {
-            console.error('Channex Channels Error:', error);
+            console.error('Channex Channels Error:', error.response?.data || error.message);
             const msg = error.response?.data?.errors?.[0]?.detail || error.message;
             return { success: false, error: msg };
         }
@@ -44,7 +44,7 @@ class ChannexService {
             });
             return { success: true, data: response.data.data || [] };
         } catch (error) {
-            console.error('Channex Room Types Error:', error);
+            console.error('Channex Room Types Error:', error.response?.data || error.message);
             const msg = error.response?.data?.errors?.[0]?.detail || error.message;
             return { success: false, error: msg };
         }
@@ -62,7 +62,7 @@ class ChannexService {
             });
             return { success: true, data: response.data.data || [] };
         } catch (error) {
-            console.error('Channex Fetch Bookings Error:', error);
+            console.error('Channex Fetch Bookings Error:', error.response?.data || error.message);
             const msg = error.response?.data?.errors?.[0]?.detail || error.message;
             return { success: false, error: msg };
         }

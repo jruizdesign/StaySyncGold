@@ -20,7 +20,7 @@ router.get('/status', async (req, res) => {
             .eq('channel_name', 'channex')
             .single();
 
-        if (dbError || !settings) {
+        if (dbError || !settings || !settings.api_key) {
             return res.json({ connected: false, channels: [] });
         }
 
@@ -94,8 +94,8 @@ router.get('/rooms', async (req, res) => {
             .eq('channel_name', 'channex')
             .single();
 
-        if (dbError || !settings) {
-            return res.status(404).json({ error: 'Channex not connected' });
+        if (dbError || !settings || !settings.api_key) {
+            return res.status(404).json({ error: 'Channex not connected or API key missing' });
         }
 
         const { api_key, property_mapping_id } = settings;
@@ -108,7 +108,7 @@ router.get('/rooms', async (req, res) => {
         }
     } catch (error) {
         console.error('Channex Rooms Route Error:', error);
-        res.status(500).json({ error: 'Internal Server Error' });
+        res.status(500).json({ error: 'Internal Server Error', details: error.message });
     }
 });
 
@@ -190,7 +190,7 @@ router.get('/mappings', async (req, res) => {
 
         if (mappingsError) {
             console.error('Mappings query error:', mappingsError);
-            return res.status(500).json({ error: 'Failed to fetch mappings' });
+            return res.status(500).json({ error: 'Failed to fetch mappings', details: mappingsError.message });
         }
 
         // Transform to simplified object: { [localType]: channelRoomId }
@@ -203,7 +203,7 @@ router.get('/mappings', async (req, res) => {
 
     } catch (error) {
         console.error('Channex Get Mappings Error:', error);
-        res.status(500).json({ error: 'Internal Server Error' });
+        res.status(500).json({ error: 'Internal Server Error', details: error.message });
     }
 });
 
@@ -243,7 +243,7 @@ router.post('/sync', async (req, res) => {
             [property_id]
         );
 
-        if (result.rows.length === 0) {
+        if (result.rows.length === 0 || !result.rows[0].api_key) {
             return res.status(404).json({ error: 'Channex not connected' });
         }
 
@@ -279,7 +279,7 @@ router.post('/sync', async (req, res) => {
 
     } catch (error) {
         console.error('Channex Sync Error:', error);
-        res.status(500).json({ error: 'Internal Server Error' });
+        res.status(500).json({ error: 'Internal Server Error', details: error.message });
     }
 });
 
