@@ -19,7 +19,7 @@ const RoomSetupWizard: React.FC<RoomSetupWizardProps> = ({ onClose, onComplete }
         roomsPerFloor: 10,
         startNumber: 101,
         type: 'Standard King',
-        price: 150
+        price_per_night: 150
     });
 
     const previewRooms = () => {
@@ -32,7 +32,7 @@ const RoomSetupWizard: React.FC<RoomSetupWizardProps> = ({ onClose, onComplete }
                     number: roomNum.toString(),
                     floor: floorNum,
                     type: config.type,
-                    price: config.price,
+                    price_per_night: config.price_per_night,
                     status: RoomStatus.CLEAN
                 });
             }
@@ -162,8 +162,8 @@ const RoomSetupWizard: React.FC<RoomSetupWizardProps> = ({ onClose, onComplete }
                                         <input
                                             type="number"
                                             min="0"
-                                            value={config.price}
-                                            onChange={e => setConfig({ ...config, price: parseInt(e.target.value) || 0 })}
+                                            value={config.price_per_night}
+                                            onChange={e => setConfig({ ...config, price_per_night: parseInt(e.target.value) || 0 })}
                                             className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all"
                                         />
                                     </div>
