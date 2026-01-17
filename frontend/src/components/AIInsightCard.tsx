@@ -97,7 +97,7 @@ export const AIInsightCard: React.FC<AIInsightCardProps> = ({
                             )}
                         </div>
                         <p className={`${styles.subtitleColor} text-xs font-bold tracking-widest uppercase mt-1`}>
-                            {load - ing ? 'ANALYZING PROPERTY DATA...' : subtitle}
+                            {loading ? 'ANALYZING PROPERTY DATA...' : subtitle}
                         </p>
                     </div>
                 </div>
