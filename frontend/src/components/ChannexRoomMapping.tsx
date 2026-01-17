@@ -31,7 +31,8 @@ const ChannexRoomMapping: React.FC<ChannexRoomMappingProps> = ({
         setLoading(true);
         try {
             // Fetch local room types
-            const typesResponse = await fetch(`/api/channex/mcp/room-types/local?property_id=${propertyId}`);
+            const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+            const typesResponse = await fetch(`${API_BASE_URL}/api/channex/mcp/room-types/local?property_id=${propertyId}`);
             const typesData = await typesResponse.json();
 
             if (!typesResponse.ok) {
@@ -39,7 +40,7 @@ const ChannexRoomMapping: React.FC<ChannexRoomMappingProps> = ({
             }
 
             // Fetch existing mappings
-            const mappingsResponse = await fetch(`/api/channex/mcp/mappings?property_id=${propertyId}`);
+            const mappingsResponse = await fetch(`${API_BASE_URL}/api/channex/mcp/mappings?property_id=${propertyId}`);
             const mappingsData = await mappingsResponse.json();
 
             if (!mappingsResponse.ok) {
@@ -91,7 +92,8 @@ const ChannexRoomMapping: React.FC<ChannexRoomMappingProps> = ({
         setError(null);
 
         try {
-            const response = await fetch('/api/channex/mcp/mappings/save', {
+            const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+            const response = await fetch(`${API_BASE_URL}/api/channex/mcp/mappings/save`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
