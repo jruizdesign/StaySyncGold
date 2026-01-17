@@ -391,7 +391,7 @@ const StaffKiosk: React.FC = () => {
             </p>
           </div>
         </div>
-        <Link to="/" className="text-slate-400 hover:text-slate-900 flex items-center gap-2 text-sm font-medium transition-colors">
+        <Link to="/dashboard" className="text-slate-400 hover:text-slate-900 flex items-center gap-2 text-sm font-medium transition-colors">
           <ArrowLeft className="w-4 h-4" /> Exit Kiosk
         </Link>
       </div>
@@ -477,7 +477,7 @@ const StaffKiosk: React.FC = () => {
             )}
 
             <div className="mt-12 text-center opacity-50 hover:opacity-100 transition-opacity">
-              <Link to="/" className="inline-flex items-center text-slate-400 hover:text-slate-600 font-medium transition-colors text-sm">
+              <Link to="/time-tracking" className="inline-flex items-center text-slate-400 hover:text-slate-600 font-medium transition-colors text-sm">
                 Manager Access
               </Link>
             </div>
