@@ -57,7 +57,7 @@ class ChannexService {
                 headers: { 'user-api-key': apiKey },
                 params: {
                     'filter[property_id]': propertyId,
-                    'limit': 50 // Limit for now
+                    'limit': 100 // Increased limit for better financial sync
                 }
             });
             return { success: true, data: response.data.data || [] };

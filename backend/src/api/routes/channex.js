@@ -231,6 +231,26 @@ router.get('/sync', async (req, res) => {
     }
 });
 
+// GET /api/channex/bookings
+// Fetch stored bookings for financials/dashboard
+router.get('/bookings', async (req, res) => {
+    try {
+        const { property_id } = req.query;
+        if (!property_id) return res.status(400).json({ error: 'Property ID required' });
+
+        const result = await db.query(
+            "SELECT * FROM bookings WHERE property_id = $1 ORDER BY arrival_date DESC",
+            [property_id]
+        );
+
+        res.json({ success: true, bookings: result.rows });
+
+    } catch (error) {
+        console.error('Fetch Bookings Error:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
 // POST /api/channex/sync
 // Trigger a manual sync (currently pulls bookings)
 router.post('/sync', async (req, res) => {
@@ -239,7 +259,7 @@ router.post('/sync', async (req, res) => {
         if (!property_id) return res.status(400).json({ error: 'Property ID required' });
 
         const result = await db.query(
-            "SELECT api_key, property_mapping_id FROM channel_settings WHERE property_id = $1 AND channel_name = 'channex'",
+            "SELECT id, api_key, property_mapping_id FROM channel_settings WHERE property_id = $1 AND channel_name = 'channex'",
             [property_id]
         );
 
@@ -247,7 +267,7 @@ router.post('/sync', async (req, res) => {
             return res.status(404).json({ error: 'Channex not connected' });
         }
 
-        const { api_key, property_mapping_id } = result.rows[0];
+        const { id: channel_setting_id, api_key, property_mapping_id } = result.rows[0];
 
         // 1. Fetch Bookings from Channex
         const bookingRes = await channexService.fetchBookings(api_key, property_mapping_id);
@@ -256,20 +276,74 @@ router.post('/sync', async (req, res) => {
             return res.status(502).json({ error: 'Failed to fetch bookings from Channex', details: bookingRes.error });
         }
 
-        // 2. Process Bookings (Log details to confirm connection)
+        // 2. Load Mappings (to link bookings to local room types)
+        const mappingResult = await db.query(
+            "SELECT local_room_type, channel_room_id FROM channel_mappings WHERE channel_setting_id = $1",
+            [channel_setting_id]
+        );
+
+        const roomMap = new Map();
+        mappingResult.rows.forEach(row => {
+            roomMap.set(row.channel_room_id, row.local_room_type);
+        });
+
+        // 3. Process and Save Bookings
         const bookings = bookingRes.data;
         const bookingsCount = bookings.length;
 
-        const summary = bookings.map(b => ({
-            id: b.id,
-            guest: b.attributes.customer?.name || 'Unknown',
-            status: b.attributes.status,
-            arrival: b.attributes.arrival_date
-        }));
+        await db.query('BEGIN');
 
-        console.log(`[Channex Sync] Fetched ${bookingsCount} bookings for property ${property_id}:`, summary);
+        for (const b of bookings) {
+            const channexRoomId = b.relationships?.room_type?.data?.id;
+            const localRoomType = roomMap.get(channexRoomId) || 'Unmapped';
 
-        // 3. Update last_sync timestamp
+            // Upsert booking into database
+            // Note: This assumes a 'bookings' table exists. 
+            await db.query(
+                `INSERT INTO bookings (
+                    property_id, 
+                    channel_booking_id, 
+                    guest_name, 
+                    total_price, 
+                    currency, 
+                    status, 
+                    arrival_date, 
+                    departure_date, 
+                    room_type,
+                    source,
+                    raw_data,
+                    created_at,
+                    updated_at
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'channex', $10, NOW(), NOW())
+                ON CONFLICT (channel_booking_id) DO UPDATE SET
+                    total_price = EXCLUDED.total_price,
+                    currency = EXCLUDED.currency,
+                    status = EXCLUDED.status,
+                    arrival_date = EXCLUDED.arrival_date,
+                    departure_date = EXCLUDED.departure_date,
+                    room_type = EXCLUDED.room_type,
+                    raw_data = EXCLUDED.raw_data,
+                    updated_at = NOW()`,
+                [
+                    property_id,
+                    b.id,
+                    b.attributes.customer?.name || 'Unknown',
+                    b.attributes.total_price,
+                    b.attributes.currency,
+                    b.attributes.status,
+                    b.attributes.arrival_date,
+                    b.attributes.departure_date,
+                    localRoomType,
+                    JSON.stringify(b)
+                ]
+            );
+        }
+
+        await db.query('COMMIT');
+
+        console.log(`[Channex Sync] Saved ${bookingsCount} bookings for property ${property_id}`);
+
+        // 4. Update last_sync timestamp
         await db.query(
             "UPDATE channel_settings SET last_sync = NOW() WHERE property_id = $1 AND channel_name = 'channex'",
             [property_id]
