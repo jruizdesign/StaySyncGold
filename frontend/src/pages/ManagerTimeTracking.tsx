@@ -23,6 +23,9 @@ const ManagerTimeTracking: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [currentDate, setCurrentDate] = useState(new Date());
 
+    // Staff Roster State
+    const [staffList, setStaffList] = useState<any[]>([]);
+
     // Edit Modal State
     const [editingLog, setEditingLog] = useState<AttendanceLog | null>(null);
     const [editTime, setEditTime] = useState('');
@@ -30,8 +33,29 @@ const ManagerTimeTracking: React.FC = () => {
     useEffect(() => {
         if (view === 'logs') {
             fetchLogs();
+        } else if (view === 'roster') {
+            fetchStaff();
         }
     }, [currentDate, user?.propertyId, view]);
+
+    const fetchStaff = async () => {
+        if (!user?.propertyId) return;
+        setLoading(true);
+        try {
+            const { data, error } = await supabase
+                .from('staff')
+                .select('*')
+                .eq('property_id', user.propertyId)
+                .order('role');
+
+            if (error) throw error;
+            setStaffList(data || []);
+        } catch (err) {
+            console.error('Error fetching staff:', err);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const fetchLogs = async () => {
         if (!user?.propertyId) return;
@@ -195,8 +219,14 @@ const ManagerTimeTracking: React.FC = () => {
                         Attendance Logs
                     </button>
                 </div>
-                <Button className="bg-emerald-500 hover:bg-emerald-600 text-white gap-2">
-                    + Manual Override
+                <Button
+                    className="bg-emerald-500 hover:bg-emerald-600 text-white gap-2"
+                    onClick={() => {
+                        // Future: Open Add Staff Modal
+                        alert('Add Staff functionality coming soon');
+                    }}
+                >
+                    + Add Staff Member
                 </Button>
             </div>
 
@@ -288,8 +318,74 @@ const ManagerTimeTracking: React.FC = () => {
             )}
 
             {view === 'roster' && (
-                <div className="flex flex-col items-center justify-center py-20 bg-white rounded-xl border border-slate-200 border-dashed">
-                    <p className="text-slate-400 font-medium">Staff Roster not implemented in this view</p>
+                <div className="space-y-6">
+                    <div className="flex items-center justify-between">
+                        <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+                            <User className="w-5 h-5 text-slate-400" />
+                            Staff Directory
+                        </h2>
+                    </div>
+
+                    <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <table className="w-full text-left">
+                            <thead className="bg-slate-50 border-b border-slate-100">
+                                <tr>
+                                    <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Staff Member</th>
+                                    <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Role</th>
+                                    <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Status</th>
+                                    <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Contact</th>
+                                    <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                                {loading && staffList.length === 0 ? (
+                                    <tr><td colSpan={5} className="text-center py-10 text-slate-400">Loading staff...</td></tr>
+                                ) : staffList.length === 0 ? (
+                                    <tr><td colSpan={5} className="text-center py-10 text-slate-400">No staff members found</td></tr>
+                                ) : (
+                                    staffList.map((staff) => (
+                                        <tr key={staff.id} className="hover:bg-slate-50/50 transition-colors">
+                                            <td className="px-6 py-4">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-500">
+                                                        {(staff.firstname?.[0] || staff.name?.[0] || '?').toUpperCase()}
+                                                    </div>
+                                                    <div>
+                                                        <div className="text-sm font-bold text-slate-800">
+                                                            {staff.name || `${staff.firstname} ${staff.last_name}`}
+                                                        </div>
+                                                        <div className="text-xs text-slate-400">ID: {staff.pin_code ? '***' : 'No PIN'}</div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                                    {staff.role}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${staff.status === 'active' ? 'bg-green-100 text-green-800' :
+                                                        staff.status === 'on_break' ? 'bg-amber-100 text-amber-800' :
+                                                            'bg-slate-100 text-slate-800'
+                                                    }`}>
+                                                    {staff.status === 'active' ? 'On Duty' :
+                                                        staff.status === 'on_break' ? 'On Break' : 'Off Duty'}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 text-sm text-slate-500">
+                                                {staff.email || 'N/A'}
+                                            </td>
+                                            <td className="px-6 py-4 text-right">
+                                                <button className="p-2 rounded-full hover:bg-slate-100 text-slate-400 hover:text-emerald-600 transition-colors">
+                                                    <Edit2 className="w-4 h-4" />
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             )}
 

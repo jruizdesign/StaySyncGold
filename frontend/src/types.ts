@@ -59,10 +59,15 @@ export interface MaintenanceRequest {
 
 export interface Staff {
   id: string;
-  name: string;
+  property_id: string;
+  firstname: string;
+  last_name: string;
+  name?: string; // Optional/Computed
   role: 'Admin' | 'Front Desk' | 'Housekeeping' | 'Maintenance' | 'Manager';
-  status: 'Active' | 'On Break' | 'Off Duty';
-  shiftStart?: string;
+  status: 'active' | 'inactive'; // Employment status
+  email?: string;
+  pin: string;
+  avatar_url?: string;
 }
 
 export interface Transaction {
