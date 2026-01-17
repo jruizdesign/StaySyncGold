@@ -7,7 +7,10 @@ interface ChannexARIManagerProps {
 }
 
 const ChannexARIManager: React.FC<ChannexARIManagerProps> = ({ propertyId }) => {
-    console.log('[ChannexARIManager] Rendering with propertyId:', propertyId);
+    console.log('[ChannexARIManager] Component function called!');
+    console.log('[ChannexARIManager] propertyId received:', propertyId);
+    console.log('[ChannexARIManager] propertyId type:', typeof propertyId);
+    console.log('[ChannexARIManager] propertyId truthy?:', !!propertyId);
 
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
@@ -17,9 +20,11 @@ const ChannexARIManager: React.FC<ChannexARIManagerProps> = ({ propertyId }) => 
 
     // Defensive check
     if (!propertyId) {
-        console.error('[ChannexARIManager] No propertyId provided!');
+        console.error('[ChannexARIManager] Returning null - No propertyId provided!');
         return null;
     }
+
+    console.log('[ChannexARIManager] Passed defensive check, will render!');
 
     const handlePushARI = async () => {
         if (!startDate || !endDate) {

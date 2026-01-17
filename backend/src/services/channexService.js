@@ -29,7 +29,7 @@ class ChannexService {
 
             // Map Channex response to our simple UI format
             // Channex returns: { data: [ { attributes: { title: "Booking.com", is_active: true } } ] }
-            return { success: true, data: response.data.data };
+            return { success: true, data: response.data.data || [] };
         } catch (error) {
             console.error('Channex Channels Error:', error);
             const msg = error.response?.data?.errors?.[0]?.detail || error.message;
@@ -42,7 +42,7 @@ class ChannexService {
                 headers: { 'user-api-key': apiKey },
                 params: { 'filter[property_id]': propertyId }
             });
-            return { success: true, data: response.data.data };
+            return { success: true, data: response.data.data || [] };
         } catch (error) {
             console.error('Channex Room Types Error:', error);
             const msg = error.response?.data?.errors?.[0]?.detail || error.message;
@@ -60,7 +60,7 @@ class ChannexService {
                     'limit': 50 // Limit for now
                 }
             });
-            return { success: true, data: response.data.data };
+            return { success: true, data: response.data.data || [] };
         } catch (error) {
             console.error('Channex Fetch Bookings Error:', error);
             const msg = error.response?.data?.errors?.[0]?.detail || error.message;
