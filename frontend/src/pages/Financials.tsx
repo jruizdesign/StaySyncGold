@@ -36,8 +36,9 @@ const Financials: React.FC = () => {
       } else {
         setError(data.error || 'Failed to load bookings');
       }
-    } catch (err) {
-      setError('Error connecting to server');
+    } catch (err: any) {
+      console.error('Financials Fetch Error:', err);
+      setError(err instanceof Error ? err.message : 'Error connecting to server');
     } finally {
       setLoading(false);
     }
