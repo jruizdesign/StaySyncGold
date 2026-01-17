@@ -283,6 +283,45 @@ router.post('/sync', async (req, res) => {
     }
 });
 
+// POST /api/channex/iframe-link
+// Generate a one-time link for the Channex mapping iframe
+router.post('/iframe-link', async (req, res) => {
+    try {
+        const { property_id } = req.body;
+        if (!property_id) return res.status(400).json({ error: 'Property ID required' });
+
+        const result = await db.query(
+            "SELECT api_key, channex_property_id FROM channel_settings WHERE property_id = $1 AND channel_name = 'channex'",
+            [property_id]
+        );
+
+        if (result.rows.length === 0 || !result.rows[0].api_key) {
+            return res.status(404).json({ error: 'Channex not connected' });
+        }
+
+        const { api_key, channex_property_id } = result.rows[0];
+
+        if (!channex_property_id) {
+            return res.status(400).json({ error: 'Channex Property ID not found. Please sync property first.' });
+        }
+
+        const tokenRes = await channexService.generateOneTimeToken(api_key, channex_property_id, 'StaySync User');
+
+        if (!tokenRes.success) {
+            return res.status(502).json({ error: 'Failed to generate Channex token', details: tokenRes.error });
+        }
+
+        const iframeBase = 'https://app.channex.io';
+        const url = `${iframeBase}/auth/exchange?oauth_session_key=${tokenRes.token}&app_mode=headless&redirect_to=/channels&property_id=${channex_property_id}`;
+
+        res.json({ success: true, url });
+
+    } catch (error) {
+        console.error('Channex Iframe Link Error:', error);
+        res.status(500).json({ error: 'Internal Server Error', details: error.message });
+    }
+});
+
 // ========== MCP-SPECIFIC ROUTES ==========
 // These routes are designed to work with the Channex MCP server
 

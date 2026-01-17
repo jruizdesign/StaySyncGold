@@ -67,6 +67,24 @@ class ChannexService {
             return { success: false, error: msg };
         }
     }
+
+    async generateOneTimeToken(apiKey, propertyId, username) {
+        try {
+            const response = await axios.post(`${this.baseUrl}/auth/one_time_token`, {
+                one_time_token: {
+                    property_id: propertyId,
+                    username: username
+                }
+            }, {
+                headers: { 'user-api-key': apiKey }
+            });
+            return { success: true, token: response.data.data.token };
+        } catch (error) {
+            console.error('Channex One-Time Token Error:', error.response?.data || error.message);
+            const msg = error.response?.data?.errors?.[0]?.detail || error.message;
+            return { success: false, error: msg };
+        }
+    }
 }
 
 module.exports = new ChannexService();
