@@ -775,7 +775,7 @@ const validateChannexIncoming = async (req, res, next) => {
         }
 
         // Optional: Verify shared secret if you enforce it.
-        // if (result.rows[0].api_key !== apiKey) return res.status(401).json({ error: 'Invalid API Key' });
+        if (result.rows[0].api_key !== apiKey) return res.status(401).json({ error: 'Invalid API Key' });
 
         req.property_id = propertyId;
         next();

@@ -24,11 +24,11 @@ router.post('/property/sync', async (req, res) => {
             return res.status(400).json({ error: 'Property ID is required' });
         }
 
-        // Get property details
-        const property = await channexProxy.getPropertyDetails(propertyId);
+        //  property details
+        const property = await channexProxy.PropertyDetails(propertyId);
 
-        // Get API key
-        const { api_key } = await channexProxy.getChannexApiKey(propertyId);
+        //  API key
+        const { api_key } = await channexProxy.ChannexApiKey(propertyId);
 
         // Return property data for MCP sync
         // The actual MCP call will be made by the AI agent
@@ -76,8 +76,8 @@ router.post('/property/save-id', async (req, res) => {
 });
 
 /**
- * GET /api/channex/room-types
- * Get local room types for mapping
+ *  /api/channex/room-types
+ *  local room types for mapping
  */
 router.get('/room-types', async (req, res) => {
     try {
@@ -87,7 +87,7 @@ router.get('/room-types', async (req, res) => {
             return res.status(400).json({ error: 'Property ID is required' });
         }
 
-        const roomTypes = await channexProxy.getLocalRoomTypes(propertyId);
+        const roomTypes = await channexProxy.LocalRoomTypes(propertyId);
 
         res.json({
             success: true,
@@ -95,14 +95,14 @@ router.get('/room-types', async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Get room types error:', error);
+        console.error(' room types error:', error);
         res.status(500).json({ error: error.message });
     }
 });
 
 /**
- * GET /api/channex/mappings
- * Get room type mappings
+ *  /api/channex/mappings
+ *  room type mappings
  */
 router.get('/mappings', async (req, res) => {
     try {
@@ -112,7 +112,7 @@ router.get('/mappings', async (req, res) => {
             return res.status(400).json({ error: 'Property ID is required' });
         }
 
-        const mappings = await channexProxy.getRoomMappings(propertyId);
+        const mappings = await channexProxy.RoomMappings(propertyId);
 
         res.json({
             success: true,
@@ -120,7 +120,7 @@ router.get('/mappings', async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Get mappings error:', error);
+        console.error(' mappings error:', error);
         res.status(500).json({ error: error.message });
     }
 });
@@ -174,8 +174,8 @@ router.post('/ari/update', async (req, res) => {
             });
         }
 
-        // Get API key
-        const { api_key, channex_property_id } = await channexProxy.getChannexApiKey(propertyId);
+        //  API key
+        const { api_key, channex_property_id } = await channexProxy.ChannexApiKey(propertyId);
 
         if (!channex_property_id) {
             return res.status(400).json({
@@ -183,8 +183,8 @@ router.post('/ari/update', async (req, res) => {
             });
         }
 
-        // Get room mappings
-        const mappings = await channexProxy.getRoomMappings(propertyId);
+        //  room mappings
+        const mappings = await channexProxy.RoomMappings(propertyId);
 
         // Return data for MCP sync
         res.json({
