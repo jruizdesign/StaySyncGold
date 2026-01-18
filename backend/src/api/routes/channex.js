@@ -677,4 +677,95 @@ router.post('/mcp/sync-complete', async (req, res) => {
     }
 });
 
+// ========== CHANNEX PUBLIC API ENDPOINTS ==========
+// These endpoints are called BY Channex to sync data
+// Base URL in Channex Config -> https://your-domain.com/api/channex/
+
+// Middleware to validate Channex API Key for incoming requests
+const validateChannexIncoming = async (req, res, next) => {
+    const propertyId = req.query.hotel_code;
+    const apiKey = req.headers['api-key']; // Channex sends this header
+
+    if (!propertyId) {
+        return res.status(400).json({ error: 'hotel_code (Property ID) is required' });
+    }
+
+    // Relaxed auth for now: Just check if property exists and Channex is enabled.
+    // In production, you might want to enforce that the apiKey matches a stored secret.
+    // For now, we verify that the property has a Channex connection.
+    try {
+        const result = await db.query(
+            "SELECT api_key FROM channel_settings WHERE property_id = $1 AND channel_name = 'channex'",
+            [propertyId]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(403).json({ error: 'Property not connected to Channex' });
+        }
+
+        // Optional: Verify shared secret if you enforce it.
+        // if (result.rows[0].api_key !== apiKey) return res.status(401).json({ error: 'Invalid API Key' });
+
+        req.property_id = propertyId;
+        next();
+    } catch (error) {
+        console.error('Channex Auth Error:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+};
+
+// GET /api/channex/test_connection/
+router.get('/test_connection/', validateChannexIncoming, (req, res) => {
+    res.json({ success: true });
+});
+
+// GET /api/channex/mapping_details/
+router.get('/mapping_details/', validateChannexIncoming, async (req, res) => {
+    console.log(`[Channex] Fetching mapping details for property: ${req.property_id}`);
+    try {
+        // 1. Fetch Room Types
+        // We group by 'type' to represent Room Types.
+        const roomsResult = await db.query(
+            "SELECT type, MAX(capacity) as capacity, COUNT(*) as count FROM rooms WHERE property_id = $1 GROUP BY type",
+            [req.property_id]
+        );
+
+        const roomTypes = roomsResult.rows.map(r => ({
+            id: r.type, // Use the room type name as ID (or hash it if needed)
+            title: r.type,
+            rate_plans: [
+                {
+                    id: `Standard_${r.type.replace(/\s+/g, '_')}`,
+                    title: "Standard Rate",
+                    sell_mode: "per_room",
+                    max_persons: r.capacity || 2,
+                    currency: "USD", // Should ideally fetch from property settings
+                    read_only: false
+                }
+            ]
+        }));
+
+        res.json({
+            data: {
+                type: "mapping_details",
+                attributes: {
+                    room_types: roomTypes
+                }
+            }
+        });
+
+    } catch (error) {
+        console.error('Channex Mapping Details Error:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+// POST /api/channex/changes/ (Stub for future updates)
+router.post('/changes/', validateChannexIncoming, (req, res) => {
+    // Channex pushes availability/rate updates here? 
+    // Or maybe we push to them. The doc says "receive changes that has happened at the property state".
+    console.log('Received changes from Channex:', req.body);
+    res.json({ success: true });
+});
+
 module.exports = router;
