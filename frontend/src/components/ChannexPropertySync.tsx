@@ -15,106 +15,135 @@ const ChannexPropertySync: React.FC<ChannexPropertySyncProps> = ({
     lastSync,
     onSyncComplete
 }) => {
-    const [isSyncing, setIsSyncing] = useState(false);
+    const [apiKey, setApiKey] = useState('');
+    const [isFetching, setIsFetching] = useState(false);
+    const [properties, setProperties] = useState<any[]>([]);
+    const [selectedProperty, setSelectedProperty] = useState<string>('');
+    const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const handleSync = async () => {
-        setIsSyncing(true);
+    const handleFetchProperties = async () => {
+        if (!apiKey) return;
+        setIsFetching(true);
         setError(null);
-
         try {
-            // Call backend to prepare property data
             const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
-            const response = await fetch(`${API_BASE_URL}/api/channex/mcp/property/sync`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ property_id: propertyId })
-            });
-
+            const response = await fetch(`${API_BASE_URL}/api/channex/properties?api_key=${apiKey}`);
             const data = await response.json();
 
-            if (!response.ok) {
-                throw new Error(data.error || 'Failed to prepare property sync');
+            if (!response.ok) throw new Error(data.error || 'Failed to fetch properties');
+
+            setProperties(data.properties || []);
+            if (data.properties.length === 1) {
+                setSelectedProperty(data.properties[0].id);
             }
-
-            // Show instructions for MCP sync
-            alert(
-                `Property data is ready for sync!\n\n` +
-                `Next steps:\n` +
-                `1. The AI agent will use Channex MCP tools to sync this property\n` +
-                `2. Property Name: ${data.property.name}\n` +
-                `3. Address: ${data.property.address}\n\n` +
-                `Please ask the AI agent to complete the Channex property sync.`
-            );
-
-            // Note: The actual MCP sync will be done by the AI agent
-            // After successful sync, the agent will call /api/channex/mcp/property/save-id
-
-            onSyncComplete();
-
         } catch (err: any) {
-            console.error('Sync error:', err);
             setError(err.message);
         } finally {
-            setIsSyncing(false);
+            setIsFetching(false);
+        }
+    };
+
+    const handleConnect = async () => {
+        if (!selectedProperty || !apiKey) return;
+        setIsSaving(true);
+        try {
+            const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+            const response = await fetch(`${API_BASE_URL}/api/channex/connect`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    property_id: propertyId,
+                    api_key: apiKey,
+                    channex_property_id: selectedProperty
+                })
+            });
+
+            if (!response.ok) throw new Error('Failed to connect property');
+
+            onSyncComplete();
+        } catch (err: any) {
+            setError(err.message);
+        } finally {
+            setIsSaving(false);
         }
     };
 
     return (
         <Card className="p-6">
-            <div className="flex items-start justify-between">
-                <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-slate-900 mb-2">
-                        Property Sync Status
-                    </h3>
+            <h3 className="text-lg font-semibold text-slate-900 mb-4">
+                Channel Connection
+            </h3>
 
-                    <div className="space-y-3">
-                        {channexPropertyId ? (
-                            <div className="flex items-center gap-2 text-green-600">
-                                <CheckCircle className="w-5 h-5" />
-                                <div>
-                                    <p className="font-medium">Synced to Channex</p>
-                                    <p className="text-xs text-slate-500">
-                                        Property ID: {channexPropertyId}
-                                    </p>
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="flex items-center gap-2 text-yellow-600">
-                                <AlertCircle className="w-5 h-5" />
-                                <p className="font-medium">Not synced</p>
-                            </div>
-                        )}
-
-                        {lastSync && (
-                            <p className="text-sm text-slate-500">
-                                Last synced: {new Date(lastSync).toLocaleString()}
-                            </p>
-                        )}
-
-                        {error && (
-                            <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-                                <p className="text-sm text-red-800">{error}</p>
-                            </div>
-                        )}
+            <div className="space-y-4">
+                {channexPropertyId ? (
+                    <div className="flex items-center gap-2 text-green-600 mb-4">
+                        <CheckCircle className="w-5 h-5" />
+                        <div>
+                            <p className="font-medium">Connected to Channex</p>
+                            <p className="text-xs text-slate-500">ID: {channexPropertyId}</p>
+                        </div>
                     </div>
-                </div>
+                ) : (
+                    <>
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-1">
+                                Channex API Key
+                            </label>
+                            <div className="flex gap-2">
+                                <input
+                                    type="text"
+                                    className="flex-1 p-2 border border-slate-300 rounded-lg"
+                                    value={apiKey}
+                                    onChange={(e) => setApiKey(e.target.value)}
+                                    placeholder="Enter your Channex API Key"
+                                />
+                                <Button
+                                    onClick={handleFetchProperties}
+                                    disabled={!apiKey || isFetching}
+                                >
+                                    {isFetching ? <Loader className="animate-spin w-4 h-4" /> : 'Fetch Properties'}
+                                </Button>
+                            </div>
+                        </div>
 
-                <Button
-                    icon={isSyncing ? Loader : RefreshCw}
-                    onClick={handleSync}
-                    disabled={isSyncing}
-                    size="sm"
-                >
-                    {isSyncing ? 'Syncing...' : channexPropertyId ? 'Re-sync' : 'Sync to Channex'}
-                </Button>
-            </div>
+                        {properties.length > 0 && (
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">
+                                    Select Property
+                                </label>
+                                <select
+                                    className="w-full p-2 border border-slate-300 rounded-lg"
+                                    value={selectedProperty}
+                                    onChange={(e) => setSelectedProperty(e.target.value)}
+                                >
+                                    <option value="">-- Select Property --</option>
+                                    {properties.map(p => (
+                                        <option key={p.id} value={p.id}>
+                                            {p.attributes.title} ({p.id})
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
 
-            <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <p className="text-sm text-blue-800">
-                    <strong>Note:</strong> Syncing requires the Channex MCP server to be configured.
-                    The AI agent will handle the actual sync using MCP tools.
-                </p>
+                        {properties.length > 0 && (
+                            <Button
+                                onClick={handleConnect}
+                                disabled={!selectedProperty || isSaving}
+                                className="w-full"
+                            >
+                                {isSaving ? 'Connecting...' : 'Connect Property'}
+                            </Button>
+                        )}
+                    </>
+                )}
+
+                {error && (
+                    <div className="p-3 bg-red-50 text-red-800 rounded text-sm">
+                        {error}
+                    </div>
+                )}
             </div>
         </Card>
     );

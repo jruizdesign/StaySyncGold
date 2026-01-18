@@ -7,13 +7,20 @@ class ChannexService {
 
     // Validate the API Key by fetching the user's properties list
     async validateConnection(apiKey) {
+        return this.getProperties(apiKey);
+    }
+
+    async getProperties(apiKey) {
         try {
             const response = await axios.get(`${this.baseUrl}/properties`, {
                 headers: { 'user-api-key': apiKey }
             });
-            return { success: true, data: response.data };
+            return { success: true, data: response.data.data || [] };
         } catch (error) {
+            console.error('Channex Properties Error:', error.response?.data || error.message);
             const msg = error.response?.data?.errors?.[0]?.detail || error.message;
+            // Handle 401 specifically
+            if (error.response?.status === 401) return { success: false, error: 'Invalid API Key' };
             return { success: false, error: msg };
         }
     }
@@ -81,6 +88,25 @@ class ChannexService {
             return { success: true, token: response.data.data.token };
         } catch (error) {
             console.error('Channex One-Time Token Error:', error.response?.data || error.message);
+            const msg = error.response?.data?.errors?.[0]?.detail || error.message;
+            return { success: false, error: msg };
+        }
+    }
+
+    // Push ARI (Availability, Rates, Inventory) updates
+    async pushARI(apiKey, propertyId, updates) {
+        try {
+            // updates should be an array of objects: { property_id, room_type_id, date, availability, rate_plan_id, rate }
+            // Channex expects: { values: [ ... ] }
+            const payload = { values: updates };
+
+            const response = await axios.post(`${this.baseUrl}/ari`, payload, {
+                headers: { 'user-api-key': apiKey }
+            });
+
+            return { success: true, data: response.data };
+        } catch (error) {
+            console.error('Channex ARI Push Error:', error.response?.data || error.message);
             const msg = error.response?.data?.errors?.[0]?.detail || error.message;
             return { success: false, error: msg };
         }

@@ -43,7 +43,7 @@ const ChannexARIManager: React.FC<ChannexARIManagerProps> = ({ propertyId }) => 
         try {
             // Prepare ARI data
             const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
-            const response = await fetch(`${API_BASE_URL}/api/channex/mcp/ari/prepare`, {
+            const response = await fetch(`${API_BASE_URL}/api/channex/ari`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -56,21 +56,10 @@ const ChannexARIManager: React.FC<ChannexARIManagerProps> = ({ propertyId }) => 
             const data = await response.json();
 
             if (!response.ok) {
-                throw new Error(data.error || 'Failed to prepare ARI data');
+                throw new Error(data.error || 'Failed to push ARI data');
             }
 
-            // Show data summary and instructions
-            const mappingsCount = data.data.mappings?.length || 0;
-            const ratesCount = data.data.rates?.length || 0;
-
-            alert(
-                `ARI data is ready for sync!\n\n` +
-                `Summary:\n` +
-                `- Date Range: ${startDate} to ${endDate}\n` +
-                `- Room Mappings: ${mappingsCount}\n` +
-                `- Rate Records: ${ratesCount}\n\n` +
-                `Next step: Ask the AI agent to push this data to Channex using MCP tools.`
-            );
+            alert(`Successfully pushed ${data.count} updates to Channex!`);
 
             setLastPush(new Date().toISOString());
 
@@ -135,26 +124,20 @@ const ChannexARIManager: React.FC<ChannexARIManagerProps> = ({ propertyId }) => 
                     disabled={isPushing || !startDate || !endDate}
                     className="w-full"
                 >
-                    {isPushing ? 'Preparing...' : 'Push Rates & Availability'}
+                    {isPushing ? 'Pushing...' : 'Push Rates & Availability'}
                 </Button>
 
                 {lastPush && (
                     <p className="text-sm text-slate-500 text-center">
-                        Last prepared: {new Date(lastPush).toLocaleString()}
+                        Last push: {new Date(lastPush).toLocaleString()}
                     </p>
                 )}
             </div>
 
             <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                 <p className="text-sm text-blue-800">
-                    <strong>How it works:</strong>
+                    <strong>Note:</strong> Dates with no rates configured will be skipped. Ensure you have set rates in the Rates & Revenue calendar.
                 </p>
-                <ol className="text-sm text-blue-700 mt-2 space-y-1 list-decimal list-inside">
-                    <li>Select the date range for rate updates</li>
-                    <li>Click "Push Rates & Availability" to prepare the data</li>
-                    <li>Ask the AI agent to complete the sync using Channex MCP tools</li>
-                    <li>The agent will update rates across all connected OTA channels</li>
-                </ol>
             </div>
 
             <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
