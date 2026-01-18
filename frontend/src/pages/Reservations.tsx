@@ -474,263 +474,261 @@ const Reservations: React.FC = () => {
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* Auto-Calculating Quote Table */}
-          {(bookingForm.roomId && bookingForm.checkIn && bookingForm.checkOut) && (
-            <div className="mt-4 bg-slate-50 p-3 rounded-lg border border-slate-200">
-              <h4 className="text-sm font-semibold text-slate-700 mb-2">Price Breakdown</h4>
-              {quoteLoading ? (
-                <div className="text-center py-2 text-slate-500 text-sm">Calculating...</div>
-              ) : quote ? (
-                <div className="text-sm">
-                  <div className="max-h-32 overflow-y-auto border-b border-slate-200 mb-2">
-                    <table className="w-full text-left">
-                      <thead className="text-xs text-slate-500 sticky top-0 bg-slate-50">
-                        <tr>
-                          <th className="pb-1">Date</th>
-                          <th className="pb-1 text-right">Rate</th>
-                        </tr>
-                      </thead>
-                      <tbody className="text-slate-600">
-                        {quote.breakdown.map((day: any) => (
-                          <tr key={day.date}>
-                            <td className="py-1">{new Date(day.date).toLocaleDateString()}</td>
-                            <td className="py-1 text-right">${day.price.toFixed(2)}</td>
+            {/* Auto-Calculating Quote Table */}
+            {(bookingForm.roomId && bookingForm.checkIn && bookingForm.checkOut) && (
+              <div className="mt-4 bg-slate-50 p-3 rounded-lg border border-slate-200">
+                <h4 className="text-sm font-semibold text-slate-700 mb-2">Price Breakdown</h4>
+                {quoteLoading ? (
+                  <div className="text-center py-2 text-slate-500 text-sm">Calculating...</div>
+                ) : quote ? (
+                  <div className="text-sm">
+                    <div className="max-h-32 overflow-y-auto border-b border-slate-200 mb-2">
+                      <table className="w-full text-left">
+                        <thead className="text-xs text-slate-500 sticky top-0 bg-slate-50">
+                          <tr>
+                            <th className="pb-1">Date</th>
+                            <th className="pb-1 text-right">Rate</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                        </thead>
+                        <tbody className="text-slate-600">
+                          {quote.breakdown.map((day: any) => (
+                            <tr key={day.date}>
+                              <td className="py-1">{new Date(day.date).toLocaleDateString()}</td>
+                              <td className="py-1 text-right">${day.price.toFixed(2)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    <div className="flex justify-between items-center font-bold text-slate-900 pt-1">
+                      <span>Total ({quote.nights} nights)</span>
+                      <span>${quote.total.toFixed(2)}</span>
+                    </div>
                   </div>
-                  <div className="flex justify-between items-center font-bold text-slate-900 pt-1">
-                    <span>Total ({quote.nights} nights)</span>
-                    <span>${quote.total.toFixed(2)}</span>
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center py-2 text-slate-400 text-xs">Invalid dates</div>
-              )}
-            </div>
-          )}
+                ) : (
+                  <div className="text-center py-2 text-slate-400 text-xs">Invalid dates</div>
+                )}
+              </div>
+            )}
 
-          <div className="flex justify-end gap-2 mt-4">
-            <Button variant="ghost" onClick={() => setIsBookingModalOpen(false)}>Cancel</Button>
-            <Button onClick={handleCreateBooking}>Confirm Booking</Button>
+            <div className="flex justify-end gap-2 mt-4">
+              <Button variant="ghost" onClick={() => setIsBookingModalOpen(false)}>Cancel</Button>
+              <Button onClick={handleCreateBooking}>Confirm Booking</Button>
+            </div>
           </div>
         </div>
-          </div>
-        </div >
       )}
 
-{
-  view === 'list' ? (
-    <Card className="overflow-hidden !p-0">
-      <div className="overflow-x-auto">
-        <table className="w-full text-left text-sm">
-          <thead className="bg-slate-50 border-b border-slate-200">
-            <tr>
-              <th className="px-6 py-4 font-semibold text-slate-700">Guest</th>
-              <th className="px-6 py-4 font-semibold text-slate-700">Room</th>
-              <th className="px-6 py-4 font-semibold text-slate-700">Check In</th>
-              <th className="px-6 py-4 font-semibold text-slate-700">Check Out</th>
-              <th className="px-6 py-4 font-semibold text-slate-700">Status</th>
-              <th className="px-6 py-4 font-semibold text-slate-700 text-right">Total</th>
-              <th className="px-6 py-4 font-semibold text-slate-700 text-center">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {filteredReservations.map((res) => (
-              <tr key={res.id} className="hover:bg-slate-50 transition-colors">
-                <td className="px-6 py-4">
-                  <div className="font-medium text-slate-900">{res.guestName}</div>
-                  <div className="text-xs text-slate-500">ID: {res.id.substring(0, 8)}...</div>
-                </td>
-                <td className="px-6 py-4 font-mono text-slate-600">#{res.roomNumber}</td>
-                <td className="px-6 py-4 text-slate-600">{new Date(res.checkIn).toLocaleDateString()}</td>
-                <td className="px-6 py-4 text-slate-600">{new Date(res.checkOut).toLocaleDateString()}</td>
-                <td className="px-6 py-4">
-                  <Badge color={getStatusColor(res.status)}>{res.status}</Badge>
-                </td>
-                <td className="px-6 py-4 text-right font-medium text-slate-900">${res.totalAmount}</td>
-                <td className="px-6 py-4 text-center">
-                  <button className="text-slate-400 hover:text-slate-600 p-2 hover:bg-slate-100 rounded-full">
-                    <MoreVertical className="w-4 h-4" />
-                  </button>
-                </td>
-              </tr>
-            ))}
-            {filteredReservations.length === 0 && (
-              <tr>
-                <td colSpan={7} className="px-6 py-12 text-center text-slate-500">
-                  No reservations found matching your search.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-    </Card>
-  ) : view === 'calendar' ? (
-    <Card className="overflow-x-auto">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-bold">Timeline & Availability</h2>
-        <div className="flex gap-2">
-          <Button variant="ghost" onClick={() => setSelectedMonth(new Date(selectedMonth.setMonth(selectedMonth.getMonth() - 1)))}>Prev</Button>
-          <span className="font-bold flex items-center px-4">{selectedMonth.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}</span>
-          <Button variant="ghost" onClick={() => setSelectedMonth(new Date(selectedMonth.setMonth(selectedMonth.getMonth() + 1)))}>Next</Button>
-        </div>
-      </div>
-      <div className="min-w-[800px]">
-        <div className="grid grid-cols-[100px_1fr] border-b">
-          <div className="p-2 font-bold bg-slate-50 border-r">Room</div>
-          <div className="grid" style={{ gridTemplateColumns: `repeat(${new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 0).getDate()}, minmax(40px, 1fr))` }}>
-            {Array.from({ length: new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 0).getDate() }, (_, i) => i + 1).map(day => (
-              <div key={day} className="text-center text-xs p-1 border-l text-slate-500">
-                {day}
-                <div className="font-mono">{new Date(selectedMonth.getFullYear(), selectedMonth.getMonth(), day).toLocaleDateString(undefined, { weekday: 'narrow' })}</div>
+      {
+        view === 'list' ? (
+          <Card className="overflow-hidden !p-0">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead className="bg-slate-50 border-b border-slate-200">
+                  <tr>
+                    <th className="px-6 py-4 font-semibold text-slate-700">Guest</th>
+                    <th className="px-6 py-4 font-semibold text-slate-700">Room</th>
+                    <th className="px-6 py-4 font-semibold text-slate-700">Check In</th>
+                    <th className="px-6 py-4 font-semibold text-slate-700">Check Out</th>
+                    <th className="px-6 py-4 font-semibold text-slate-700">Status</th>
+                    <th className="px-6 py-4 font-semibold text-slate-700 text-right">Total</th>
+                    <th className="px-6 py-4 font-semibold text-slate-700 text-center">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {filteredReservations.map((res) => (
+                    <tr key={res.id} className="hover:bg-slate-50 transition-colors">
+                      <td className="px-6 py-4">
+                        <div className="font-medium text-slate-900">{res.guestName}</div>
+                        <div className="text-xs text-slate-500">ID: {res.id.substring(0, 8)}...</div>
+                      </td>
+                      <td className="px-6 py-4 font-mono text-slate-600">#{res.roomNumber}</td>
+                      <td className="px-6 py-4 text-slate-600">{new Date(res.checkIn).toLocaleDateString()}</td>
+                      <td className="px-6 py-4 text-slate-600">{new Date(res.checkOut).toLocaleDateString()}</td>
+                      <td className="px-6 py-4">
+                        <Badge color={getStatusColor(res.status)}>{res.status}</Badge>
+                      </td>
+                      <td className="px-6 py-4 text-right font-medium text-slate-900">${res.totalAmount}</td>
+                      <td className="px-6 py-4 text-center">
+                        <button className="text-slate-400 hover:text-slate-600 p-2 hover:bg-slate-100 rounded-full">
+                          <MoreVertical className="w-4 h-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {filteredReservations.length === 0 && (
+                    <tr>
+                      <td colSpan={7} className="px-6 py-12 text-center text-slate-500">
+                        No reservations found matching your search.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        ) : view === 'calendar' ? (
+          <Card className="overflow-x-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold">Timeline & Availability</h2>
+              <div className="flex gap-2">
+                <Button variant="ghost" onClick={() => setSelectedMonth(new Date(selectedMonth.setMonth(selectedMonth.getMonth() - 1)))}>Prev</Button>
+                <span className="font-bold flex items-center px-4">{selectedMonth.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}</span>
+                <Button variant="ghost" onClick={() => setSelectedMonth(new Date(selectedMonth.setMonth(selectedMonth.getMonth() + 1)))}>Next</Button>
               </div>
-            ))}
-          </div>
-        </div>
-        {/* We need distinct rooms, not filtering by room types only. Fetching rooms is needed or we can map from available reservations if full list not available, but ideally we show all rooms.
+            </div>
+            <div className="min-w-[800px]">
+              <div className="grid grid-cols-[100px_1fr] border-b">
+                <div className="p-2 font-bold bg-slate-50 border-r">Room</div>
+                <div className="grid" style={{ gridTemplateColumns: `repeat(${new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 0).getDate()}, minmax(40px, 1fr))` }}>
+                  {Array.from({ length: new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 0).getDate() }, (_, i) => i + 1).map(day => (
+                    <div key={day} className="text-center text-xs p-1 border-l text-slate-500">
+                      {day}
+                      <div className="font-mono">{new Date(selectedMonth.getFullYear(), selectedMonth.getMonth(), day).toLocaleDateString(undefined, { weekday: 'narrow' })}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              {/* We need distinct rooms, not filtering by room types only. Fetching rooms is needed or we can map from available reservations if full list not available, but ideally we show all rooms.
                 For now, let's assume we can derive rooms from reservations or roomTypes derived earlier. But roomTypes are just types.
                 We should validly fetch rooms. I'll add rooms fetching to the effect.
             */}
-        <div className="divide-y relative">
-          {rooms.map(room => (
-            <div key={room.id} className="grid grid-cols-[100px_1fr] hover:bg-slate-50 relative group">
-              <div className="p-3 font-medium bg-white border-r text-sm truncate sticky left-0 z-10 flex flex-col justify-center">
-                <span>Room {room.number}</span>
-                <span className="text-xs text-slate-400">{room.type}</span>
-              </div>
-              <div className="grid relative" style={{ gridTemplateColumns: `repeat(${new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 0).getDate()}, 1fr)` }}>
-                {/* Grid Lines */}
-                {Array.from({ length: new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 0).getDate() }, (_, i) => i + 1).map(day => (
-                  <div key={day} className="border-l h-12"></div>
+              <div className="divide-y relative">
+                {rooms.map(room => (
+                  <div key={room.id} className="grid grid-cols-[100px_1fr] hover:bg-slate-50 relative group">
+                    <div className="p-3 font-medium bg-white border-r text-sm truncate sticky left-0 z-10 flex flex-col justify-center">
+                      <span>Room {room.number}</span>
+                      <span className="text-xs text-slate-400">{room.type}</span>
+                    </div>
+                    <div className="grid relative" style={{ gridTemplateColumns: `repeat(${new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 0).getDate()}, 1fr)` }}>
+                      {/* Grid Lines */}
+                      {Array.from({ length: new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 0).getDate() }, (_, i) => i + 1).map(day => (
+                        <div key={day} className="border-l h-12"></div>
+                      ))}
+
+                      {/* Reservations Bars */}
+                      {reservations
+                        .filter(res => res.roomId === room.id)
+                        .map(res => {
+                          const startOfMonth = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth(), 1);
+                          const endOfMonth = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 0);
+                          const checkIn = new Date(res.checkIn);
+                          const checkOut = new Date(res.checkOut);
+
+                          // Check overlap
+                          if (checkOut <= startOfMonth || checkIn > endOfMonth) return null;
+
+                          // Calculate Grid Position
+                          // Start Day: Max(1, checkIn date)
+                          const startDay = checkIn < startOfMonth ? 1 : checkIn.getDate();
+
+                          // Duration: Min(endOfMonth, checkOut) - Start
+                          const endDay = checkOut > endOfMonth ? endOfMonth.getDate() : checkOut.getDate();
+                          const span = Math.max(1, endDay - startDay); // at least 1 day block? or checkOut is day AFTER last night? Usually hotel checkOut is day after.
+                          // if checkIn 1st, checkOut 2nd -> 1 night. Span should reflect nights? or visual block?
+                          // Visual block from CheckIn Day start to CheckOut Day start.
+
+                          return (
+                            <div
+                              key={res.id}
+                              className="absolute top-1 bottom-1 bg-blue-500 rounded text-white text-xs flex items-center px-2 truncate shadow-sm z-0 hover:z-20 hover:shadow-md transition-all cursor-pointer border border-blue-600"
+                              style={{
+                                gridColumnStart: startDay,
+                                gridColumnEnd: `span ${span}`,
+                                left: '2px',
+                                right: '2px'
+                              }}
+                              title={`${res.guestName} (${res.status})`}
+                            >
+                              {res.guestName}
+                            </div>
+                          );
+                        })
+                      }
+                    </div>
+                  </div>
                 ))}
-
-                {/* Reservations Bars */}
-                {reservations
-                  .filter(res => res.roomId === room.id)
-                  .map(res => {
-                    const startOfMonth = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth(), 1);
-                    const endOfMonth = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 0);
-                    const checkIn = new Date(res.checkIn);
-                    const checkOut = new Date(res.checkOut);
-
-                    // Check overlap
-                    if (checkOut <= startOfMonth || checkIn > endOfMonth) return null;
-
-                    // Calculate Grid Position
-                    // Start Day: Max(1, checkIn date)
-                    const startDay = checkIn < startOfMonth ? 1 : checkIn.getDate();
-
-                    // Duration: Min(endOfMonth, checkOut) - Start
-                    const endDay = checkOut > endOfMonth ? endOfMonth.getDate() : checkOut.getDate();
-                    const span = Math.max(1, endDay - startDay); // at least 1 day block? or checkOut is day AFTER last night? Usually hotel checkOut is day after.
-                    // if checkIn 1st, checkOut 2nd -> 1 night. Span should reflect nights? or visual block?
-                    // Visual block from CheckIn Day start to CheckOut Day start.
-
-                    return (
-                      <div
-                        key={res.id}
-                        className="absolute top-1 bottom-1 bg-blue-500 rounded text-white text-xs flex items-center px-2 truncate shadow-sm z-0 hover:z-20 hover:shadow-md transition-all cursor-pointer border border-blue-600"
-                        style={{
-                          gridColumnStart: startDay,
-                          gridColumnEnd: `span ${span}`,
-                          left: '2px',
-                          right: '2px'
-                        }}
-                        title={`${res.guestName} (${res.status})`}
-                      >
-                        {res.guestName}
-                      </div>
-                    );
-                  })
-                }
               </div>
             </div>
-          ))}
-        </div>
-      </div>
-    </Card>
-  ) : (
-    <>
-      {view === 'rates' && (
-        <div className="space-y-6">
-          <div className="flex justify-between items-center">
-            <h2 className="text-xl font-bold">Revenue Management</h2>
-            <div className="flex gap-2">
-              <Button variant="ghost" onClick={() => setSelectedMonth(new Date(selectedMonth.setMonth(selectedMonth.getMonth() - 1)))}>Prev</Button>
-              <span className="font-bold flex items-center px-4">{selectedMonth.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}</span>
-              <Button variant="ghost" onClick={() => setSelectedMonth(new Date(selectedMonth.setMonth(selectedMonth.getMonth() + 1)))}>Next</Button>
-            </div>
-          </div>
-
-          {/* Revenue Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card className="p-4 bg-white border-none shadow-sm">
-              <div className="text-sm text-slate-500 font-medium">Occupancy</div>
-              <div className="text-2xl font-bold text-slate-900">{calculateRevenueStats().occupancy.toFixed(1)}%</div>
-              <div className="text-xs text-green-600 mt-1">Target: 75%</div>
-            </Card>
-            <Card className="p-4 bg-white border-none shadow-sm">
-              <div className="text-sm text-slate-500 font-medium">ADR (Average Daily Rate)</div>
-              <div className="text-2xl font-bold text-slate-900">${calculateRevenueStats().adr.toFixed(2)}</div>
-              <div className="text-xs text-slate-400 mt-1">vs Last Month</div>
-            </Card>
-            <Card className="p-4 bg-white border-none shadow-sm">
-              <div className="text-sm text-slate-500 font-medium">RevPAR</div>
-              <div className="text-2xl font-bold text-slate-900">${calculateRevenueStats().revpar.toFixed(2)}</div>
-              <div className="text-xs text-blue-600 mt-1">Revenue Per Available Room</div>
-            </Card>
-          </div>
-
-          <Card className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr>
-                  <th className="p-3 text-left bg-slate-50 sticky left-0 z-10 border-b">Room Type</th>
-                  {Array.from({ length: new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 0).getDate() }, (_, i) => i + 1).map(day => (
-                    <th key={day} className="p-2 min-w-[60px] text-center bg-slate-50 border-b border-l text-xs text-slate-500 font-mono">
-                      {day}
-                      <br />
-                      {new Date(selectedMonth.getFullYear(), selectedMonth.getMonth(), day).toLocaleDateString(undefined, { weekday: 'narrow' })}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {roomTypes.map(type => (
-                  <tr key={type} className="hover:bg-slate-50/50">
-                    <td className="p-3 font-bold text-slate-700 sticky left-0 bg-white border-r z-10 shadow-sm">{type}</td>
-                    {Array.from({ length: new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 0).getDate() }, (_, i) => i + 1).map(day => {
-                      const date = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth(), day);
-                      const dateStr = date.toISOString().split('T')[0];
-                      const rate = rates.find(r => r.room_type === type && r.date === dateStr);
-
-                      return (
-                        <td key={day} className="p-0 border-r border-b relative">
-                          <input
-                            type="number"
-                            className="w-full h-full p-2 text-center bg-transparent focus:bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-emerald-500 transition-colors"
-                            placeholder="-"
-                            defaultValue={rate?.price}
-                            onBlur={(e) => handleRateChange(type, date, e.target.value)}
-                          />
-                        </td>
-                      );
-                    })}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
           </Card>
-        </div>
-      )}
-    </>
-  )
-}
+        ) : (
+          <>
+            {view === 'rates' && (
+              <div className="space-y-6">
+                <div className="flex justify-between items-center">
+                  <h2 className="text-xl font-bold">Revenue Management</h2>
+                  <div className="flex gap-2">
+                    <Button variant="ghost" onClick={() => setSelectedMonth(new Date(selectedMonth.setMonth(selectedMonth.getMonth() - 1)))}>Prev</Button>
+                    <span className="font-bold flex items-center px-4">{selectedMonth.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}</span>
+                    <Button variant="ghost" onClick={() => setSelectedMonth(new Date(selectedMonth.setMonth(selectedMonth.getMonth() + 1)))}>Next</Button>
+                  </div>
+                </div>
+
+                {/* Revenue Stats Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <Card className="p-4 bg-white border-none shadow-sm">
+                    <div className="text-sm text-slate-500 font-medium">Occupancy</div>
+                    <div className="text-2xl font-bold text-slate-900">{calculateRevenueStats().occupancy.toFixed(1)}%</div>
+                    <div className="text-xs text-green-600 mt-1">Target: 75%</div>
+                  </Card>
+                  <Card className="p-4 bg-white border-none shadow-sm">
+                    <div className="text-sm text-slate-500 font-medium">ADR (Average Daily Rate)</div>
+                    <div className="text-2xl font-bold text-slate-900">${calculateRevenueStats().adr.toFixed(2)}</div>
+                    <div className="text-xs text-slate-400 mt-1">vs Last Month</div>
+                  </Card>
+                  <Card className="p-4 bg-white border-none shadow-sm">
+                    <div className="text-sm text-slate-500 font-medium">RevPAR</div>
+                    <div className="text-2xl font-bold text-slate-900">${calculateRevenueStats().revpar.toFixed(2)}</div>
+                    <div className="text-xs text-blue-600 mt-1">Revenue Per Available Room</div>
+                  </Card>
+                </div>
+
+                <Card className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr>
+                        <th className="p-3 text-left bg-slate-50 sticky left-0 z-10 border-b">Room Type</th>
+                        {Array.from({ length: new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 0).getDate() }, (_, i) => i + 1).map(day => (
+                          <th key={day} className="p-2 min-w-[60px] text-center bg-slate-50 border-b border-l text-xs text-slate-500 font-mono">
+                            {day}
+                            <br />
+                            {new Date(selectedMonth.getFullYear(), selectedMonth.getMonth(), day).toLocaleDateString(undefined, { weekday: 'narrow' })}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {roomTypes.map(type => (
+                        <tr key={type} className="hover:bg-slate-50/50">
+                          <td className="p-3 font-bold text-slate-700 sticky left-0 bg-white border-r z-10 shadow-sm">{type}</td>
+                          {Array.from({ length: new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 0).getDate() }, (_, i) => i + 1).map(day => {
+                            const date = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth(), day);
+                            const dateStr = date.toISOString().split('T')[0];
+                            const rate = rates.find(r => r.room_type === type && r.date === dateStr);
+
+                            return (
+                              <td key={day} className="p-0 border-r border-b relative">
+                                <input
+                                  type="number"
+                                  className="w-full h-full p-2 text-center bg-transparent focus:bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-emerald-500 transition-colors"
+                                  placeholder="-"
+                                  defaultValue={rate?.price}
+                                  onBlur={(e) => handleRateChange(type, date, e.target.value)}
+                                />
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </Card>
+              </div>
+            )}
+          </>
+        )
+      }
     </div >
   );
 };
