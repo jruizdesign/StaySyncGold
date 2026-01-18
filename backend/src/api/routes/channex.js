@@ -595,6 +595,83 @@ router.get('/mappings', async (req, res) => {
     }
 });
 
+// POST /api/channex/mappings/auto-sync
+// Automatically match local room types to Channex room types by name
+router.post('/mappings/auto-sync', async (req, res) => {
+    try {
+        const { property_id } = req.body;
+        if (!property_id) return res.status(400).json({ error: 'Property ID required' });
+
+        // 1. Get Channex Settings
+        const settingResult = await db.query(
+            "SELECT api_key, channex_property_id, id as setting_id FROM channel_settings WHERE property_id = $1 AND channel_name = 'channex'",
+            [property_id]
+        );
+
+        if (settingResult.rows.length === 0) return res.status(404).json({ error: 'Channex not connected' });
+        const { api_key, channex_property_id, setting_id } = settingResult.rows[0];
+
+        // 2. Fetch Remote Room Types from Channex
+        const remoteResult = await channexService.getRoomTypes(api_key, channex_property_id);
+        if (!remoteResult.success) {
+            return res.status(502).json({ error: 'Failed to fetch Channex room types: ' + remoteResult.error });
+        }
+        const channexRooms = remoteResult.data;
+
+        // 3. Fetch Local Room Types
+        const localResult = await db.query(
+            "SELECT DISTINCT type FROM rooms WHERE property_id = $1",
+            [property_id]
+        );
+        const localRooms = localResult.rows.map(r => r.type);
+
+        // 4. Match and Upsert
+        let matchCount = 0;
+        const matches = [];
+
+        for (const cRoom of channexRooms) {
+            const channexTitle = cRoom.attributes.title;
+            const channexId = cRoom.id;
+
+            // Find local match (case-insensitive)
+            const localMatch = localRooms.find(lType => lType.toLowerCase() === channexTitle.toLowerCase());
+
+            if (localMatch) {
+                // Upsert into channel_mappings
+                // We assume uniqueness on (channel_setting_id, local_room_type)
+                // Note: PostgreSQL upsert syntax: INSERT ... ON CONFLICT (...) DO UPDATE ...
+
+                // First check if mapping exists to avoid overwriting if user manually set it? 
+                // The user's script suggests 'upsert', so we overwrite to ensure sync.
+                // However, we need to be careful not to wipe 'channex_rate_plan_id' if we don't have it here.
+                // The user script doesn't map rate plan, just room type. 
+                // So we should only update 'channex_room_type_id'.
+
+                await db.query(
+                    `INSERT INTO channel_mappings (property_id, channel_setting_id, local_room_type, channex_room_type_id)
+                     VALUES ($1, $2, $3, $4)
+                     ON CONFLICT (channel_setting_id, local_room_type) 
+                     DO UPDATE SET channex_room_type_id = EXCLUDED.channex_room_type_id`,
+                    [property_id, setting_id, localMatch, channexId]
+                );
+
+                matches.push({ local: localMatch, remote: channexTitle });
+                matchCount++;
+            }
+        }
+
+        res.json({
+            success: true,
+            message: `Auto-sync complete. Matched ${matchCount} room types.`,
+            matches
+        });
+
+    } catch (error) {
+        console.error('Auto Sync Mappings Error:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
 // POST /api/channex/ari
 // Push ARI updates to Channex
 router.post('/ari', async (req, res) => {

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Button, Badge } from './UIComponents';
-import { Save, Plus, Loader } from 'lucide-react';
+import { Save, Plus, Loader, Wand2 } from 'lucide-react';
 
 interface RoomMapping {
     localRoomType: string;
@@ -23,6 +23,7 @@ const ChannexRoomMapping: React.FC<ChannexRoomMappingProps> = ({
     const [remoteRooms, setRemoteRooms] = useState<any[]>([]); // New state for remote rooms
     const [mappings, setMappings] = useState<RoomMapping[]>([]);
     const [error, setError] = useState<string | null>(null);
+    const [isAutoSyncing, setIsAutoSyncing] = useState(false);
 
     useEffect(() => {
         fetchData();
@@ -89,6 +90,34 @@ const ChannexRoomMapping: React.FC<ChannexRoomMappingProps> = ({
     // Auto-fill Rate Plan ID if standard format is detected? 
     // For now, keep it manual.
 
+    const handleAutoSync = async () => {
+        setIsAutoSyncing(true);
+        setError(null);
+        try {
+            const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+            const response = await fetch(`${API_BASE_URL}/api/channex/mappings/auto-sync`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ property_id: propertyId })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to auto-sync mappings');
+            }
+
+            alert(data.message);
+            fetchData(); // Refresh mappings after sync
+
+        } catch (err: any) {
+            console.error('Auto Sync error:', err);
+            setError(err.message);
+        } finally {
+            setIsAutoSyncing(false);
+        }
+    };
+
     const handleSaveAll = async () => {
         setSaving(true);
         setError(null);
@@ -125,9 +154,19 @@ const ChannexRoomMapping: React.FC<ChannexRoomMappingProps> = ({
                 <h3 className="text-lg font-semibold text-slate-900">
                     Room Type Mappings
                 </h3>
-                <Button onClick={handleSaveAll} disabled={saving} icon={Save}>
-                    {saving ? 'Saving...' : 'Save All Changes'}
-                </Button>
+                <div className="flex gap-2">
+                    <Button
+                        variant="secondary"
+                        icon={isAutoSyncing ? Loader : Wand2}
+                        onClick={handleAutoSync}
+                        disabled={isAutoSyncing || saving}
+                    >
+                        {isAutoSyncing ? 'Matching...' : 'Auto Match'}
+                    </Button>
+                    <Button onClick={handleSaveAll} disabled={saving || isAutoSyncing} icon={Save}>
+                        {saving ? 'Saving...' : 'Save All Changes'}
+                    </Button>
+                </div>
             </div>
 
             {error && (
