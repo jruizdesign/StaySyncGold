@@ -206,7 +206,7 @@ const Reservations: React.FC = () => {
           check_in: bookingForm.checkIn,
           check_out: bookingForm.checkOut,
           status: 'Confirmed',
-          total_amount: await calculateTotalAmount(bookingForm.roomId, bookingForm.checkIn, bookingForm.checkOut)
+          total_amount: quote ? quote.total : await calculateTotalAmount(bookingForm.roomId, bookingForm.checkIn, bookingForm.checkOut)
         });
 
       if (resError) throw resError;
@@ -492,10 +492,25 @@ const Reservations: React.FC = () => {
                           </tr>
                         </thead>
                         <tbody className="text-slate-600">
-                          {quote.breakdown.map((day: any) => (
+                          {quote.breakdown.map((day: any, index: number) => (
                             <tr key={day.date}>
                               <td className="py-1">{new Date(day.date).toLocaleDateString()}</td>
-                              <td className="py-1 text-right">${day.price.toFixed(2)}</td>
+                              <td className="py-1 text-right">
+                                <input
+                                  type="number"
+                                  min="0"
+                                  step="0.01"
+                                  className="w-24 text-right p-1 border border-slate-300 rounded focus:outline-none focus:ring-1 focus:ring-gold-500 bg-white"
+                                  value={day.price}
+                                  onChange={(e) => {
+                                    const newPrice = parseFloat(e.target.value) || 0;
+                                    const newBreakdown = [...quote.breakdown];
+                                    newBreakdown[index].price = newPrice;
+                                    const newTotal = newBreakdown.reduce((sum, d) => sum + d.price, 0);
+                                    setQuote({ ...quote, breakdown: newBreakdown, total: newTotal });
+                                  }}
+                                />
+                              </td>
                             </tr>
                           ))}
                         </tbody>
