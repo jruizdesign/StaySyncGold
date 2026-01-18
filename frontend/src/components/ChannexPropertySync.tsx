@@ -77,71 +77,99 @@ const ChannexPropertySync: React.FC<ChannexPropertySyncProps> = ({
 
             <div className="space-y-4">
                 {channexPropertyId ? (
-                    <div className="flex items-center gap-2 text-green-600 mb-4">
+                    <div className="flex items-center gap-2 text-green-600 mb-4 bg-green-50 p-4 rounded-lg border border-green-200">
                         <CheckCircle className="w-5 h-5" />
                         <div>
                             <p className="font-medium">Connected to Channex</p>
                             <p className="text-xs text-slate-500">ID: {channexPropertyId}</p>
+                            <p className="text-xs text-slate-500 mt-1">
+                                <button onClick={() => window.location.reload()} className="underline hover:text-green-800 flex items-center gap-1">
+                                    <RefreshCw className="w-3 h-3" /> Refresh Status
+                                </button>
+                            </p>
                         </div>
                     </div>
                 ) : (
                     <>
+                        <div className="p-4 bg-blue-50 text-blue-800 text-sm rounded-lg mb-4">
+                            Enter your Channex.io API Token and Property ID to enable synchronization.
+                        </div>
+
                         <div>
                             <label className="block text-sm font-medium text-slate-700 mb-1">
-                                Channex API Key
+                                Channex API Token
+                            </label>
+                            <input
+                                type="password"
+                                className="w-full p-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gold-500"
+                                value={apiKey}
+                                onChange={(e) => setApiKey(e.target.value)}
+                                placeholder="••••••••••••••••••••••••"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-1">
+                                Channex Property ID
                             </label>
                             <div className="flex gap-2">
                                 <input
                                     type="text"
-                                    className="flex-1 p-2 border border-slate-300 rounded-lg"
-                                    value={apiKey}
-                                    onChange={(e) => setApiKey(e.target.value)}
-                                    placeholder="Enter your Channex API Key"
-                                />
-                                <Button
-                                    onClick={handleFetchProperties}
-                                    disabled={!apiKey || isFetching}
-                                >
-                                    {isFetching ? <Loader className="animate-spin w-4 h-4" /> : 'Fetch Properties'}
-                                </Button>
-                            </div>
-                        </div>
-
-                        {properties.length > 0 && (
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">
-                                    Select Property
-                                </label>
-                                <select
-                                    className="w-full p-2 border border-slate-300 rounded-lg"
+                                    className="flex-1 p-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gold-500"
                                     value={selectedProperty}
                                     onChange={(e) => setSelectedProperty(e.target.value)}
+                                    placeholder="e.g. property_xyz"
+                                />
+                                <Button
+                                    variant="outline"
+                                    onClick={handleFetchProperties}
+                                    disabled={!apiKey || isFetching}
+                                    title="Auto-fetch properties if you don't know the ID"
                                 >
-                                    <option value="">-- Select Property --</option>
+                                    {isFetching ? <Loader className="animate-spin w-4 h-4" /> : 'Fetch IDs'}
+                                </Button>
+                            </div>
+                            {properties.length > 0 && (
+                                <select
+                                    className="w-full mt-2 p-2 border border-slate-300 rounded-lg bg-slate-50 text-sm"
+                                    onChange={(e) => setSelectedProperty(e.target.value)}
+                                    value={selectedProperty}
+                                >
+                                    <option value="">-- Or select from found properties --</option>
                                     {properties.map(p => (
-                                        <option key={p.id} value={p.id}>
-                                            {p.attributes.title} ({p.id})
-                                        </option>
+                                        <option key={p.id} value={p.id}>{p.attributes.title} ({p.id})</option>
                                     ))}
                                 </select>
-                            </div>
-                        )}
+                            )}
+                        </div>
 
-                        {properties.length > 0 && (
+                        <div className="flex justify-end gap-3 mt-6">
+                            <Button variant="ghost" onClick={() => { setApiKey(''); setSelectedProperty(''); setError(null); }}>
+                                Cancel
+                            </Button>
+
+                            <Button
+                                variant="secondary"
+                                onClick={handleFetchProperties} // Re-using fetch as "Test" effectively
+                                disabled={!apiKey || isFetching}
+                            >
+                                Test Connection
+                            </Button>
+
                             <Button
                                 onClick={handleConnect}
-                                disabled={!selectedProperty || isSaving}
-                                className="w-full"
+                                disabled={!selectedProperty || !apiKey || isSaving}
                             >
-                                {isSaving ? 'Connecting...' : 'Connect Property'}
+                                {isSaving ? 'Connecting...' : 'Save & Connect'}
                             </Button>
-                        )}
+                        </div>
                     </>
                 )}
 
                 {error && (
-                    <div className="p-3 bg-red-50 text-red-800 rounded text-sm">
-                        {error}
+                    <div className="flex items-start gap-2 p-3 bg-red-50 text-red-800 rounded border border-red-200 text-sm">
+                        <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+                        <span>{error}</span>
                     </div>
                 )}
             </div>
