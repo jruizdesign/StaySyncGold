@@ -5,6 +5,7 @@ import { RoomStatus, Room } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import RoomSetupWizard from '../components/RoomSetupWizard';
+import ReportIssueModal from '../components/ReportIssueModal';
 
 const Housekeeping: React.FC = () => {
   const { user } = useAuth();
@@ -12,7 +13,7 @@ const Housekeeping: React.FC = () => {
   const [filter, setFilter] = useState('ALL');
   const [rooms, setRooms] = useState<Room[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showWizard, setShowWizard] = useState(false);
+  const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
 
   const filters = [
     { label: 'ALL', value: 'ALL' },
@@ -91,6 +92,37 @@ const Housekeeping: React.FC = () => {
     }
   };
 
+  const handleSubmitIssue = async (issueData: any) => {
+    if (!selectedRoom || !user?.propertyId) return;
+
+    try {
+      // 1. Create Maintenance Ticket
+      const { error: ticketError } = await supabase
+        .from('maintenance')
+        .insert({
+          property_id: user.propertyId,
+          room_id: selectedRoom.id,
+          status: 'Open',
+          description: issueData.description,
+          priority: issueData.severity,
+          category: issueData.category,
+          ai_summary: issueData.ai_summary,
+          suggested_action: issueData.suggested_action
+        });
+
+      if (ticketError) throw ticketError;
+
+      // 2. Set Room to OOO
+      await handleUpdateStatus(selectedRoom.id, RoomStatus.OOO);
+
+      setSelectedRoom(null);
+      alert('Issue reported and room marked for maintenance.');
+    } catch (error) {
+      console.error('Error submitting issue:', error);
+      alert('Failed to report issue.');
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case RoomStatus.CLEAN: return 'bg-emerald-100 text-emerald-800 border-emerald-200';
@@ -127,22 +159,14 @@ const Housekeeping: React.FC = () => {
     <div className="space-y-8 animate-fadeIn pb-10">
       {/* Top Header */}
       <div className="flex justify-between items-center border-b border-slate-200 pb-6">
-        <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold text-slate-900">Property Manager</h1>
-          <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-        </div>
-      </div>
-
-      {/* Sub Header & Actions */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-slate-900">Room Operations</h2>
-          <p className="text-slate-500 text-sm mt-1">Inventory and housekeeping status</p>
+          <h1 className="text-2xl font-bold text-slate-900">Room Management</h1>
+          <p className="text-slate-500 mt-1">Manage room status, cleaning, and maintenance.</p>
         </div>
         <div className="flex items-center gap-3">
           <button onClick={() => setShowWizard(true)} className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors shadow-sm shadow-purple-200">
             <Wand2 className="w-4 h-4" />
-            Run Setup Wizard
+            Setup Wizard
           </button>
           <button onClick={() => navigate('/admin?tab=rooms')} className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 hover:border-slate-300 text-slate-700 rounded-lg font-medium transition-colors shadow-sm">
             <Plus className="w-4 h-4" />
@@ -157,9 +181,9 @@ const Housekeeping: React.FC = () => {
           <button
             key={f.value}
             onClick={() => setFilter(f.value)}
-            className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${filter === f.value
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${filter === f.value
               ? 'bg-slate-900 text-white shadow-md'
-              : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
+              : 'bg-white border text-slate-600 hover:bg-slate-50 border-slate-200'
               }`}
           >
             {f.label}
@@ -168,51 +192,84 @@ const Housekeeping: React.FC = () => {
       </div>
 
       {/* Room Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {filteredRooms.map(room => (
-          <div key={room.id} className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 group overflow-hidden">
+          <div key={room.id} className="bg-white rounded-xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow duration-200 overflow-hidden flex flex-col">
             <div className="p-5 flex justify-between items-start">
-              <div className="flex items-start gap-4">
-                <div className="p-2.5 bg-slate-50 rounded-xl text-slate-400 group-hover:text-gold-500 transition-colors">
-                  <BedDouble className="w-6 h-6" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold text-slate-900">{room.number}</h3>
-                  <p className="text-xs font-medium text-slate-500 mt-0.5">
-                    {room.type} • Floor {room.floor || 1}
-                  </p>
-                </div>
+              <div>
+                <h3 className="text-lg font-bold text-slate-900">Room {room.number}</h3>
+                <p className="text-slate-500 text-sm">{room.type}</p>
               </div>
-            </div>
-
-            {/* Status Bar */}
-            <div className="px-5 pb-5">
-              <div className={`w-full py-2 rounded-xl text-center font-bold text-xs uppercase tracking-wider border ${getStatusColor(room.status)}`}>
+              <span className={`px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider border flex items-center gap-1 ${getStatusColor(room.status)}`}>
+                {room.status === RoomStatus.CLEAN ? <CheckCircle size={12} /> :
+                  room.status === RoomStatus.DIRTY ? <Loader size={12} className="animate-spin" /> :
+                    room.status === RoomStatus.OOO ? <AlertCircle size={12} /> : null}
                 {getStatusDisplay(room.status)}
+              </span>
+            </div>
+
+            <div className="px-5 py-2 space-y-2 text-sm">
+              <div className="flex justify-between text-slate-600">
+                <span>Floor:</span>
+                <span className="font-medium text-slate-900">{room.floor || 1}</span>
+              </div>
+              <div className="flex justify-between text-slate-600">
+                <span>Capacity:</span>
+                <span className="font-medium text-slate-900">{room.capacity || 2} Guests</span>
+              </div>
+              <div className="flex justify-between text-slate-600">
+                <span>Rate:</span>
+                <span className="font-medium text-slate-900">${room.rate || 0}/night</span>
               </div>
             </div>
 
-            {/* Actions */}
-            <div className="flex border-t border-slate-100 divide-x divide-slate-100 bg-slate-50/50">
+            <div className="p-5 mt-auto space-y-3">
+              {room.status === RoomStatus.DIRTY ? (
+                <button
+                  onClick={() => handleUpdateStatus(room.id, RoomStatus.CLEAN)}
+                  className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-lg transition-colors shadow-sm text-sm"
+                >
+                  Mark Ready
+                </button>
+              ) : room.status === RoomStatus.CLEAN ? (
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    disabled
+                    className="py-2.5 bg-slate-100 text-slate-400 font-medium rounded-lg text-sm cursor-not-allowed"
+                  >
+                    Clean
+                  </button>
+                  <button
+                    onClick={() => handleUpdateStatus(room.id, RoomStatus.OOO)}
+                    className="py-2.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-medium rounded-lg transition-colors text-sm"
+                  >
+                    Maintain
+                  </button>
+                </div>
+              ) : room.status === RoomStatus.OOO ? (
+                <button
+                  onClick={() => handleUpdateStatus(room.id, RoomStatus.CLEAN)}
+                  className="w-full py-2.5 bg-slate-800 hover:bg-slate-900 text-white font-medium rounded-lg transition-colors shadow-sm text-sm"
+                >
+                  Mark Fixed (Ready)
+                </button>
+              ) : (
+                <button disabled className="w-full py-2.5 bg-slate-100 text-slate-400 font-medium rounded-lg text-sm cursor-not-allowed">
+                  Occupied
+                </button>
+              )}
+
               <button
-                onClick={() => handleUpdateStatus(room.id, RoomStatus.CLEAN)}
-                className="flex-1 py-3 text-xs font-bold text-emerald-600 hover:bg-emerald-50 transition-colors disabled:opacity-50"
-                disabled={room.status === RoomStatus.CLEAN}
+                onClick={() => setSelectedRoom(room)}
+                className="w-full py-2 bg-transparent text-slate-500 hover:text-slate-700 text-xs font-medium border border-transparent hover:border-slate-200 rounded-lg transition-all"
               >
-                Mark Clean
-              </button>
-              <button
-                onClick={() => handleUpdateStatus(room.id, RoomStatus.DIRTY)}
-                className="flex-1 py-3 text-xs font-bold text-rose-600 hover:bg-rose-50 transition-colors disabled:opacity-50"
-                disabled={room.status === RoomStatus.DIRTY}
-              >
-                Mark Dirty
+                Report Issue
               </button>
             </div>
           </div>
         ))}
         {filteredRooms.length === 0 && !loading && (
-          <div className="col-span-full py-12 text-center text-slate-500">
+          <div className="col-span-full py-16 text-center text-slate-400 bg-slate-50 rounded-xl border border-dashed border-slate-200">
             <BedDouble className="w-12 h-12 mx-auto mb-3 opacity-20" />
             <p>No rooms found matching this filter.</p>
           </div>
@@ -237,6 +294,15 @@ const Housekeeping: React.FC = () => {
           />
         )
       }
+
+      {selectedRoom && (
+        <ReportIssueModal
+          roomNumber={selectedRoom.number}
+          roomId={selectedRoom.id}
+          onClose={() => setSelectedRoom(null)}
+          onSubmit={handleSubmitIssue}
+        />
+      )}
     </div >
   );
 };

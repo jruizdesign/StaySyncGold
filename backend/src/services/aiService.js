@@ -139,7 +139,55 @@ async function generateFinancialBriefing(dailyData) {
     }
 }
 
+
+/**
+ * Analyze maintenance request for severity and categorization
+ * @param {string} description - User reported issue description
+ * @returns {Promise<Object>} - Analysis result
+ */
+async function analyzeMaintenanceRequest(description) {
+    try {
+        const model = genAI.getGenerativeModel({ model: 'gemini-3.0-flash-001' });
+
+        const prompt = `
+            You are a Hotel Maintenance Supervisor AI. 
+            Analyze the following reported issue and categorize it.
+            
+            ISSUE: "${description}"
+            
+            Return a JSON object with:
+            - "severity": "Critical" | "High" | "Medium" | "Low"
+            - "category": "Plumbing" | "Electrical" | "HVAC" | "Furniture" | "Structural" | "Other"
+            - "summary": A professional one-sentence summary for the maintenance log.
+            - "suggested_action": Immediate action required by staff (max 10 words).
+            
+            Rules:
+            - "Critical": Safety hazards, active leaks, power outages, security issues.
+            - "High": Guest impact, AC failure, appliance broken.
+        `;
+
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        const text = response.text();
+
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) throw new Error("Failed to parse AI response");
+
+        return JSON.parse(jsonMatch[0]);
+    } catch (error) {
+        console.error("AI Maintenance Analysis Error:", error);
+        // Fallback
+        return {
+            severity: "Medium",
+            category: "Other",
+            summary: description.substring(0, 50) + "...",
+            suggested_action: "Investigate reported issue."
+        };
+    }
+}
+
 module.exports = {
     generatePropertyInsights,
-    generateFinancialBriefing
+    generateFinancialBriefing,
+    analyzeMaintenanceRequest
 };

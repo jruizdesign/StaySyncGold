@@ -19,7 +19,8 @@ const RoomSetupWizard: React.FC<RoomSetupWizardProps> = ({ onClose, onComplete }
         roomsPerFloor: 10,
         startNumber: 101,
         type: 'Standard King',
-        price_per_night: 150
+        price_per_night: 150,
+        capacity: 2
     });
 
     const previewRooms = () => {
@@ -33,6 +34,7 @@ const RoomSetupWizard: React.FC<RoomSetupWizardProps> = ({ onClose, onComplete }
                     floor: floorNum,
                     type: config.type,
                     price_per_night: config.price_per_night,
+                    capacity: config.capacity,
                     status: RoomStatus.CLEAN
                 });
             }
@@ -157,80 +159,92 @@ const RoomSetupWizard: React.FC<RoomSetupWizardProps> = ({ onClose, onComplete }
                                             <option>Penthouse</option>
                                         </select>
                                     </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-700 mb-1">Base Price ($)</label>
-                                        <input
-                                            type="number"
-                                            min="0"
-                                            value={config.price_per_night}
-                                            onChange={e => setConfig({ ...config, price_per_night: parseInt(e.target.value) || 0 })}
-                                            className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all"
-                                        />
-                                    </div>
                                 </div>
-                            </div>
-                        </div>
-
-                        {/* Preview */}
-                        <div className="bg-slate-50 rounded-xl p-6 border border-slate-200">
-                            <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide mb-4 flex items-center justify-between">
-                                <span>Preview</span>
-                                <span className="text-purple-600 bg-purple-100 px-2 py-0.5 rounded-full text-xs">
-                                    {generatedRooms.length} Rooms
-                                </span>
-                            </h3>
-
-                            <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
-                                {generatedRooms.slice(0, 20).map((room, i) => (
-                                    <div key={i} className="bg-white p-3 rounded-lg border border-slate-100 flex justify-between items-center text-sm shadow-sm">
-                                        <div className="flex items-center gap-3">
-                                            <span className="font-bold text-slate-700">#{room.number}</span>
-                                            <span className="text-slate-400">•</span>
-                                            <span className="text-slate-600">Floor {room.floor}</span>
-                                        </div>
-                                        <span className="text-slate-500">{room.type}</span>
-                                    </div>
-                                ))}
-                                {generatedRooms.length > 20 && (
-                                    <div className="text-center py-2 text-xs text-slate-500 italic">
-                                        ...and {generatedRooms.length - 20} more rooms
-                                    </div>
-                                )}
-                            </div>
-
-                            <div className="mt-6 pt-6 border-t border-slate-200">
-                                <div className="flex items-start gap-3 p-3 bg-blue-50 text-blue-700 rounded-lg text-xs">
-                                    <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-                                    <p>This will add {generatedRooms.length} new rooms to your inventory. Existing rooms will not be affected unless there is a number conflict.</p>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">Base Price ($)</label>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        value={config.price_per_night}
+                                        onChange={e => setConfig({ ...config, price_per_night: parseInt(e.target.value) || 0 })}
+                                        className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">Capacity</label>
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        max="10"
+                                        value={config.capacity}
+                                        onChange={e => setConfig({ ...config, capacity: parseInt(e.target.value) || 2 })}
+                                        className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all"
+                                    />
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                {/* Footer */}
-                <div className="p-6 border-t border-slate-100 bg-slate-50/50 flex justify-end gap-3">
-                    <button
-                        onClick={onClose}
-                        className="px-4 py-2 text-slate-600 hover:text-slate-900 font-medium transition-colors"
-                    >
-                        Cancel
-                    </button>
-                    <button
-                        onClick={handleGenerate}
-                        disabled={loading || generatedRooms.length === 0}
-                        className="flex items-center gap-2 px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-bold shadow-lg shadow-purple-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        {loading ? (
-                            <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        ) : (
-                            <Save className="w-4 h-4" />
-                        )}
-                        Create {generatedRooms.length} Rooms
-                    </button>
+                    {/* Preview */}
+                    <div className="bg-slate-50 rounded-xl p-6 border border-slate-200">
+                        <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide mb-4 flex items-center justify-between">
+                            <span>Preview</span>
+                            <span className="text-purple-600 bg-purple-100 px-2 py-0.5 rounded-full text-xs">
+                                {generatedRooms.length} Rooms
+                            </span>
+                        </h3>
+
+                        <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                            {generatedRooms.slice(0, 20).map((room, i) => (
+                                <div key={i} className="bg-white p-3 rounded-lg border border-slate-100 flex justify-between items-center text-sm shadow-sm">
+                                    <div className="flex items-center gap-3">
+                                        <span className="font-bold text-slate-700">#{room.number}</span>
+                                        <span className="text-slate-400">•</span>
+                                        <span className="text-slate-600">Floor {room.floor}</span>
+                                    </div>
+                                    <span className="text-slate-500">{room.type}</span>
+                                </div>
+                            ))}
+                            {generatedRooms.length > 20 && (
+                                <div className="text-center py-2 text-xs text-slate-500 italic">
+                                    ...and {generatedRooms.length - 20} more rooms
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="mt-6 pt-6 border-t border-slate-200">
+                            <div className="flex items-start gap-3 p-3 bg-blue-50 text-blue-700 rounded-lg text-xs">
+                                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                                <p>This will add {generatedRooms.length} new rooms to your inventory. Existing rooms will not be affected unless there is a number conflict.</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
+
+            {/* Footer */}
+            <div className="p-6 border-t border-slate-100 bg-slate-50/50 flex justify-end gap-3">
+                <button
+                    onClick={onClose}
+                    className="px-4 py-2 text-slate-600 hover:text-slate-900 font-medium transition-colors"
+                >
+                    Cancel
+                </button>
+                <button
+                    onClick={handleGenerate}
+                    disabled={loading || generatedRooms.length === 0}
+                    className="flex items-center gap-2 px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-bold shadow-lg shadow-purple-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                    {loading ? (
+                        <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    ) : (
+                        <Save className="w-4 h-4" />
+                    )}
+                    Create {generatedRooms.length} Rooms
+                </button>
+            </div>
         </div>
+        </div >
     );
 };
 

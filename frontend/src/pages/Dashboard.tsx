@@ -1,9 +1,10 @@
 import React from 'react';
 import { Card, Badge } from '../components/UIComponents';
-import { TrendingUp, Users, BedDouble, AlertCircle, DollarSign } from 'lucide-react';
+import { CheckCircle, TrendingUp, Users, BedDouble, AlertCircle, DollarSign } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { LiveActivityFeed } from '../components/LiveActivityFeed';
 import { AIInsightCard } from '../components/AIInsightCard';
+import { supabase } from '../lib/supabase';
 
 import { useAuth } from '../context/AuthContext';
 
@@ -124,6 +125,35 @@ const Dashboard: React.FC = () => {
     cleaningSub: "Active Tasks"
   };
 
+  // Urgent Tickets Fetching
+  const [urgentTickets, setUrgentTickets] = React.useState<any[]>([]);
+
+  React.useEffect(() => {
+    const fetchUrgent = async () => {
+      if (!user?.propertyId) return;
+      const { data } = await supabase
+        .from('maintenance')
+        .select('*, rooms(number)')
+        .eq('property_id', user.propertyId)
+        .in('priority', ['Critical', 'High'])
+        .neq('status', 'Resolved')
+        .limit(3);
+      setUrgentTickets(data || []);
+    };
+
+    fetchUrgent();
+
+    // Subscribe to new urgent tickets
+    const channel = supabase
+      .channel('dashboard-urgent')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'maintenance', filter: `property_id=eq.${user?.propertyId}` },
+        () => fetchUrgent()
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [user?.propertyId]);
+
   return (
     <div className="space-y-6">
 
@@ -204,7 +234,27 @@ const Dashboard: React.FC = () => {
                   </div>
                 </div>
               </>
-            ) : <p className="text-slate-500 text-sm text-center py-8">No urgent alerts.</p>}
+            ) : (
+              urgentTickets.length > 0 ? (
+                urgentTickets.map(t => (
+                  <div key={t.id} className="flex items-start gap-3 p-3 bg-red-50 rounded-lg border border-red-100">
+                    <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 shrink-0" />
+                    <div>
+                      <p className="text-sm font-bold text-slate-900">Room {t.rooms?.number} - {t.category || 'Maintenance'}</p>
+                      <p className="text-xs text-slate-600 mt-0.5">{t.ai_summary || t.description}</p>
+                      <div className="mt-1 flex gap-2">
+                        <Badge color="red">{t.priority}</Badge>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-6">
+                  <CheckCircle className="w-8 h-8 text-emerald-400 mx-auto mb-2 opacity-50" />
+                  <p className="text-slate-500 text-sm">No urgent issues requiring attention.</p>
+                </div>
+              )
+            )}
           </div>
         </Card>
       </div>

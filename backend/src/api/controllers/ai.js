@@ -107,6 +107,28 @@ async function fetchPropertyData(propertyId) {
     }
 }
 
+
+/**
+ * @desc    Analyze a maintenance issue before submission
+ * @route   POST /api/ai/analyze-issue
+ * @access  Public (Context: Staff/Guest)
+ */
+const analyzeIssue = async (req, res) => {
+    try {
+        const { description } = req.body;
+        if (!description) {
+            return res.status(400).json({ error: 'Description is required' });
+        }
+
+        const analysis = await aiService.analyzeMaintenanceRequest(description);
+        res.status(200).json(analysis);
+    } catch (error) {
+        console.error('Error analyzing issue:', error);
+        res.status(500).json({ error: 'Analysis failed' });
+    }
+};
+
 module.exports = {
-    getPropertyInsights
+    getPropertyInsights,
+    analyzeIssue
 };

@@ -12,6 +12,7 @@ import Financials from './pages/Financials';
 import LandingPage from './pages/LandingPage';
 import Login from './pages/Login';
 import AdminSettings from './pages/AdminSettings';
+import Accounting from './pages/Accounting';
 import ITSecurity from './pages/ITSecurity';
 import DigitalSolutions from './pages/DigitalSolutions';
 import ChannelManager from './pages/ChannelManager';

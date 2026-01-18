@@ -33,6 +33,7 @@ export interface Room {
   status: RoomStatus;
   rate: number;
   floor: number;
+  capacity: number;
 }
 
 export interface Reservation {
