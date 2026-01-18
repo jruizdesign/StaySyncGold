@@ -51,10 +51,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 .from('users')
                 .select('*')
                 .eq('id', userId)
-                .single();
+                .maybeSingle();
 
-            if (error) {
-                console.warn(`[Auth] ID lookup failed: ${error.message}. Trying email...`);
+            if (error || !data) {
+                console.warn(`[Auth] ID lookup failed: ${error?.message || 'User not found'}. Trying email...`);
                 // 2. Fallback: Try fetching by Email (Manual entry mismatch fix)
                 const { data: emailData, error: emailError } = await supabase
                     .from('users')

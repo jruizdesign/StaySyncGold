@@ -33,6 +33,7 @@ app.use(express.json());
 // CORS Configuration
 const allowedOrigins = [
   process.env.CLIENT_ORIGIN || 'http://localhost:3001',
+  'http://localhost:5173',
   'https://www.staysync.space',
   'https://staysync.space'
 ];
