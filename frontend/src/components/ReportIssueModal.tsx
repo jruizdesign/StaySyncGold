@@ -5,15 +5,21 @@ import { logger } from '../lib/logger';
 interface ReportIssueModalProps {
     roomNumber: string;
     roomId: string;
+    existingIssue?: any;
     onClose: () => void;
     onSubmit: (issue: any) => void;
 }
 
-const ReportIssueModal: React.FC<ReportIssueModalProps> = ({ roomNumber, roomId, onClose, onSubmit }) => {
-    const [step, setStep] = useState(1);
+const ReportIssueModal: React.FC<ReportIssueModalProps> = ({ roomNumber, roomId, existingIssue, onClose, onSubmit }) => {
+    const [step, setStep] = useState(existingIssue ? 2 : 1);
     const [description, setDescription] = useState('');
     const [analyzing, setAnalyzing] = useState(false);
-    const [analysis, setAnalysis] = useState<any>(null);
+    const [analysis, setAnalysis] = useState<any>(existingIssue ? {
+        severity: existingIssue.priority || existingIssue.severity,
+        category: existingIssue.category,
+        summary: existingIssue.ai_summary,
+        suggested_action: existingIssue.suggested_action
+    } : null);
 
     const handleAnalyze = async () => {
         if (!description.trim()) return;
@@ -43,6 +49,10 @@ const ReportIssueModal: React.FC<ReportIssueModalProps> = ({ roomNumber, roomId,
     };
 
     const handleConfirm = () => {
+        if (existingIssue) {
+            onClose();
+            return;
+        }
         onSubmit({
             description, // Keep original user description
             ai_summary: analysis.summary,
@@ -53,98 +63,105 @@ const ReportIssueModal: React.FC<ReportIssueModalProps> = ({ roomNumber, roomId,
     };
 
     return (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn">
-            <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col">
-                <div className="p-5 border-b border-slate-100 flex justify-between items-center">
-                    <h3 className="text-lg font-bold text-slate-900">Report Issue - Room {roomNumber}</h3>
-                    <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col transform transition-all scale-100">
+                <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-white">
+                    <h3 className="text-xl font-bold text-slate-800">
+                        {existingIssue ? 'Issue Details' : 'Report Issue'} <span className="text-slate-400 font-medium ml-1">- Room {roomNumber}</span>
+                    </h3>
+                    <button onClick={onClose} className="p-2 bg-slate-50 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-600 transition-colors">
                         <X className="w-5 h-5" />
                     </button>
                 </div>
 
-                <div className="p-6 space-y-6">
+                <div className="p-6 space-y-6 bg-slate-50/30">
                     {step === 1 ? (
                         <>
                             <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-2">Describe the issue</label>
+                                <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wide">Describe the issue</label>
                                 <textarea
                                     value={description}
                                     onChange={(e) => setDescription(e.target.value)}
                                     placeholder="e.g., The sink in the bathroom is draining very slowly and making a gurgling noise."
-                                    className="w-full h-32 px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none text-slate-700"
+                                    className="w-full h-40 px-5 py-4 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none resize-none text-slate-700 text-base shadow-sm bg-white placeholder:text-slate-400"
                                 />
                             </div>
 
-                            <div className="bg-blue-50 p-4 rounded-xl flex gap-3 text-blue-700 text-sm">
-                                <Info className="w-5 h-5 shrink-0" />
-                                <p>StaySync AI will analyze your report to determine severity and categorize it automatically for the maintenance team.</p>
+                            <div className="bg-blue-50 p-4 rounded-xl flex gap-3 text-blue-700 text-sm border border-blue-100/50 items-start">
+                                <Info className="w-5 h-5 shrink-0 mt-0.5" />
+                                <p className="leading-snug">StaySync AI will analyze your report to instantly determine severity, categorize the problem, and suggest immediate actions for the maintenance team.</p>
                             </div>
                         </>
                     ) : (
-                        <div className="space-y-4 animate-slideIn">
-                            <div className="flex items-center gap-3 mb-4">
-                                <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center text-red-600">
-                                    <CheckCircle className="w-6 h-6" />
+                        <div className="space-y-5 animate-slideIn">
+                            <div className="flex items-center gap-4 mb-6">
+                                <div className={`w-14 h-14 rounded-full flex items-center justify-center shadow-sm ${existingIssue ? 'bg-slate-100 text-slate-600' : 'bg-green-100 text-green-600'}`}>
+                                    {existingIssue ? <Info className="w-7 h-7" /> : <CheckCircle className="w-7 h-7" />}
                                 </div>
                                 <div>
-                                    <h4 className="font-bold text-slate-900">Analysis Complete</h4>
-                                    <p className="text-sm text-slate-500">Categorized as <span className="font-medium text-slate-900">{analysis.category}</span></p>
+                                    <h4 className="text-xl font-bold text-slate-900">{existingIssue ? 'Issue Report' : 'Analysis Complete'}</h4>
+                                    <p className="text-slate-500">Categorized as <span className="font-bold text-slate-800 bg-slate-200/50 px-2 py-0.5 rounded text-sm uppercase tracking-wide ml-1">{analysis.category}</span></p>
                                 </div>
                             </div>
 
-                            <div className="bg-slate-50 border border-slate-100 rounded-xl p-4 space-y-4">
-                                <div>
-                                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Severity</span>
-                                    <div className={`mt-1 text-lg font-black ${analysis.severity === 'Critical' ? 'text-red-600' :
-                                            analysis.severity === 'High' ? 'text-orange-600' :
-                                                'text-blue-600'
+                            <div className="space-y-4">
+                                <div className="bg-white p-5 rounded-xl border border-slate-200 hover:border-slate-300 transition-colors shadow-sm">
+                                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block">Severity Level</span>
+                                    <div className={`text-2xl font-black tracking-tight ${analysis.severity === 'Critical' ? 'text-red-600' :
+                                        analysis.severity === 'High' ? 'text-orange-500' :
+                                            analysis.severity === 'Medium' ? 'text-amber-500' :
+                                                'text-blue-500'
                                         }`}>
-                                        {analysis.severity.toUpperCase()}
+                                        {analysis.severity?.toUpperCase() || 'UNKNOWN'}
                                     </div>
                                 </div>
 
-                                <div>
-                                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Summary</span>
-                                    <p className="mt-1 text-slate-700 font-medium">{analysis.summary}</p>
+                                <div className="bg-white p-5 rounded-xl border border-slate-200 hover:border-slate-300 transition-colors shadow-sm">
+                                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block">AI Summary</span>
+                                    <p className="text-slate-700 font-medium leading-relaxed">{analysis.summary}</p>
                                 </div>
 
-                                <div>
-                                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Suggested Action</span>
-                                    <p className="mt-1 text-slate-700">{analysis.suggested_action}</p>
+                                <div className="bg-white p-5 rounded-xl border border-slate-200 hover:border-slate-300 transition-colors shadow-sm relative overflow-hidden">
+                                    <div className="absolute top-0 left-0 w-1 h-full bg-blue-500"></div>
+                                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block">Suggested Action</span>
+                                    <p className="text-slate-700 leading-relaxed">{analysis.suggested_action}</p>
                                 </div>
                             </div>
                         </div>
                     )}
                 </div>
 
-                <div className="p-5 border-t border-slate-100 bg-slate-50/50 flex justify-end gap-3">
-                    <button onClick={onClose} className="px-4 py-2 text-slate-600 hover:text-slate-900 font-medium">Cancel</button>
+                <div className="p-6 border-t border-slate-100 bg-white flex justify-end gap-3 z-10">
+                    <button onClick={onClose} className="px-5 py-2.5 text-slate-500 hover:text-slate-800 font-semibold transition-colors">
+                        {existingIssue ? 'Close' : 'Cancel'}
+                    </button>
 
                     {step === 1 ? (
                         <button
                             onClick={handleAnalyze}
                             disabled={!description.trim() || analyzing}
-                            className="flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold shadow-lg shadow-blue-200 transition-all disabled:opacity-50"
+                            className="flex items-center gap-2 px-8 py-2.5 bg-slate-900 hover:bg-black text-white rounded-xl font-bold shadow-lg shadow-slate-200 hover:shadow-xl transition-all disabled:opacity-50 disabled:shadow-none transform hover:-translate-y-0.5"
                         >
-                            {analyzing ? <span className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" /> : <Sparkles className="w-4 h-4" />}
-                            Analyze & Report
+                            {analyzing ? <span className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" /> : <Sparkles className="w-4 h-4 text-purple-300" />}
+                            {analyzing ? 'Analyzing...' : 'Analyze Issue'}
                         </button>
                     ) : (
-                        <button
-                            onClick={() => setStep(1)}
-                            className="mr-auto text-sm text-slate-500 hover:text-slate-700 font-medium"
-                        >
-                            Back
-                        </button>
-                    )}
-
-                    {step === 2 && (
-                        <button
-                            onClick={handleConfirm}
-                            className="px-6 py-2 bg-black text-white rounded-lg font-bold hover:bg-slate-800 transition-colors shadow-lg"
-                        >
-                            Confirm & Submit
-                        </button>
+                        !existingIssue && (
+                            <>
+                                <button
+                                    onClick={() => setStep(1)}
+                                    className="mr-auto text-sm text-slate-400 hover:text-slate-600 font-medium px-2"
+                                >
+                                    Back to Edit
+                                </button>
+                                <button
+                                    onClick={handleConfirm}
+                                    className="px-8 py-2.5 bg-black text-white rounded-xl font-bold hover:bg-slate-800 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                                >
+                                    Confirm & Submit
+                                </button>
+                            </>
+                        )
                     )}
                 </div>
             </div>

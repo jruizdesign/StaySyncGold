@@ -93,6 +93,41 @@ const Housekeeping: React.FC = () => {
     }
   };
 
+  // Fetch active maintenance tickets
+  const [activeTickets, setActiveTickets] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (user?.propertyId) {
+      fetchTickets();
+
+      // Subscribe to ticket changes
+      const ticketChannel = supabase
+        .channel('active-tickets')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'maintenance', filter: `property_id=eq.${user.propertyId}` },
+          () => fetchTickets()
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(ticketChannel);
+      };
+    }
+  }, [user?.propertyId]);
+
+  const fetchTickets = async () => {
+    const { data } = await supabase
+      .from('maintenance')
+      .select('*')
+      .eq('property_id', user?.propertyId)
+      .neq('status', 'Resolved');
+
+    setActiveTickets(data || []);
+  };
+
+  const getActiveTicketForRoom = (roomId: string) => {
+    return activeTickets.find(t => t.room_id === roomId);
+  };
+
   const handleSubmitIssue = async (issueData: any) => {
     if (!selectedRoom || !user?.propertyId) return;
 
@@ -117,6 +152,7 @@ const Housekeeping: React.FC = () => {
       await handleUpdateStatus(selectedRoom.id, RoomStatus.OOO);
 
       setSelectedRoom(null);
+      fetchTickets(); // Refresh tickets immediately
       alert('Issue reported and room marked for maintenance.');
     } catch (error) {
       console.error('Error submitting issue:', error);
@@ -194,81 +230,87 @@ const Housekeeping: React.FC = () => {
 
       {/* Room Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {filteredRooms.map(room => (
-          <div key={room.id} className="bg-white rounded-xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow duration-200 overflow-hidden flex flex-col">
-            <div className="p-5 flex justify-between items-start">
-              <div>
-                <h3 className="text-lg font-bold text-slate-900">Room {room.number}</h3>
-                <p className="text-slate-500 text-sm">{room.type}</p>
-              </div>
-              <span className={`px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider border flex items-center gap-1 ${getStatusColor(room.status)}`}>
-                {room.status === RoomStatus.CLEAN ? <CheckCircle size={12} /> :
-                  room.status === RoomStatus.DIRTY ? <Loader size={12} className="animate-spin" /> :
-                    room.status === RoomStatus.OOO ? <AlertCircle size={12} /> : null}
-                {getStatusDisplay(room.status)}
-              </span>
-            </div>
-
-            <div className="px-5 py-2 space-y-2 text-sm">
-              <div className="flex justify-between text-slate-600">
-                <span>Floor:</span>
-                <span className="font-medium text-slate-900">{room.floor || 1}</span>
-              </div>
-              <div className="flex justify-between text-slate-600">
-                <span>Capacity:</span>
-                <span className="font-medium text-slate-900">{room.capacity || 2} Guests</span>
-              </div>
-              <div className="flex justify-between text-slate-600">
-                <span>Rate:</span>
-                <span className="font-medium text-slate-900">${room.rate || 0}/night</span>
-              </div>
-            </div>
-
-            <div className="p-5 mt-auto space-y-3">
-              {room.status === RoomStatus.DIRTY ? (
-                <button
-                  onClick={() => handleUpdateStatus(room.id, RoomStatus.CLEAN)}
-                  className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-lg transition-colors shadow-sm text-sm"
-                >
-                  Mark Ready
-                </button>
-              ) : room.status === RoomStatus.CLEAN ? (
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    disabled
-                    className="py-2.5 bg-slate-100 text-slate-400 font-medium rounded-lg text-sm cursor-not-allowed"
-                  >
-                    Clean
-                  </button>
-                  <button
-                    onClick={() => handleUpdateStatus(room.id, RoomStatus.OOO)}
-                    className="py-2.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-medium rounded-lg transition-colors text-sm"
-                  >
-                    Maintain
-                  </button>
+        {filteredRooms.map(room => {
+          const activeTicket = getActiveTicketForRoom(room.id);
+          return (
+            <div key={room.id} className="bg-white rounded-xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow duration-200 overflow-hidden flex flex-col">
+              <div className="p-5 flex justify-between items-start">
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900">Room {room.number}</h3>
+                  <p className="text-slate-500 text-sm">{room.type}</p>
                 </div>
-              ) : room.status === RoomStatus.OOO ? (
-                <button
-                  onClick={() => handleUpdateStatus(room.id, RoomStatus.CLEAN)}
-                  className="w-full py-2.5 bg-slate-800 hover:bg-slate-900 text-white font-medium rounded-lg transition-colors shadow-sm text-sm"
-                >
-                  Mark Fixed (Ready)
-                </button>
-              ) : (
-                <button disabled className="w-full py-2.5 bg-slate-100 text-slate-400 font-medium rounded-lg text-sm cursor-not-allowed">
-                  Occupied
-                </button>
-              )}
+                <span className={`px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider border flex items-center gap-1 ${getStatusColor(room.status)}`}>
+                  {room.status === RoomStatus.CLEAN ? <CheckCircle size={12} /> :
+                    room.status === RoomStatus.DIRTY ? <Loader size={12} className="animate-spin" /> :
+                      room.status === RoomStatus.OOO ? <AlertCircle size={12} /> : null}
+                  {getStatusDisplay(room.status)}
+                </span>
+              </div>
 
-              <button
-                onClick={() => setSelectedRoom(room)}
-                className="w-full py-2 bg-transparent text-slate-500 hover:text-slate-700 text-xs font-medium border border-transparent hover:border-slate-200 rounded-lg transition-all"
-              >
-                Report Issue
-              </button>
+              <div className="px-5 py-2 space-y-2 text-sm">
+                <div className="flex justify-between text-slate-600">
+                  <span>Floor:</span>
+                  <span className="font-medium text-slate-900">{room.floor || 1}</span>
+                </div>
+                <div className="flex justify-between text-slate-600">
+                  <span>Capacity:</span>
+                  <span className="font-medium text-slate-900">{room.capacity || 2} Guests</span>
+                </div>
+                <div className="flex justify-between text-slate-600">
+                  <span>Rate:</span>
+                  <span className="font-medium text-slate-900">${room.rate || 0}/night</span>
+                </div>
+              </div>
+
+              <div className="p-5 mt-auto space-y-3">
+                {room.status === RoomStatus.DIRTY ? (
+                  <button
+                    onClick={() => handleUpdateStatus(room.id, RoomStatus.CLEAN)}
+                    className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-lg transition-colors shadow-sm text-sm"
+                  >
+                    Mark Ready
+                  </button>
+                ) : room.status === RoomStatus.CLEAN ? (
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      disabled
+                      className="py-2.5 bg-slate-100 text-slate-400 font-medium rounded-lg text-sm cursor-not-allowed"
+                    >
+                      Clean
+                    </button>
+                    <button
+                      onClick={() => handleUpdateStatus(room.id, RoomStatus.OOO)}
+                      className="py-2.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-medium rounded-lg transition-colors text-sm"
+                    >
+                      Maintain
+                    </button>
+                  </div>
+                ) : room.status === RoomStatus.OOO ? (
+                  <button
+                    onClick={() => handleUpdateStatus(room.id, RoomStatus.CLEAN)}
+                    className="w-full py-2.5 bg-slate-800 hover:bg-slate-900 text-white font-medium rounded-lg transition-colors shadow-sm text-sm"
+                  >
+                    Mark Fixed (Ready)
+                  </button>
+                ) : (
+                  <button disabled className="w-full py-2.5 bg-slate-100 text-slate-400 font-medium rounded-lg text-sm cursor-not-allowed">
+                    Occupied
+                  </button>
+                )}
+
+                <button
+                  onClick={() => setSelectedRoom(room)}
+                  className={`w-full py-2 text-xs font-medium border rounded-lg transition-all ${room.status === RoomStatus.OOO && activeTicket
+                      ? 'bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100'
+                      : 'bg-transparent text-slate-500 hover:text-slate-700 border-transparent hover:border-slate-200'
+                    }`}
+                >
+                  {room.status === RoomStatus.OOO && activeTicket ? 'View Issue Details' : 'Report Issue'}
+                </button>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
         {filteredRooms.length === 0 && !loading && (
           <div className="col-span-full py-16 text-center text-slate-400 bg-slate-50 rounded-xl border border-dashed border-slate-200">
             <BedDouble className="w-12 h-12 mx-auto mb-3 opacity-20" />
@@ -300,6 +342,7 @@ const Housekeeping: React.FC = () => {
         <ReportIssueModal
           roomNumber={selectedRoom.number}
           roomId={selectedRoom.id}
+          existingIssue={getActiveTicketForRoom(selectedRoom.id)}
           onClose={() => setSelectedRoom(null)}
           onSubmit={handleSubmitIssue}
         />
