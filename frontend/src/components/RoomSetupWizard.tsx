@@ -244,7 +244,6 @@ const RoomSetupWizard: React.FC<RoomSetupWizardProps> = ({ onClose, onComplete }
                 </button>
             </div>
         </div>
-        </div >
     );
 };
 

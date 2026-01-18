@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Wand2, BedDouble, AlertCircle, Loader } from 'lucide-react';
+import { Plus, Wand2, BedDouble, AlertCircle, Loader, CheckCircle } from 'lucide-react';
 import { RoomStatus, Room } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -14,6 +14,7 @@ const Housekeeping: React.FC = () => {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
+  const [showWizard, setShowWizard] = useState(false);
 
   const filters = [
     { label: 'ALL', value: 'ALL' },
