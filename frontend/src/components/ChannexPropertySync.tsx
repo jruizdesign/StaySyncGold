@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../config';
 import React, { useState } from 'react';
 import { Card, Button } from './UIComponents';
 import { CheckCircle, AlertCircle, Loader, RefreshCw } from 'lucide-react';
@@ -27,7 +28,7 @@ const ChannexPropertySync: React.FC<ChannexPropertySyncProps> = ({
         setIsFetching(true);
         setError(null);
         try {
-            const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+            // API_BASE_URL imported from config
             const response = await fetch(`${API_BASE_URL}/api/channex/properties?api_key=${apiKey}`);
             const data = await response.json();
 
@@ -48,7 +49,7 @@ const ChannexPropertySync: React.FC<ChannexPropertySyncProps> = ({
         if (!selectedProperty || !apiKey) return;
         setIsSaving(true);
         try {
-            const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+            // API_BASE_URL imported from config
             const response = await fetch(`${API_BASE_URL}/api/channex/connect`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },

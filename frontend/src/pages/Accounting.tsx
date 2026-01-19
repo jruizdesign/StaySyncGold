@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { API_BASE_URL } from '../config';
 import { useAuth } from '../context/AuthContext';
 import { MetricCard } from '../components/accounting/MetricCard';
 import { GuestLedgerTable } from '../components/accounting/GuestLedgerTable';
@@ -7,7 +8,7 @@ import { FinancialInsightCard } from '../components/accounting/FinancialInsightC
 import { DebtItem, LedgerEntry, DailyFinancialData } from '../types/accounting';
 import { ShieldAlert, Download } from 'lucide-react';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+const API_BASE = `${API_BASE_URL}/api`;
 
 const Accounting: React.FC = () => {
     const { user } = useAuth();
@@ -85,8 +86,8 @@ const Accounting: React.FC = () => {
                 <button
                     onClick={() => setActiveTab('overview')}
                     className={`pb-3 text-sm font-medium transition-all relative ${activeTab === 'overview'
-                            ? 'text-slate-900'
-                            : 'text-slate-500 hover:text-slate-700'
+                        ? 'text-slate-900'
+                        : 'text-slate-500 hover:text-slate-700'
                         }`}
                 >
                     Overview
@@ -97,8 +98,8 @@ const Accounting: React.FC = () => {
                 <button
                     onClick={() => setActiveTab('guest_ledger')}
                     className={`pb-3 text-sm font-medium transition-all relative ${activeTab === 'guest_ledger'
-                            ? 'text-slate-900'
-                            : 'text-slate-500 hover:text-slate-700'
+                        ? 'text-slate-900'
+                        : 'text-slate-500 hover:text-slate-700'
                         }`}
                 >
                     Guest Ledger (Due)
@@ -109,8 +110,8 @@ const Accounting: React.FC = () => {
                 <button
                     onClick={() => setActiveTab('transactions')}
                     className={`pb-3 text-sm font-medium transition-all relative ${activeTab === 'transactions'
-                            ? 'text-slate-900'
-                            : 'text-slate-500 hover:text-slate-700'
+                        ? 'text-slate-900'
+                        : 'text-slate-500 hover:text-slate-700'
                         }`}
                 >
                     All Transactions

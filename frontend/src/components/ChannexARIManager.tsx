@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { API_BASE_URL } from '../config';
 import { Card, Button } from './UIComponents';
 import { Upload, Loader, Calendar } from 'lucide-react';
 
@@ -42,7 +43,7 @@ const ChannexARIManager: React.FC<ChannexARIManagerProps> = ({ propertyId }) => 
 
         try {
             // Prepare ARI data
-            const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+            // API_BASE_URL imported from config
             const response = await fetch(`${API_BASE_URL}/api/channex/ari`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },

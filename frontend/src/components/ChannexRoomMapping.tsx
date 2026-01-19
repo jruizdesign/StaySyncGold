@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { API_BASE_URL } from '../config';
 import { Card, Button, Badge } from './UIComponents';
 import { Save, Plus, Loader, Wand2 } from 'lucide-react';
 
@@ -32,7 +32,7 @@ const ChannexRoomMapping: React.FC<ChannexRoomMappingProps> = ({
     const fetchData = async () => {
         setLoading(true);
         try {
-            const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+            // API_BASE_URL imported from config
 
             // 1. Fetch local room types
             const localRes = await fetch(`${API_BASE_URL}/api/channex/rooms/local?property_id=${propertyId}`);
@@ -94,7 +94,7 @@ const ChannexRoomMapping: React.FC<ChannexRoomMappingProps> = ({
         setIsAutoSyncing(true);
         setError(null);
         try {
-            const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+            // API_BASE_URL imported from config
             const response = await fetch(`${API_BASE_URL}/api/channex/mappings/auto-sync`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -123,7 +123,7 @@ const ChannexRoomMapping: React.FC<ChannexRoomMappingProps> = ({
         setError(null);
 
         try {
-            const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+            // API_BASE_URL imported from config
             const response = await fetch(`${API_BASE_URL}/api/channex/save-mappings`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },

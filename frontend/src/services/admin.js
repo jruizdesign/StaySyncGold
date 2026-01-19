@@ -1,4 +1,6 @@
-const API_URL = `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}/api/admin`;
+import { API_BASE_URL } from '../config';
+
+const API_URL = `${API_BASE_URL}/api/admin`;
 
 export const getProperties = async () => {
   try {

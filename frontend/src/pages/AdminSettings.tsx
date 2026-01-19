@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { API_BASE_URL } from '../config';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { Button, Card, Input, Select, Badge } from '../components/UIComponents';
@@ -70,7 +70,7 @@ const DatabaseInspector: React.FC = () => {
 
     const handleTestDb = async () => {
         try {
-            const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+            // API_BASE_URL injected via config
             const res = await fetch(`${API_BASE_URL}/test-db`);
             const text = await res.text();
             if (!text) throw new Error('Empty response from server');
@@ -402,7 +402,7 @@ const ChannelManager: React.FC = () => {
 
     const fetchActiveChannels = async (propertyId: string) => {
         try {
-            const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+            // API_BASE_URL injected via config
             const res = await fetch(`${API_BASE_URL}/api/channex/status?property_id=${propertyId}`);
             const text = await res.text();
             if (!text) return; // Handle empty response gracefully
@@ -417,7 +417,7 @@ const ChannelManager: React.FC = () => {
 
     const fetchMappingData = async (propertyId: string) => {
         try {
-            const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+            // API_BASE_URL injected via config
             // A. Fetch Channex Rooms
             const channexRes = await fetch(`${API_BASE_URL}/api/channex/rooms?property_id=${propertyId}`);
             const channexText = await channexRes.text();
@@ -460,7 +460,7 @@ const ChannelManager: React.FC = () => {
         }
         setLoading(true);
         try {
-            const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+            // API_BASE_URL injected via config
             const res = await fetch(`${API_BASE_URL}/api/channex/verify`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -487,7 +487,7 @@ const ChannelManager: React.FC = () => {
 
         // Verify with Backend first
         try {
-            const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+            // API_BASE_URL injected via config
             const verifyRes = await fetch(`${API_BASE_URL}/api/channex/verify`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -534,7 +534,7 @@ const ChannelManager: React.FC = () => {
     const handleSync = async () => {
         setSyncing(true);
         try {
-            const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+            // API_BASE_URL injected via config
             const res = await fetch(`${API_BASE_URL}/api/channex/sync`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -562,7 +562,7 @@ const ChannelManager: React.FC = () => {
         if (!user?.propertyId) return;
         setSavingMappings(true);
         try {
-            const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+            // API_BASE_URL injected via config
             const res = await fetch(`${API_BASE_URL}/api/channex/mappings`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },

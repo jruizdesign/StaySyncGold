@@ -13,7 +13,7 @@ class ChannexService {
     async getProperties(apiKey) {
         try {
             const response = await axios.get(`${this.baseUrl}/properties`, {
-                headers: { 'api-key': apiKey }
+                headers: { 'Authorization': 'Bearer ' + apiKey }
             });
             return { success: true, data: response.data.data || [] };
         } catch (error) {
@@ -29,7 +29,7 @@ class ChannexService {
     async getActiveChannels(apiKey, propertyId) {
         try {
             const response = await axios.get(`${this.baseUrl}/channels`, {
-                headers: { 'api-key': apiKey },
+                headers: { 'Authorization': 'Bearer ' + apiKey },
                 params: { 'filter[property_id]': propertyId }
             });
 
@@ -44,7 +44,7 @@ class ChannexService {
     async getRoomTypes(apiKey, propertyId) {
         try {
             const response = await axios.get(`${this.baseUrl}/room_types`, {
-                headers: { 'api-key': apiKey },
+                headers: { 'Authorization': 'Bearer ' + apiKey },
                 params: { 'filter[property_id]': propertyId }
             });
             return { success: true, data: response.data.data || [] };
@@ -58,7 +58,7 @@ class ChannexService {
     async fetchBookings(apiKey, propertyId) {
         try {
             const response = await axios.get(`${this.baseUrl}/bookings`, {
-                headers: { 'api-key': apiKey },
+                headers: { 'Authorization': 'Bearer ' + apiKey },
                 params: {
                     'filter[property_id]': propertyId,
                     'limit': 100
@@ -80,7 +80,7 @@ class ChannexService {
                     username: username
                 }
             }, {
-                headers: { 'api-key': apiKey }
+                headers: { 'Authorization': 'Bearer ' + apiKey }
             });
             return { success: true, token: response.data.data.token };
         } catch (error) {
@@ -98,7 +98,7 @@ class ChannexService {
             const payload = { values: updates };
 
             const response = await axios.post(`${this.baseUrl}/ari`, payload, {
-                headers: { 'api-key': apiKey }
+                headers: { 'Authorization': 'Bearer ' + apiKey }
             });
 
             return { success: true, data: response.data };

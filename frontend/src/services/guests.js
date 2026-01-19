@@ -1,4 +1,6 @@
-const API_URL = `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}/api/guests`;
+import { API_BASE_URL } from '../config';
+
+const API_URL = `${API_BASE_URL}/api/guests`;
 
 export const getGuests = async () => {
   try {

@@ -30,13 +30,11 @@ const port = process.env.PORT || 5000;
 app.use(express.json());
 
 // CORS Configuration
-// CORS Configuration
 const allowedOrigins = [
-  process.env.CLIENT_ORIGIN || 'http://localhost:3001',
-  'http://localhost:5173',
-  'https://www.staysync.space',
-  'https://staysync.space'
-];
+  process.env.CLIENT_ORIGIN, // Production domain MUST be set
+  'http://localhost:5173',   // Local dev
+  'http://localhost:3001'    // Local dev alt
+].filter(Boolean); // Remote undefined values
 
 app.use(cors({
   origin: (origin, callback) => {
@@ -70,13 +68,15 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "https://trusted.cdn.com"],
+      // Add trusted external scripts here (Stripe, Analytics, etc.)
+      scriptSrc: ["'self'"],
       objectSrc: ["'none'"],
+      upgradeInsecureRequests: [],
     },
   },
   xFrameOptions: { action: "sameorigin" },
   xContentTypeOptions: true,
-  referrerPolicy: { policy: "no-referrer-when-downgrade" },
+  referrerPolicy: { policy: "strict-origin-when-cross-origin" },
 }));
 
 app.use('/api/reservations', reservationsRouter);
@@ -106,9 +106,11 @@ app.get('/test-db', async (req, res) => {
       time: result.rows[0].now,
     });
   } catch (err) {
+    console.error('Database connection failed:', err); // Error log kept
     res.status(500).json({
       message: 'Database connection failed!',
-      error: err.message,
+      // Hide stack trace in production
+      error: process.env.NODE_ENV === 'production' ? 'Internal Server Error' : err.message,
     });
   }
 });

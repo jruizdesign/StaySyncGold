@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../config';
 import React, { useState } from 'react';
 import { X, Sparkles, AlertTriangle, CheckCircle, Info } from 'lucide-react';
 import { logger } from '../lib/logger';
@@ -25,7 +26,7 @@ const ReportIssueModal: React.FC<ReportIssueModalProps> = ({ roomNumber, roomId,
         if (!description.trim()) return;
         setAnalyzing(true);
         try {
-            const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+            const API_BASE = `${API_BASE_URL}/api`;
             const res = await fetch(`${API_BASE}/ai/analyze-issue`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
