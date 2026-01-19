@@ -123,8 +123,12 @@ const analyzeIssue = async (req, res) => {
         const analysis = await aiService.analyzeMaintenanceRequest(description);
         res.status(200).json(analysis);
     } catch (error) {
-        console.error('Error analyzing issue:', error);
-        res.status(500).json({ error: 'Analysis failed' });
+        console.error('DEBUG: Full AI Error:', error);
+        console.error('DEBUG: AI Error Message:', error.message);
+        if (error.response) {
+            console.error('DEBUG: AI Error Response:', await error.response.text());
+        }
+        res.status(500).json({ error: 'Analysis failed', details: error.message });
     }
 };
 
