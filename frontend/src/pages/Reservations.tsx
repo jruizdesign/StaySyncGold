@@ -274,9 +274,10 @@ const Reservations: React.FC = () => {
         if (!response.ok) throw new Error('Failed to update reservation');
       } else {
         // CREATE New
-        const { error: resError } = await supabase
-          .from('reservations')
-          .insert({
+        const response = await fetch('/api/reservations', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
             property_id: user.propertyId,
             guest_id: guest_id,
             room_id: bookingForm.roomId,
@@ -284,10 +285,15 @@ const Reservations: React.FC = () => {
             check_out: isIndefinite ? '2030-01-01' : bookingForm.checkOut,
             is_indefinite: isIndefinite,
             status: 'Confirmed',
-            total_amount: quote ? quote.total : await calculateTotalAmount(bookingForm.roomId, bookingForm.checkIn, bookingForm.checkOut)
-          });
+            total_price: quote ? quote.total : await calculateTotalAmount(bookingForm.roomId, bookingForm.checkIn, bookingForm.checkOut),
+            user_id: user.id // Critical for RLS
+          })
+        });
 
-        if (resError) throw resError;
+        if (!response.ok) {
+          const text = await response.text();
+          throw new Error(`Failed to create reservation: ${text}`);
+        }
       }
 
       setIsBookingModalOpen(false);

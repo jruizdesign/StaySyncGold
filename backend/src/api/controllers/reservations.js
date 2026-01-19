@@ -61,8 +61,8 @@ const createReservation = async (req, res, next) => {
 
     // 1. Create Reservation
     const { rows: resRows } = await client.query(
-      'INSERT INTO Reservations (property_id, guest_id, room_id, check_in, check_out, status, user_id) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
-      [property_id, guest_id, room_id, check_in, check_out, status, user_id]
+      'INSERT INTO Reservations (property_id, guest_id, room_id, check_in, check_out, status, user_id, total_amount) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
+      [property_id, guest_id, room_id, check_in, check_out, status, user_id, total_price]
     );
     const reservation = resRows[0];
 
@@ -139,8 +139,8 @@ const updateReservation = async (req, res, next) => {
     }
 
     const { rows } = await client.query(
-      'UPDATE Reservations SET property_id = $1, guest_id = $2, room_id = $3, check_in = $4, check_out = $5, status = $6, user_id = COALESCE($8, user_id) WHERE id = $7 RETURNING *',
-      [property_id, guest_id, room_id, check_in, check_out, status, id, user_id]
+      'UPDATE Reservations SET property_id = $1, guest_id = $2, room_id = $3, check_in = $4, check_out = $5, status = $6, user_id = COALESCE($8, user_id), total_amount = $9 WHERE id = $7 RETURNING *',
+      [property_id, guest_id, room_id, check_in, check_out, status, id, user_id, total_price]
     );
     if (rows.length === 0) {
       await client.query('ROLLBACK');
