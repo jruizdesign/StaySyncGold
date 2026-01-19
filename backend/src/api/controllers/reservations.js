@@ -98,6 +98,8 @@ const createReservation = async (req, res, next) => {
 const updateReservation = async (req, res, next) => {
   try {
     const { id } = req.params;
+    console.log('[DEBUG] updateReservation called for ID:', id);
+    console.log('[DEBUG] Request Body:', req.body);
     const { property_id, guest_id, room_id, check_in, check_out, status, total_price } = req.body;
 
     await db.query('BEGIN');

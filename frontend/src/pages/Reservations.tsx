@@ -399,8 +399,21 @@ const Reservations: React.FC = () => {
       });
 
       if (!response.ok) {
-        const err = await response.json();
-        throw new Error(err.message || 'Failed to update');
+        const text = await response.text();
+        console.error(`[DEBUG] Update Failed: Status ${response.status} ${response.statusText}. Body:`, text);
+        let errMsg = `Failed to update (${response.status} ${response.statusText})`;
+        try {
+          if (text) {
+            const err = JSON.parse(text);
+            errMsg = err.message || errMsg;
+          } else {
+            errMsg += ': Empty response body';
+          }
+        } catch (e) {
+          console.error("Failed to parse error response:", text);
+          errMsg += `: ${text ? text.substring(0, 100) : 'Empty Body'}`;
+        }
+        throw new Error(errMsg);
       }
 
       // Update local state immediately for UI responsiveness, then fetch strict data
