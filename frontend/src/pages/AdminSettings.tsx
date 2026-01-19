@@ -757,7 +757,8 @@ const ChannelManager: React.FC = () => {
 const PropertyManagement: React.FC = () => {
     const { user } = useAuth();
     const [property, setProperty] = useState<Property | null>(null);
-    const [loading, setLoading] = useState(false);
+    const [initialLoading, setInitialLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
     // Form State
     const [formData, setFormData] = useState({
@@ -768,24 +769,37 @@ const PropertyManagement: React.FC = () => {
     });
 
     useEffect(() => {
-        if (user?.propertyId) fetchProperty();
+        if (user?.propertyId) {
+            fetchProperty();
+        } else {
+            setInitialLoading(false);
+        }
     }, [user]);
 
     const fetchProperty = async () => {
-        const { data, error } = await supabase
-            .from('properties')
-            .select('*')
-            .eq('id', user?.propertyId)
-            .single();
+        try {
+            const { data, error } = await supabase
+                .from('properties')
+                .select('*')
+                .eq('id', user?.propertyId)
+                .single();
 
-        if (data) {
-            setProperty(data);
-            setFormData({
-                name: data.name || '',
-                phone: data.phone || '+1 (555) 123-4567',
-                location: data.location || '123 Luxury Blvd, Metropolis',
-                timezone: 'Pacific Time (PT)' // Default or fetch if column exists
-            });
+            if (error) throw error;
+
+            if (data) {
+                setProperty(data);
+                setFormData({
+                    name: data.name || '',
+                    phone: data.phone || '+1 (555) 123-4567',
+                    location: data.location || '123 Luxury Blvd, Metropolis',
+                    timezone: 'Pacific Time (PT)' // Default or fetch if column exists
+                });
+            }
+        } catch (err: any) {
+            console.error('Error fetching property:', err);
+            setError(err.message);
+        } finally {
+            setInitialLoading(false);
         }
     };
 
@@ -861,7 +875,10 @@ const PropertyManagement: React.FC = () => {
     };
 
     if (!user?.propertyId) return <div className="p-4">No property assigned.</div>;
-    if (!property) return <div className="p-4 flex items-center gap-2"><Loader className="animate-spin" /> Loading property details...</div>;
+    if (initialLoading) return <div className="p-4 flex items-center gap-2"><Loader className="animate-spin" /> Loading property details...</div>;
+    if (error) return <div className="p-4 text-red-500">Error loading property: {error}</div>;
+    if (!property) return <div className="p-4">Property not found.</div>;
+
 
     return (
         <Card title="Property Configuration">
@@ -1300,6 +1317,7 @@ const FeatureRequests: React.FC = () => {
 
 // Import logger to log 'Admin Page Viewed' (Example usage, though we handle this in useEffect) 
 import { logger } from '../lib/logger';
+import { useState, useEffect } from 'react';
 
 const AdminSettings: React.FC = () => {
     const { user } = useAuth(); // Global Auth
@@ -1413,3 +1431,7 @@ const AdminSettings: React.FC = () => {
 };
 
 export default AdminSettings;
+function setLoading(arg0: boolean) {
+    throw new Error('Function not implemented.');
+}
+
