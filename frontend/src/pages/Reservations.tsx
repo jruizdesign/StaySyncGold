@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Button, Badge, Input } from '../components/UIComponents';
+import { Card, Button, Badge, Input, Modal } from '../components/UIComponents';
 import { Plus, Search, MoreVertical, Loader, Edit, Trash2 } from 'lucide-react';
 import { ReservationStatus, Reservation } from '../types';
 import { useAuth } from '../context/AuthContext';
@@ -41,6 +41,9 @@ const Reservations: React.FC = () => {
   });
   const [editingReservationId, setEditingReservationId] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [reservationToDelete, setReservationToDelete] = useState<string | null>(null);
+
 
   useEffect(() => {
     if (user) {
@@ -510,20 +513,26 @@ const Reservations: React.FC = () => {
     }
   };
 
-  const handleDeleteReservation = async (id: string) => {
-    if (!confirm('Are you sure you want to PERMANENTLY delete this reservation? This cannot be undone.')) return;
+  const handleDeleteClick = (id: string) => {
+    setReservationToDelete(id);
+    setIsDeleteModalOpen(true);
+    setOpenMenuId(null);
+  };
+
+  const confirmDeleteReservation = async () => {
+    if (!reservationToDelete) return;
 
     setLoading(true);
     try {
-      const response = await fetch(`/api/reservations/${id}?modified_by=${user?.id}&modifier_name=${user?.email}`, {
+      const response = await fetch(`/api/reservations/${reservationToDelete}?modified_by=${user?.id}&modifier_name=${user?.email}`, {
         method: 'DELETE'
       });
 
       if (!response.ok) throw new Error('Failed to delete');
 
       fetchReservations();
-      // Close menu if open
-      setOpenMenuId(null);
+      setIsDeleteModalOpen(false);
+      setReservationToDelete(null);
     } catch (err: any) {
       console.error("Delete error:", err);
       alert("Failed to delete: " + err.message);
@@ -944,7 +953,7 @@ const Reservations: React.FC = () => {
                                   <Edit className="w-3 h-3" /> Edit
                                 </button>
                                 <button
-                                  onClick={() => handleDeleteReservation(res.id)}
+                                  onClick={() => handleDeleteClick(res.id)}
                                   className="w-full text-left px-4 py-2 text-xs text-red-600 hover:bg-red-50 flex items-center gap-2"
                                 >
                                   <Trash2 className="w-3 h-3" /> Delete
@@ -1128,6 +1137,21 @@ const Reservations: React.FC = () => {
           </>
         )
       }
+      <Modal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        title="Confirm Deletion"
+      >
+        <div className="space-y-4">
+          <p className="text-slate-600">
+            Are you sure you want to <strong>permanently delete</strong> this reservation? This action cannot be undone and will remove all associated financial records.
+          </p>
+          <div className="flex justify-end gap-3 pt-2">
+            <Button variant="ghost" onClick={() => setIsDeleteModalOpen(false)}>Cancel</Button>
+            <Button variant="danger" onClick={confirmDeleteReservation} icon={Trash2}>Delete Reservation</Button>
+          </div>
+        </div>
+      </Modal>
     </div >
   );
 };

@@ -269,6 +269,10 @@ const deleteReservation = async (req, res, next) => {
 
     await db.query('BEGIN');
 
+    // Fetch property_id before deletion for logging
+    const { rows: existingRows } = await db.query('SELECT property_id FROM Reservations WHERE id = $1', [id]);
+    const property_id = existingRows.length > 0 ? existingRows[0].property_id : null;
+
     const { rowCount } = await db.query('DELETE FROM Reservations WHERE id = $1', [id]);
     if (rowCount === 0) {
       await db.query('ROLLBACK');
@@ -286,7 +290,7 @@ const deleteReservation = async (req, res, next) => {
         `Reservation deleted by ${modifier_name || 'Staff'} (ID: ${id})`,
         'RESERVATION',
         'RESERVATION_DELETE',
-        null, // Property ID might be hard to get if we deleted it, but we could fetch before delete if needed. efficient for now to omit or modify flow. 
+        property_id,
         modified_by,
         { reservation_id: id }
       );
