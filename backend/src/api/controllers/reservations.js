@@ -174,6 +174,17 @@ const updateReservation = async (req, res, next) => {
       }
     }
 
+    // CALCULATE DAILY RATE: If not provided, derive from total / nights
+    let dailyRate = daily_price; // Assuming passed in payload, else calculate
+    if (!dailyRate && total_price && check_in && check_out) {
+      const nights = Math.max(1, (new Date(check_out) - new Date(check_in)) / (1000 * 60 * 60 * 24));
+      dailyRate = total_price / nights;
+    }
+    // If indefinite, total_price is 1 night (or placeholder), so dailyRate ~ total_price
+    if (is_indefinite) {
+      dailyRate = total_price;
+    }
+
     if (bookingSearch.rows.length > 0) {
       await db.query(
         `UPDATE bookings SET 
@@ -183,29 +194,42 @@ const updateReservation = async (req, res, next) => {
             departure_date = COALESCE($4, departure_date),
             guest_name = COALESCE($5, guest_name),
             room_type = COALESCE($6, room_type),
+            daily_rate = COALESCE($7, daily_rate),
+            is_indefinite = COALESCE($8, is_indefinite),
             updated_at = NOW()
-        WHERE channel_booking_id = $7`,
-        [total_price, status, check_in, check_out, guestName, roomType, targetBookingId]
+        WHERE channel_booking_id = $9`,
+        [total_price, status, check_in, check_out, guestName, roomType, dailyRate, is_indefinite, targetBookingId]
       );
       console.log(`[SYNC] Updated booking ${targetBookingId} for Reservation ${id}`);
-    }
+    } else {
+      // Insert new
+      await db.query(
+        `INSERT INTO bookings 
+         (property_id, channel_booking_id, guest_name, total_price, currency, status, arrival_date, departure_date, room_type, source, raw_data, daily_rate, is_indefinite, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW(), NOW())`,
+        [property_id, targetBookingId, guestName, total_price, 'USD', status, check_in, check_out, roomType, 'manual', JSON.stringify({ id, property_id, guest_id, room_id, check_in, check_out, status, total_price, daily_price, is_indefinite }), dailyRate, is_indefinite]
+      );
+      console.log(`[SYNC] Created new booking ${targetBookingId}`);
+    }  // Optional: Reset if moved back to confirmed? Or assume 'Clean'/'Inspected' if not occupied?
+    // For now, let's leave it as is to avoid overwriting housekeeping flows inadvertently.
+  }
 
     // 3. Handle Room Status Changes (Check-in/Check-out)
     if (status === 'Checked In') {
-      await db.query('UPDATE rooms SET status = $1 WHERE id = $2', ['Occupied', room_id]);
-    } else if (status === 'Checked Out') {
-      await db.query('UPDATE rooms SET status = $1 WHERE id = $2', ['Dirty', room_id]);
-    } else if (status === 'Confirmed') {
-      // Optional: Reset if moved back to confirmed? Or assume 'Clean'/'Inspected' if not occupied?
-      // For now, let's leave it as is to avoid overwriting housekeeping flows inadvertently.
-    }
-
-    await db.query('COMMIT');
-    res.status(200).json(rows[0]);
-  } catch (error) {
-    await db.query('ROLLBACK');
-    res.status(500).json({ error: error.message });
+    await db.query('UPDATE rooms SET status = $1 WHERE id = $2', ['Occupied', room_id]);
+  } else if (status === 'Checked Out') {
+    await db.query('UPDATE rooms SET status = $1 WHERE id = $2', ['Dirty', room_id]);
+  } else if (status === 'Confirmed') {
+    // Optional: Reset if moved back to confirmed? Or assume 'Clean'/'Inspected' if not occupied?
+    // For now, let's leave it as is to avoid overwriting housekeeping flows inadvertently.
   }
+
+  await db.query('COMMIT');
+  res.status(200).json(rows[0]);
+} catch (error) {
+  await db.query('ROLLBACK');
+  res.status(500).json({ error: error.message });
+}
 };
 
 // @desc    Delete a reservation

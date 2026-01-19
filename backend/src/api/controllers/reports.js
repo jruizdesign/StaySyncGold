@@ -63,8 +63,23 @@ const getBookingLedger = async (req, res, next) => {
     const { property_id } = req.query;
     if (!property_id) return res.status(400).json({ error: 'Property ID required' });
 
+    // ROBUST: Link bookings to payments via raw_data->>'id' (Reservation UUID)
+    // matches the res_id in payments table.
+    // DYNAMIC ACCRUAL: If is_indefinite=true AND status='Checked In', we calculate total based on days stayed * daily_rate
     const result = await db.query(
-      "SELECT * FROM bookings WHERE property_id = $1 ORDER BY arrival_date DESC",
+      `SELECT b.*, 
+        (SELECT COALESCE(SUM(p.amount), 0) 
+         FROM payments p 
+         WHERE p.res_id::text = b.raw_data->>'id' -- ID match
+        ) as paid_amount,
+        CASE 
+          WHEN b.is_indefinite = true AND b.status = 'Checked In' THEN 
+             GREATEST(1, (EXTRACT(DAY FROM NOW() - b.arrival_date)))::numeric * COALESCE(b.daily_rate, b.total_price)
+          ELSE b.total_price 
+        END as calculated_total
+       FROM bookings b 
+       WHERE b.property_id = $1 
+       ORDER BY b.arrival_date DESC`,
       [property_id]
     );
 
