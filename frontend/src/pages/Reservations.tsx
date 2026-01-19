@@ -369,6 +369,52 @@ const Reservations: React.FC = () => {
     if (view === 'rates') fetchRates();
   }, [view, selectedMonth, user?.propertyId]);
 
+  const handleUpdateStatus = async (id: string, newStatus: string) => {
+    if (!confirm(`Are you sure you want to mark this reservation as ${newStatus}?`)) return;
+
+    try {
+      // We need the full reservation object to update it, as our API (currently) expects a full PUT body usually,
+      // but let's see check the controller. The controller expects:
+      // { property_id, guest_id, room_id, check_in, check_out, status, total_price }
+      // So we first need to find the reservation in our local state.
+      const res = reservations.find(r => r.id === id);
+      if (!res) return;
+
+      // We rely on the backend API to handle the update and all related side-effects (Room Status, Financials).
+
+      const response = await fetch(`/api/reservations/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          property_id: user?.propertyId,
+          guest_id: res.guestId,
+          room_id: res.roomId,
+          check_in: res.checkIn,
+          check_out: res.checkOut,
+          status: newStatus,
+          total_price: res.totalAmount
+        })
+      });
+
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.message || 'Failed to update');
+      }
+
+      // Update local state immediately for UI responsiveness, then fetch strict data
+      setReservations(prev => prev.map(r => r.id === id ? { ...r, status: newStatus as ReservationStatus } : r));
+
+      fetchReservations();
+      if (user) fetchRooms();
+
+    } catch (err: any) {
+      console.error("Error updating status:", err);
+      alert("Failed to update status: " + err.message);
+    }
+  };
+
   const filteredReservations = reservations.filter(r =>
     r.guestName.toLowerCase().includes(searchTerm.toLowerCase()) ||
     r.roomNumber.includes(searchTerm)
@@ -566,9 +612,29 @@ const Reservations: React.FC = () => {
                       </td>
                       <td className="px-6 py-4 text-right font-medium text-slate-900">${res.totalAmount}</td>
                       <td className="px-6 py-4 text-center">
-                        <button className="text-slate-400 hover:text-slate-600 p-2 hover:bg-slate-100 rounded-full">
-                          <MoreVertical className="w-4 h-4" />
-                        </button>
+                        <div className="flex justify-center gap-2">
+                          {res.status === 'Confirmed' && (
+                            <button
+                              onClick={() => handleUpdateStatus(res.id, 'Checked In')}
+                              className="text-white bg-green-500 hover:bg-green-600 px-3 py-1 rounded-md text-xs font-bold transition-colors"
+                              title="Check In"
+                            >
+                              Check In
+                            </button>
+                          )}
+                          {res.status === 'Checked In' && (
+                            <button
+                              onClick={() => handleUpdateStatus(res.id, 'Checked Out')}
+                              className="text-white bg-slate-700 hover:bg-slate-800 px-3 py-1 rounded-md text-xs font-bold transition-colors"
+                              title="Check Out"
+                            >
+                              Check Out
+                            </button>
+                          )}
+                          <button className="text-slate-400 hover:text-slate-600 p-2 hover:bg-slate-100 rounded-full">
+                            <MoreVertical className="w-4 h-4" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
