@@ -1,17 +1,15 @@
-import { API_BASE_URL } from '../config';
+import { analyzeIncidentReport } from '../services/geminiService';
 import React, { useState } from 'react';
-import { X, Sparkles, AlertTriangle, CheckCircle, Info } from 'lucide-react';
-import { logger } from '../lib/logger';
+import { X, Sparkles, CheckCircle, Info } from 'lucide-react';
 
 interface ReportIssueModalProps {
     roomNumber: string;
-    room_Id: string;
     existingIssue?: any;
     onClose: () => void;
     onSubmit: (issue: any) => void;
 }
 
-const ReportIssueModal: React.FC<ReportIssueModalProps> = ({ roomNumber, room_Id, existingIssue, onClose, onSubmit }) => {
+const ReportIssueModal: React.FC<ReportIssueModalProps> = ({ roomNumber, existingIssue, onClose, onSubmit }) => {
     const [step, setStep] = useState(existingIssue ? 2 : 1);
     const [description, setDescription] = useState('');
     const [analyzing, setAnalyzing] = useState(false);
@@ -26,14 +24,15 @@ const ReportIssueModal: React.FC<ReportIssueModalProps> = ({ roomNumber, room_Id
         if (!description.trim()) return;
         setAnalyzing(true);
         try {
-            const API_BASE = `${API_BASE_URL}/api`;
-            const res = await fetch(`${API_BASE}/ai/analyze-issue`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ description })
+            const result = await analyzeIncidentReport(description);
+            if (!result) throw new Error("AI Analysis returned null");
+
+            setAnalysis({
+                severity: result.severity,
+                category: result.category,
+                summary: result.summary,
+                suggested_action: result.suggestedAction // Note mapping: camelCase vs snake_case
             });
-            const data = await res.json();
-            setAnalysis(data);
             setStep(2);
         } catch (error) {
             console.error('Analysis failed', error);

@@ -128,6 +128,22 @@ const Housekeeping: React.FC = () => {
     return activeTickets.find(t => t.room_id === roomId);
   };
 
+  const addIssue = (roomId: string, issue: any) => {
+    setActiveTickets(prev => [...prev, {
+      ...issue,
+      room_id: roomId,
+      status: 'Open',
+      created_at: new Date().toISOString()
+    }]);
+
+    setRooms(prev => prev.map(r => {
+      if (r.id === roomId) {
+        return { ...r, status: RoomStatus.OOO };
+      }
+      return r;
+    }));
+  };
+
   const handleSubmitIssue = async (issueData: any) => {
     if (!selectedRoom || !user?.propertyId) return;
 
@@ -149,10 +165,16 @@ const Housekeeping: React.FC = () => {
       if (ticketError) throw ticketError;
 
       // 2. Set Room to OOO
+      // Note: We do this locally via addIssue for optimistic update, 
+      // but we also need to persist it to DB. 
+      // The local state update happens in addIssue, but let's ensure DB update is called too.
       await handleUpdateStatus(selectedRoom.id, RoomStatus.OOO);
 
+      // Optimistic update
+      addIssue(selectedRoom.id, issueData);
+
       setSelectedRoom(null);
-      fetchTickets(); // Refresh tickets immediately
+      // fetchTickets(); // No longer needed due to optimistic update
       alert('Issue reported and room marked for maintenance.');
     } catch (error) {
       console.error('Error submitting issue:', error);
@@ -341,7 +363,6 @@ const Housekeeping: React.FC = () => {
       {selectedRoom && (
         <ReportIssueModal
           roomNumber={selectedRoom.number}
-          room_Id={selectedRoom.id}
           existingIssue={getActiveTicketForRoom(selectedRoom.id)}
           onClose={() => setSelectedRoom(null)}
           onSubmit={handleSubmitIssue}

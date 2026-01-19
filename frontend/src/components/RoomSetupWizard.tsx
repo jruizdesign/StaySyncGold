@@ -32,7 +32,7 @@ const RoomSetupWizard: React.FC<RoomSetupWizardProps> = ({ onClose, onComplete }
                     number: roomNum.toString(),
                     floor: floorNum,
                     type: config.type,
-                    price_per_night: config.price_per_night,
+                    rate: config.price_per_night,
                     capacity: config.capacity,
                     status: RoomStatus.CLEAN
                 });
