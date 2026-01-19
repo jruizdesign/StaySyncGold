@@ -13,7 +13,7 @@ class ChannexService {
     async getProperties(apiKey) {
         try {
             const response = await axios.get(`${this.baseUrl}/properties`, {
-                headers: { 'user-api-key': apiKey }
+                headers: { 'api-key': apiKey }
             });
             return { success: true, data: response.data.data || [] };
         } catch (error) {
@@ -25,17 +25,14 @@ class ChannexService {
         }
     }
 
-    // Mock-ish implementation of fetching *active* OTA connections for a property
-    // In reality, you'd list Channels for the Property in Channex
+    // Fetch *active* OTA connections for a property
     async getActiveChannels(apiKey, propertyId) {
         try {
             const response = await axios.get(`${this.baseUrl}/channels`, {
-                headers: { 'user-api-key': apiKey },
+                headers: { 'api-key': apiKey },
                 params: { 'filter[property_id]': propertyId }
             });
 
-            // Map Channex response to our simple UI format
-            // Channex returns: { data: [ { attributes: { title: "Booking.com", is_active: true } } ] }
             return { success: true, data: response.data.data || [] };
         } catch (error) {
             console.error('Channex Channels Error:', error.response?.data || error.message);
@@ -43,10 +40,11 @@ class ChannexService {
             return { success: false, error: msg };
         }
     }
+
     async getRoomTypes(apiKey, propertyId) {
         try {
             const response = await axios.get(`${this.baseUrl}/room_types`, {
-                headers: { 'user-api-key': apiKey },
+                headers: { 'api-key': apiKey },
                 params: { 'filter[property_id]': propertyId }
             });
             return { success: true, data: response.data.data || [] };
@@ -59,12 +57,11 @@ class ChannexService {
 
     async fetchBookings(apiKey, propertyId) {
         try {
-            // Fetch recent bookings (e.g., created or modified)
             const response = await axios.get(`${this.baseUrl}/bookings`, {
-                headers: { 'user-api-key': apiKey },
+                headers: { 'api-key': apiKey },
                 params: {
                     'filter[property_id]': propertyId,
-                    'limit': 100 // Increased limit for better financial sync
+                    'limit': 100
                 }
             });
             return { success: true, data: response.data.data || [] };
@@ -83,7 +80,7 @@ class ChannexService {
                     username: username
                 }
             }, {
-                headers: { 'user-api-key': apiKey }
+                headers: { 'api-key': apiKey }
             });
             return { success: true, token: response.data.data.token };
         } catch (error) {
@@ -101,7 +98,7 @@ class ChannexService {
             const payload = { values: updates };
 
             const response = await axios.post(`${this.baseUrl}/ari`, payload, {
-                headers: { 'user-api-key': apiKey }
+                headers: { 'api-key': apiKey }
             });
 
             return { success: true, data: response.data };
