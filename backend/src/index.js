@@ -110,7 +110,10 @@ app.get('/test-db', async (req, res) => {
     res.status(500).json({
       message: 'Database connection failed!',
       // Hide stack trace in production
-      error: process.env.NODE_ENV === 'production' ? 'Internal Server Error' : err.message,
+      // TEMPORARY: Show full error for debugging
+      error: err.message,
+      code: err.code,
+      detail: err.detail
     });
   }
 });
