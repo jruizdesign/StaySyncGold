@@ -9,10 +9,9 @@ import {
     FileKey,
     Activity,
     CheckCircle2,
-    ArrowRight,
     Monitor
 } from 'lucide-react';
-import { Button } from '../components/UIComponents';
+
 
 const ITSecurity: React.FC = () => {
     const navigate = useNavigate();

@@ -1,16 +1,11 @@
-import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     Code2,
     Cloud,
     ShieldCheck,
-    ArrowRight,
-    Cpu,
-    Smartphone,
-    Globe,
-    CheckCircle2
+    ArrowRight
 } from 'lucide-react';
-import { Button } from '../components/UIComponents';
+
 
 const DigitalSolutions: React.FC = () => {
     const navigate = useNavigate();

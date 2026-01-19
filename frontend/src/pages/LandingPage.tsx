@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Play, ArrowRight, CheckCircle2, Sparkles, LayoutDashboard, BedDouble, BrainCircuit } from 'lucide-react';
-import { Button } from '../components/UIComponents';
+import { ArrowRight, Sparkles, LayoutDashboard, BedDouble, BrainCircuit } from 'lucide-react';
+
 
 const LandingPage: React.FC = () => {
     const navigate = useNavigate();

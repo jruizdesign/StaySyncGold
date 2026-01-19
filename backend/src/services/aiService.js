@@ -1,4 +1,6 @@
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+const { GoogleGenerativeAI, SchemaType } = require('@google/generative-ai');
+
+// ... (existing code)
 
 // Initialize Gemini AI
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
@@ -14,7 +16,7 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
  */
 async function generatePropertyInsights(propertyData) {
     try {
-        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
+        const model = genAI.getGenerativeModel({ model: 'gemini-3-flash-preview' });
 
         // Build context from property data
         const context = buildPropertyContext(propertyData);
@@ -113,7 +115,7 @@ async function generateFinancialBriefing(dailyData) {
     try {
         // User requested 'gemini-3.0-flash-001' specifically for this feature
         // Note: If 3.0 is not valid, this will fail. Fallback handling recommended but complying with request.
-        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
+        const model = genAI.getGenerativeModel({ model: 'gemini-3-flash-preview' });
 
         const prompt = `
             You are a specialized Financial Analyst for a Hotel Manager.
@@ -147,41 +149,51 @@ async function generateFinancialBriefing(dailyData) {
  */
 async function analyzeMaintenanceRequest(description) {
     try {
-        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
+        const model = genAI.getGenerativeModel({
+            model: 'gemini-3-flash-preview',
+            generationConfig: {
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: SchemaType.OBJECT,
+                    properties: {
+                        severity: {
+                            type: SchemaType.STRING,
+                            enum: ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'],
+                            description: 'The urgency of the issue.'
+                        },
+                        category: {
+                            type: SchemaType.STRING,
+                            description: 'The domain of the issue (e.g., Plumbing, Electrical, Housekeeping, IT).'
+                        },
+                        summary: {
+                            type: SchemaType.STRING,
+                            description: 'A concise 1-sentence summary of the issue.'
+                        },
+                        suggestedAction: {
+                            type: SchemaType.STRING,
+                            description: 'A recommended action for the staff member.'
+                        }
+                    },
+                    required: ['severity', 'category', 'summary', 'suggestedAction']
+                }
+            }
+        });
 
-        const prompt = `
-            You are a Hotel Maintenance Supervisor AI. 
-            Analyze the following reported issue and categorize it.
-            
-            ISSUE: "${description}"
-            
-            Return a JSON object with:
-            - "severity": "Critical" | "High" | "Medium" | "Low"
-            - "category": "Plumbing" | "Electrical" | "HVAC" | "Furniture" | "Structural" | "Other"
-            - "summary": A professional one-sentence summary for the maintenance log.
-            - "suggested_action": Immediate action required by staff (max 10 words).
-            
-            Rules:
-            - "Critical": Safety hazards, active leaks, power outages, security issues.
-            - "High": Guest impact, AC failure, appliance broken.
-        `;
+        const prompt = `Analyze the following hotel room issue report: "${description}". Categorize it, determine severity, summarize, and suggest immediate action for the staff.`;
 
         const result = await model.generateContent(prompt);
         const response = await result.response;
         const text = response.text();
 
-        const jsonMatch = text.match(/\{[\s\S]*\}/);
-        if (!jsonMatch) throw new Error("Failed to parse AI response");
-
-        return JSON.parse(jsonMatch[0]);
+        return JSON.parse(text);
     } catch (error) {
         console.error("AI Maintenance Analysis Error:", error);
         // Fallback
         return {
-            severity: "Medium",
+            severity: "MEDIUM",
             category: "Other",
             summary: description.substring(0, 50) + "...",
-            suggested_action: "Investigate reported issue."
+            suggestedAction: "Investigate reported issue."
         };
     }
 }

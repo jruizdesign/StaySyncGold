@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Button, Badge, Input } from '../components/UIComponents';
-import { Plus, RefreshCw, Settings, CheckCircle, AlertCircle, Loader } from 'lucide-react';
+import { Card, Button } from '../components/UIComponents';
+import { Plus, RefreshCw, Loader } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import ChannexPropertySync from '../components/ChannexPropertySync';
@@ -63,21 +63,10 @@ interface ChannelSetting {
     last_sync?: string;
 }
 
-interface RoomMapping {
-    id: string;
-    channel_setting_id: string;
-    local_room_type?: string;
-    channel_room_id?: string;
-    channex_room_type_id?: string;
-    channex_rate_plan_id?: string;
-}
-
 const ChannelManager: React.FC = () => {
     const { user } = useAuth();
     const [loading, setLoading] = useState(true);
     const [channelSettings, setChannelSettings] = useState<ChannelSetting[]>([]);
-    const [roomMappings, setRoomMappings] = useState<RoomMapping[]>([]);
-    const [selectedChannel, setSelectedChannel] = useState<ChannelSetting | null>(null);
     const [isSyncing, setIsSyncing] = useState(false);
 
     useEffect(() => {
@@ -108,12 +97,12 @@ const ChannelManager: React.FC = () => {
     const fetchRoomMappings = async () => {
         if (!user?.propertyId) return;
         try {
-            const { data, error } = await supabase
+            const { error } = await supabase
                 .from('channel_mappings')
                 .select('*');
 
             if (error) throw error;
-            setRoomMappings(data || []);
+
         } catch (err) {
             console.error('Error fetching room mappings:', err);
         }

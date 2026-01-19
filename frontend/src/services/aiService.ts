@@ -18,7 +18,7 @@ export const generateSmartResponse = async (userPrompt: string, context: string)
 
   try {
     const response = await client.models.generateContent({
-      model: 'gemini-2.0-flash-exp',
+      model: 'gemini-3-flash-preview',
       contents: `System: You are an AI assistant for a hotel PMS called StaySyncGold. 
       Use the following context to answer the user's question concisely.
       
@@ -30,7 +30,7 @@ export const generateSmartResponse = async (userPrompt: string, context: string)
       }
     });
 
-    return response.text || "I couldn't process that request.";
+    return response.text || "I couldn't process that request. Please try again.";
   } catch (error) {
     console.error("Gemini API Error:", error);
     return "Sorry, I encountered an error communicating with the AI service.";

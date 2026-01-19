@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
-import { Card, Button, Input, Select, Badge } from '../components/UIComponents';
-import { Plus, Wrench, AlertTriangle, CheckCircle, Clock, Sparkles } from 'lucide-react';
+import { Card, Button, Input, Badge } from '../components/UIComponents';
+import { Plus, Wrench, CheckCircle, Clock, Sparkles } from 'lucide-react';
 
 interface MaintenanceTicket {
     id: string;

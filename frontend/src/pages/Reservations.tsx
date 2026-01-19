@@ -79,8 +79,8 @@ const Reservations: React.FC = () => {
         // Map Supabase result to Reservation interface
         const mappedReservations: Reservation[] = data.map((folder: any) => ({
           id: folder.id,
-          guestId: folder.guest_id,
-          roomId: folder.room_id,
+          guestId: folder.guest_id || '',
+          roomId: folder.room_id || '',
           checkIn: folder.check_in,
           checkOut: folder.check_out,
           status: folder.status as ReservationStatus,
@@ -939,13 +939,16 @@ const Reservations: React.FC = () => {
                           </button>
                           <div className="relative">
                             <button
-                              onClick={() => setOpenMenuId(openMenuId === res.id ? null : res.id)}
+                              onClick={() => {
+                                console.log("Toggling menu for ID:", res.id, "Current open:", openMenuId);
+                                setOpenMenuId(openMenuId === res.id ? null : res.id);
+                              }}
                               className="text-slate-400 hover:text-slate-600 p-2 hover:bg-slate-100 rounded-full"
                             >
                               <MoreVertical className="w-4 h-4" />
                             </button>
                             {openMenuId === res.id && (
-                              <div className="absolute right-0 mt-1 w-32 bg-white rounded-lg shadow-lg border border-slate-100 py-1 z-50">
+                              <div className="absolute right-0 mt-1 w-32 bg-white rounded-lg shadow-lg border border-slate-100 py-1 z-[9999]">
                                 <button
                                   onClick={() => handleEditClick(res)}
                                   className="w-full text-left px-4 py-2 text-xs text-slate-700 hover:bg-slate-50 flex items-center gap-2"

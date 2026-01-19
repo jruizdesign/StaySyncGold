@@ -301,8 +301,8 @@ const Housekeeping: React.FC = () => {
                 <button
                   onClick={() => setSelectedRoom(room)}
                   className={`w-full py-2 text-xs font-medium border rounded-lg transition-all ${room.status === RoomStatus.OOO && activeTicket
-                      ? 'bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100'
-                      : 'bg-transparent text-slate-500 hover:text-slate-700 border-transparent hover:border-slate-200'
+                    ? 'bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100'
+                    : 'bg-transparent text-slate-500 hover:text-slate-700 border-transparent hover:border-slate-200'
                     }`}
                 >
                   {room.status === RoomStatus.OOO && activeTicket ? 'View Issue Details' : 'Report Issue'}
@@ -341,7 +341,7 @@ const Housekeeping: React.FC = () => {
       {selectedRoom && (
         <ReportIssueModal
           roomNumber={selectedRoom.number}
-          roomId={selectedRoom.id}
+          room_Id={selectedRoom.id}
           existingIssue={getActiveTicketForRoom(selectedRoom.id)}
           onClose={() => setSelectedRoom(null)}
           onSubmit={handleSubmitIssue}

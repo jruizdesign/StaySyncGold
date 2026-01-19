@@ -126,7 +126,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           </div>
 
           <div className="flex items-center gap-4">
-            <div className="flex flex-col items-end hidden sm:flex">
+            <div className="flex-col items-end hidden sm:flex">
               <span className="text-sm font-medium text-slate-900">{user?.email || 'Guest User'}</span>
               <span className="text-xs text-slate-500 capitalize">{user?.role || 'Visitor'}</span>
             </div>

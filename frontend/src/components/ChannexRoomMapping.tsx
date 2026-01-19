@@ -1,6 +1,7 @@
+import { useState, useEffect } from 'react';
 import { API_BASE_URL } from '../config';
-import { Card, Button, Badge } from './UIComponents';
-import { Save, Plus, Loader, Wand2 } from 'lucide-react';
+import { Card, Button } from './UIComponents';
+import { Save, Loader, Wand2 } from 'lucide-react';
 
 interface RoomMapping {
     localRoomType: string;
@@ -19,7 +20,7 @@ const ChannexRoomMapping: React.FC<ChannexRoomMappingProps> = ({
 }) => {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-    const [localRoomTypes, setLocalRoomTypes] = useState<string[]>([]);
+
     const [remoteRooms, setRemoteRooms] = useState<any[]>([]); // New state for remote rooms
     const [mappings, setMappings] = useState<RoomMapping[]>([]);
     const [error, setError] = useState<string | null>(null);
@@ -46,7 +47,7 @@ const ChannexRoomMapping: React.FC<ChannexRoomMappingProps> = ({
             const remoteRes = await fetch(`${API_BASE_URL}/api/channex/rooms/remote?property_id=${propertyId}`);
             const remoteData = await remoteRes.json();
 
-            setLocalRoomTypes(localData.roomTypes || []);
+
             setRemoteRooms(remoteData.rooms || []);
 
             // Initialize mappings array

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Wand2, Calculator, Save, CheckCircle, AlertCircle } from 'lucide-react';
+import { X, Wand2, Calculator, Save, AlertCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { logger } from '../lib/logger';
 import { useAuth } from '../context/AuthContext';
@@ -13,7 +13,6 @@ interface RoomSetupWizardProps {
 const RoomSetupWizard: React.FC<RoomSetupWizardProps> = ({ onClose, onComplete }) => {
     const { user } = useAuth();
     const [loading, setLoading] = useState(false);
-    const [step, setStep] = useState(1);
     const [config, setConfig] = useState({
         floors: 1,
         roomsPerFloor: 10,
@@ -46,9 +45,25 @@ const RoomSetupWizard: React.FC<RoomSetupWizardProps> = ({ onClose, onComplete }
 
     const handleGenerate = async () => {
         if (!user?.propertyId) return;
+
+        // Safety Layer: Explicit Confirmation
+        const confirmed = window.confirm(
+            "⚠️ WARNING: This will DELETE ALL EXISTING ROOMS for this property and replace them with the generated inventory.\n\nThis action cannot be undone. Are you sure you want to proceed?"
+        );
+        if (!confirmed) return;
+
         setLoading(true);
 
         try {
+            // 1. Wipe existing rooms first
+            const { error: deleteError } = await supabase
+                .from('rooms')
+                .delete()
+                .eq('property_id', user.propertyId);
+
+            if (deleteError) throw deleteError;
+
+            // 2. Insert new rooms
             const roomsToInsert = generatedRooms.map(room => ({
                 ...room,
                 property_id: user.propertyId,

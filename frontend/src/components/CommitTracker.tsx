@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { GitCommit, ExternalLink, Clock, User } from 'lucide-react';
+import { ExternalLink, Clock, User } from 'lucide-react';
 import { Card } from './UIComponents';
 
 interface CommitInfo {

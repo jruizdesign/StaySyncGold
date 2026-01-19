@@ -5,13 +5,13 @@ import { logger } from '../lib/logger';
 
 interface ReportIssueModalProps {
     roomNumber: string;
-    roomId: string;
+    room_Id: string;
     existingIssue?: any;
     onClose: () => void;
     onSubmit: (issue: any) => void;
 }
 
-const ReportIssueModal: React.FC<ReportIssueModalProps> = ({ roomNumber, roomId, existingIssue, onClose, onSubmit }) => {
+const ReportIssueModal: React.FC<ReportIssueModalProps> = ({ roomNumber, room_Id, existingIssue, onClose, onSubmit }) => {
     const [step, setStep] = useState(existingIssue ? 2 : 1);
     const [description, setDescription] = useState('');
     const [analyzing, setAnalyzing] = useState(false);

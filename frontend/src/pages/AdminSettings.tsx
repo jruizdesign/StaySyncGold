@@ -1434,3 +1434,7 @@ const AdminSettings: React.FC = () => {
 export default AdminSettings;
 
 
+function setLoading(_arg0: boolean) {
+    throw new Error('Function not implemented.');
+}
+

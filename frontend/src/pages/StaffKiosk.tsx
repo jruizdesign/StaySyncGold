@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Button, Modal } from '../components/UIComponents';
 import StaffCard from '../components/StaffCard';
-import { Clock, LogOut, ArrowLeft, Loader, Coffee, Play, Pause, ChevronLeft, User } from 'lucide-react';
+import { Clock, LogOut, ArrowLeft, Loader, Coffee, Play, ChevronLeft, User } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';

@@ -1,5 +1,5 @@
 import React from 'react';
-import { User, Clock, Coffee, LogOut } from 'lucide-react';
+import { User } from 'lucide-react';
 import { Staff } from '../types';
 
 interface StaffCardProps {

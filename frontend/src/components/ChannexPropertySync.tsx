@@ -13,7 +13,6 @@ interface ChannexPropertySyncProps {
 const ChannexPropertySync: React.FC<ChannexPropertySyncProps> = ({
     propertyId,
     channexPropertyId,
-    lastSync,
     onSyncComplete
 }) => {
     const [apiKey, setApiKey] = useState('');

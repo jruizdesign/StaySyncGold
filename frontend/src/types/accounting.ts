@@ -7,6 +7,7 @@ export interface AccountingStat {
 }
 
 export interface DebtItem {
+    [x: string]: string | number;
     id: string; // Booking ID
     guestName: string;
     room: string;
@@ -14,7 +15,7 @@ export interface DebtItem {
     checkout: string; // ISO Date
     status: string;
     score: number;
-    priorityLabel: 'Critical (Checkout w/ Debt)' | 'High (Debt)' | 'Medium (In-House)' | 'Low';
+    priorityLabel: string;
 }
 
 export interface LedgerEntry {

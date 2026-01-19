@@ -46,7 +46,7 @@ const Financials: React.FC = () => {
   };
 
   // Calculate totals
-  const totalRevenue = bookings.reduce((sum, b) => sum + (Number(b.total_price) || 0), 0);
+
   const activeBookings = bookings.filter(b => b.status !== 'cancelled').length;
   const currency = bookings[0]?.currency || 'USD';
 

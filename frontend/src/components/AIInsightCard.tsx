@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { Sparkles, AlertTriangle, ArrowRight, Loader2, CheckCircle2 } from 'lucide-react';
 
 interface AIInsightCardProps {
@@ -9,21 +9,12 @@ interface AIInsightCardProps {
     onAction?: () => void;
     variant?: 'default' | 'success' | 'alert';
     loading?: boolean;
-    error?: boolean;
     timestamp?: string;
 }
 
-export const AIInsightCard: React.FC<AIInsightCardProps> = ({
-    title = "Lumina Operational Intel",
-    subtitle = "ARREARS & MAINTENANCE ANALYSIS",
-    message = "Unable to generate AI brief. Please check manual Arrears and Maintenance logs below.",
-    actionLabel = "Review open maintenance tickets.",
-    onAction,
-    variant = 'alert',
-    loading = false,
-    error = false,
-    timestamp
-}) => {
+export const AIInsightCard = ({
+    title = "Operational Intel", subtitle = "Financial And Property Analysis", message = "Unable to generate AI brief. Please check manual Arrears and Maintenance logs below.", actionLabel = "Review open maintenance tickets.", onAction, variant = 'default', loading = false, timestamp
+}: AIInsightCardProps) => {
     // Determine styles based on variant
     const variantStyles = {
         default: {
@@ -144,4 +135,4 @@ export const AIInsightCard: React.FC<AIInsightCardProps> = ({
             </div>
         </div>
     );
-};
+}

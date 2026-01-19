@@ -49,7 +49,7 @@ export const GuestLedgerTable: React.FC<GuestLedgerTableProps> = ({ items, isLoa
                                 <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
                                     <td className="px-6 py-4 font-medium text-slate-900">
                                         {item.guestName}
-                                        {item.priorityScore <= 2 && (
+                                        {item.score <= 2 && (
                                             <span className="ml-2 inline-flex items-center text-xs text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded">
                                                 <AlertCircle size={10} className="mr-1" /> Priority
                                             </span>
@@ -58,8 +58,8 @@ export const GuestLedgerTable: React.FC<GuestLedgerTableProps> = ({ items, isLoa
                                     <td className="px-6 py-4 text-slate-600 font-mono text-xs">{item.room}</td>
                                     <td className="px-6 py-4">
                                         <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${item.status === 'checked_in' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' :
-                                                item.status === 'checked_out' ? 'bg-slate-100 text-slate-700 border-slate-200' :
-                                                    'bg-blue-50 text-blue-700 border-blue-100'
+                                            item.status === 'checked_out' ? 'bg-slate-100 text-slate-700 border-slate-200' :
+                                                'bg-blue-50 text-blue-700 border-blue-100'
                                             }`}>
                                             {item.status === 'checked_in' && <BadgeCheck size={12} />}
                                             {item.status.replace('_', ' ')}
