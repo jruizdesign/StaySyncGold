@@ -47,15 +47,15 @@ const getReservationById = async (req, res, next) => {
 // @access  Public
 const createReservation = async (req, res, next) => {
   try {
-    const { property_id, guest_id, room_id, check_in, check_out, status, total_price } = req.body;
+    const { property_id, guest_id, room_id, check_in, check_out, status, total_price, user_id } = req.body;
 
     // Start transaction
     await db.query('BEGIN');
 
     // 1. Create Reservation
     const { rows: resRows } = await db.query(
-      'INSERT INTO Reservations (property_id, guest_id, room_id, check_in, check_out, status) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
-      [property_id, guest_id, room_id, check_in, check_out, status]
+      'INSERT INTO Reservations (property_id, guest_id, room_id, check_in, check_out, status, user_id) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
+      [property_id, guest_id, room_id, check_in, check_out, status, user_id]
     );
     const reservation = resRows[0];
 
@@ -82,8 +82,9 @@ const createReservation = async (req, res, next) => {
             source,
             raw_data,
             created_at,
-            updated_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'manual', $10, NOW(), NOW())`,
+            updated_at,
+            user_id
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'manual', $10, NOW(), NOW(), $11)`,
       [
         property_id,
         `local_${reservation.id}`, // Generate a local ID
@@ -94,7 +95,8 @@ const createReservation = async (req, res, next) => {
         check_in,
         check_out,
         roomType,
-        JSON.stringify(reservation)
+        JSON.stringify(reservation),
+        user_id
       ]
     );
 
@@ -120,7 +122,7 @@ const updateReservation = async (req, res, next) => {
 
     const { rows } = await db.query(
       'UPDATE Reservations SET property_id = $1, guest_id = $2, room_id = $3, check_in = $4, check_out = $5, status = $6 WHERE id = $7 RETURNING *',
-      [property_id, guest_id, room_id, check_in, check_out, status, id]
+      [property_id, guest_id, room_id, check_in, check_out, status, id, user_id]
     );
     if (rows.length === 0) {
       await db.query('ROLLBACK');
@@ -164,8 +166,9 @@ const updateReservation = async (req, res, next) => {
                 source,
                 raw_data,
                 created_at,
-                updated_at
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'manual', $10, NOW(), NOW())`,
+                updated_at,
+                user_id
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'manual', $10, NOW(), NOW(), $11)`,
           [
             property_id,
             targetBookingId, // Use local_ID
@@ -176,7 +179,7 @@ const updateReservation = async (req, res, next) => {
             check_in,
             check_out,
             roomType,
-            JSON.stringify({ id, property_id, guest_id, room_id, check_in, check_out, status, total_price }) // minimal raw_data
+            JSON.stringify({ id, property_id, guest_id, room_id, check_in, check_out, status, total_price, user_id }) // minimal raw_data
           ]
         );
         console.log(`[SYNC] Created missing booking ${targetBookingId}`);
@@ -211,15 +214,16 @@ const updateReservation = async (req, res, next) => {
             daily_rate = COALESCE($7, daily_rate),
             is_indefinite = COALESCE($8, is_indefinite),
             updated_at = NOW()
-        WHERE channel_booking_id = $9`,
-        [total_price, status, check_in, check_out, guestName, roomType, dailyRate, is_indefinite, targetBookingId]
+            user_id = COALESCE($9, user_id)
+        WHERE channel_booking_id = $10`,
+        [total_price, status, check_in, check_out, guestName, roomType, dailyRate, is_indefinite, user_id, targetBookingId]
       );
       console.log(`[SYNC] Updated booking ${targetBookingId} for Reservation ${id}`);
     } else {
       // Insert new
       await db.query(
         `INSERT INTO bookings 
-         (property_id, channel_booking_id, guest_name, total_price, currency, status, arrival_date, departure_date, room_type, source, raw_data, daily_rate, is_indefinite, created_at, updated_at)
+         (property_id, channel_booking_id, guest_name, total_price, currency, status, arrival_date, departure_date, room_type, source, raw_data, daily_rate, is_indefinite, created_at, updated_at, user_id)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW(), NOW())`,
         [property_id, targetBookingId, guestName, total_price, 'USD', status, check_in, check_out, roomType, 'manual', JSON.stringify({ id, property_id, guest_id, room_id, check_in, check_out, status, total_price, daily_price, is_indefinite }), dailyRate, is_indefinite]
       );
