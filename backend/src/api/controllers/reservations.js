@@ -133,9 +133,45 @@ const updateReservation = async (req, res, next) => {
     if (bookingSearch.rows.length > 0) {
       targetBookingId = bookingSearch.rows[0].channel_booking_id;
     } else {
-      console.warn(`[SYNC] No matching booking found for Reservation ${id}. Sync skipped.`);
-      // Optional: Insert new booking here if missing? 
-      // For now, assume it should exist.
+      console.warn(`[SYNC] No matching booking found for Reservation ${id}. Creating new booking record...`);
+      // Self-healing: Create the missing booking record
+      try {
+        await db.query(
+          `INSERT INTO bookings (
+                property_id, 
+                channel_booking_id, 
+                guest_name, 
+                total_price, 
+                currency, 
+                status, 
+                arrival_date, 
+                departure_date, 
+                room_type,
+                source,
+                raw_data,
+                created_at,
+                updated_at
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'manual', $10, NOW(), NOW())`,
+          [
+            property_id,
+            targetBookingId, // Use local_ID
+            guestName,
+            total_price || 0,
+            'USD',
+            status,
+            check_in,
+            check_out,
+            roomType,
+            JSON.stringify({ id, property_id, guest_id, room_id, check_in, check_out, status, total_price }) // minimal raw_data
+          ]
+        );
+        console.log(`[SYNC] Created missing booking ${targetBookingId}`);
+        // Skip the update step since we just inserted
+        return res.status(200).json(rows[0]);
+      } catch (insertError) {
+        console.error("[SYNC] Failed to auto-create booking:", insertError.message);
+        // Continue to try update if possible, or just log error
+      }
     }
 
     if (bookingSearch.rows.length > 0) {
