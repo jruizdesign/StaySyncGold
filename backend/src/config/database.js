@@ -3,7 +3,7 @@ require('dotenv').config();
 
 // DEBUGGING & VALIDATION
 console.log("[DB CONFIG] Checking Connection Variables...");
-let dbUrl = process.env.DATABASE_URL;
+let dbUrl = process.env.DATABASE_URL ? process.env.DATABASE_URL.trim() : "";
 
 if (dbUrl) {
   // 1. Sanitize: Remove wrapping quotes if present (common Render mistake)
