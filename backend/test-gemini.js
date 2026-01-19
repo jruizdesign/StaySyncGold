@@ -1,0 +1,31 @@
+require('dotenv').config();
+const { GoogleGenerativeAI } = require('@google/generative-ai');
+
+async function testModel(modelName) {
+    console.log(`Testing model: ${modelName}...`);
+    try {
+        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+        const model = genAI.getGenerativeModel({ model: modelName });
+        const result = await model.generateContent("Hello, are you there?");
+        const response = await result.response;
+        console.log(`✅ Success with ${modelName}:`, response.text());
+        return true;
+    } catch (error) {
+        console.error(`❌ Failed with ${modelName}:`, error.message);
+        return false;
+    }
+}
+
+async function run() {
+    if (!process.env.GEMINI_API_KEY) {
+        console.error("❌ GEMINI_API_KEY is missing from process.env");
+        return;
+    }
+
+    await testModel('gemini-3-flash-preview');
+    await testModel('gemini-3.0-flash-001');
+    await testModel('gemini-2.0-flash-exp');
+    await testModel('gemini-1.5-flash');
+}
+
+run();

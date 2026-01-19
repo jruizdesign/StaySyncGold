@@ -14,7 +14,7 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
  */
 async function generatePropertyInsights(propertyData) {
     try {
-        const model = genAI.getGenerativeModel({ model: 'gemini-3-flash-preview' });
+        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
 
         // Build context from property data
         const context = buildPropertyContext(propertyData);
@@ -113,7 +113,7 @@ async function generateFinancialBriefing(dailyData) {
     try {
         // User requested 'gemini-3.0-flash-001' specifically for this feature
         // Note: If 3.0 is not valid, this will fail. Fallback handling recommended but complying with request.
-        const model = genAI.getGenerativeModel({ model: 'gemini-3.0-flash-001' });
+        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
 
         const prompt = `
             You are a specialized Financial Analyst for a Hotel Manager.
@@ -147,7 +147,7 @@ async function generateFinancialBriefing(dailyData) {
  */
 async function analyzeMaintenanceRequest(description) {
     try {
-        const model = genAI.getGenerativeModel({ model: 'gemini-3.0-flash-001' });
+        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
 
         const prompt = `
             You are a Hotel Maintenance Supervisor AI. 
