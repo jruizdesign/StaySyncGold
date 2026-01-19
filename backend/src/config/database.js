@@ -1,22 +1,39 @@
 const { Pool } = require('pg');
 require('dotenv').config();
 
-// DEBUGGING: Log environment status
+// DEBUGGING & VALIDATION
 console.log("[DB CONFIG] Checking Connection Variables...");
-const dbUrl = process.env.DATABASE_URL;
+let dbUrl = process.env.DATABASE_URL;
+
 if (dbUrl) {
-  console.log(`[DB CONFIG] DATABASE_URL found. Type: ${typeof dbUrl}, Length: ${dbUrl.length}`);
-  // Show partial URL for verification (hide password)
-  // Format usually postgres://user:pass@host...
-  const sanitized = dbUrl.replace(/:([^:@]+)@/, ':****@');
-  console.log(`[DB CONFIG] Sanitized URL: ${sanitized}`);
+  // 1. Sanitize: Remove wrapping quotes if present (common Render mistake)
+  if ((dbUrl.startsWith('"') && dbUrl.endsWith('"')) || (dbUrl.startsWith("'") && dbUrl.endsWith("'"))) {
+    console.warn("[DB CONFIG] Removing quotes from DATABASE_URL");
+    dbUrl = dbUrl.slice(1, -1);
+  }
+
+  // 2. Validate format
+  try {
+    const parsed = new URL(dbUrl);
+    console.log(`[DB CONFIG] URL Protocol: ${parsed.protocol}`);
+    // Ensure it starts with postgres
+    if (!parsed.protocol.startsWith('postgres')) {
+      console.error("[DB CONFIG] ERROR: DATABASE_URL must start with postgres://");
+    }
+  } catch (e) {
+    console.error("[DB CONFIG] FATAL: DATABASE_URL is not a valid URL.", e.message);
+    // Fallback or let it crash clearly
+  }
+
+  // Log safe version
+  const safeUrl = dbUrl.replace(/:([^:@]+)@/, ':****@');
+  console.log(`[DB CONFIG] Using URL: ${safeUrl}`);
 } else {
   console.log("[DB CONFIG] No DATABASE_URL found. Using breakdown vars.");
-  console.log(`[DB CONFIG] DB_HOST: ${process.env.DB_HOST}`);
 }
 
-const poolConfig = process.env.DATABASE_URL
-  ? { connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } }
+const poolConfig = dbUrl
+  ? { connectionString: dbUrl, ssl: { rejectUnauthorized: false } }
   : {
     user: process.env.DB_USER,
     host: process.env.DB_HOST,
