@@ -474,7 +474,9 @@ const Reservations: React.FC = () => {
           check_in: res.checkIn,
           check_out: res.checkOut,
           status: newStatus,
-          total_price: res.totalAmount
+          total_price: res.totalAmount,
+          modified_by: user?.id,
+          modifier_name: user?.email
         })
       });
 
