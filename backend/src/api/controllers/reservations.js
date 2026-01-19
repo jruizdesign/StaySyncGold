@@ -45,24 +45,24 @@ const getReservationById = async (req, res, next) => {
 // @desc    Create a reservation
 // @route   POST /api/reservations
 // @access  Public
+// @desc    Create a reservation
+// @route   POST /api/reservations
+// @access  Public
 const createReservation = async (req, res, next) => {
   const client = await db.pool.connect();
   try {
-    const { property_id, guest_id, room_id, check_in, check_out, status, total_price, user_id } = req.body;
+    const { property_id, guest_id, room_id, check_in, check_out, status, total_price } = req.body;
 
     // Start transaction
     await client.query('BEGIN');
 
-    // Set RLS Context Pattern (Impersonate Supabase User)
-    if (user_id) {
-      await client.query("SELECT set_config('request.jwt.claim.sub', $1, true)", [user_id]);
-      await client.query("SET LOCAL role authenticated");
-    }
+    // NOTE: RLS context via user_id removed as requested.
+    // Ensure database user has privileges to insert without RLS impersonation.
 
     // 1. Create Reservation
     const { rows: resRows } = await client.query(
-      'INSERT INTO Reservations (property_id, guest_id, room_id, check_in, check_out, status, user_id, total_amount) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
-      [property_id, guest_id, room_id, check_in, check_out, status, user_id, total_price]
+      'INSERT INTO Reservations (property_id, guest_id, room_id, check_in, check_out, status, total_amount) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
+      [property_id, guest_id, room_id, check_in, check_out, status, total_price]
     );
     const reservation = resRows[0];
 
@@ -89,9 +89,8 @@ const createReservation = async (req, res, next) => {
             source,
             raw_data,
             created_at,
-            updated_at,
-            user_id
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'manual', $10, NOW(), NOW(), $11)`,
+            updated_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'manual', $10, NOW(), NOW())`,
       [
         property_id,
         `local_${reservation.id}`, // Generate a local ID
@@ -102,8 +101,7 @@ const createReservation = async (req, res, next) => {
         check_in,
         check_out,
         roomType,
-        JSON.stringify(reservation),
-        user_id
+        JSON.stringify(reservation)
       ]
     );
 

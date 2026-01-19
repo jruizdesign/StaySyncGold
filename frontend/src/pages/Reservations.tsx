@@ -286,7 +286,7 @@ const Reservations: React.FC = () => {
             is_indefinite: isIndefinite,
             status: 'Confirmed',
             total_price: quote ? quote.total : await calculateTotalAmount(bookingForm.roomId, bookingForm.checkIn, bookingForm.checkOut),
-            user_id: user.id // Critical for RLS
+
           })
         });
 
