@@ -19,15 +19,18 @@ if (dbUrl) {
     // Ensure it starts with postgres
     if (!parsed.protocol.startsWith('postgres')) {
       console.error("[DB CONFIG] ERROR: DATABASE_URL must start with postgres://");
+      dbUrl = null; // Invalid protocol, fallback
     }
   } catch (e) {
-    console.error("[DB CONFIG] FATAL: DATABASE_URL is not a valid URL.", e.message);
-    // Fallback or let it crash clearly
+    console.error("[DB CONFIG] FATAL: DATABASE_URL is not a valid URL. Falling back to component variables.", e.message);
+    dbUrl = null; // Invalid URL, enforce fallback
   }
 
-  // Log safe version
-  const safeUrl = dbUrl.replace(/:([^:@]+)@/, ':****@');
-  console.log(`[DB CONFIG] Using URL: ${safeUrl}`);
+  if (dbUrl) {
+    // Log safe version
+    const safeUrl = dbUrl.replace(/:([^:@]+)@/, ':****@');
+    console.log(`[DB CONFIG] Using URL: ${safeUrl}`);
+  }
 } else {
   console.log("[DB CONFIG] No DATABASE_URL found. Using breakdown vars.");
 }
