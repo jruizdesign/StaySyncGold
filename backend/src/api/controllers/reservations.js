@@ -211,25 +211,22 @@ const updateReservation = async (req, res, next) => {
       );
       console.log(`[SYNC] Created new booking ${targetBookingId}`);
     }  // Optional: Reset if moved back to confirmed? Or assume 'Clean'/'Inspected' if not occupied?
-    // For now, let's leave it as is to avoid overwriting housekeeping flows inadvertently.
-  }
-
     // 3. Handle Room Status Changes (Check-in/Check-out)
     if (status === 'Checked In') {
-    await db.query('UPDATE rooms SET status = $1 WHERE id = $2', ['Occupied', room_id]);
-  } else if (status === 'Checked Out') {
-    await db.query('UPDATE rooms SET status = $1 WHERE id = $2', ['Dirty', room_id]);
-  } else if (status === 'Confirmed') {
-    // Optional: Reset if moved back to confirmed? Or assume 'Clean'/'Inspected' if not occupied?
-    // For now, let's leave it as is to avoid overwriting housekeeping flows inadvertently.
-  }
+      await db.query('UPDATE rooms SET status = $1 WHERE id = $2', ['Occupied', room_id]);
+    } else if (status === 'Checked Out') {
+      await db.query('UPDATE rooms SET status = $1 WHERE id = $2', ['Dirty', room_id]);
+    } else if (status === 'Confirmed') {
+      // Optional: Reset if moved back to confirmed? Or assume 'Clean'/'Inspected' if not occupied?
+      // For now, let's leave it as is to avoid overwriting housekeeping flows inadvertently.
+    }
 
-  await db.query('COMMIT');
-  res.status(200).json(rows[0]);
-} catch (error) {
-  await db.query('ROLLBACK');
-  res.status(500).json({ error: error.message });
-}
+    await db.query('COMMIT');
+    res.status(200).json(rows[0]);
+  } catch (error) {
+    await db.query('ROLLBACK');
+    res.status(500).json({ error: error.message });
+  }
 };
 
 // @desc    Delete a reservation
