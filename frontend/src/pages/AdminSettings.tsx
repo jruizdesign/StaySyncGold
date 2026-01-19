@@ -2,8 +2,8 @@ import { API_BASE_URL } from '../config';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { Button, Card, Input, Select, Badge } from '../components/UIComponents';
-import { Settings, Database, Users, Building, ShieldCheck, Plus, Search, ChevronRight, Layout, Globe, Loader, GitBranch } from 'lucide-react';
-import { Property, ChannelSetting, ChannelMapping } from '../types';
+import { Database, Users, Building, ShieldCheck, Plus, Layout, Globe, Loader, GitBranch } from 'lucide-react';
+import { Property, ChannelSetting } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { CommitTracker } from '../components/CommitTracker';
 
@@ -759,6 +759,7 @@ const PropertyManagement: React.FC = () => {
     const [property, setProperty] = useState<Property | null>(null);
     const [initialLoading, setInitialLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [saving, setSaving] = useState(false);
 
     // Form State
     const [formData, setFormData] = useState({
@@ -826,7 +827,7 @@ const PropertyManagement: React.FC = () => {
             console.error('Error saving property:', error);
             alert(`Failed to save settings: ${error.message}`);
         } finally {
-            setLoading(false);
+            setSaving(false);
         }
     };
 
@@ -843,7 +844,7 @@ const PropertyManagement: React.FC = () => {
             if (!confirmWipe) return;
         }
 
-        setLoading(true);
+        setSaving(true);
         try {
             // 1. Update Property Status
             const { error: updateError } = await supabase
@@ -870,7 +871,7 @@ const PropertyManagement: React.FC = () => {
             console.error(err);
             alert("Error updating Demo Mode: " + err.message);
         } finally {
-            setLoading(false);
+            setSaving(false);
         }
     };
 
@@ -924,7 +925,7 @@ const PropertyManagement: React.FC = () => {
                             </div>
                             <button
                                 onClick={handleToggleDemoMode}
-                                disabled={loading}
+                                disabled={saving}
                                 className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gold-500 ${property.demo_mode ? 'bg-gold-50' : 'bg-slate-200'}`}
                             >
                                 <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${property.demo_mode ? 'translate-x-6' : 'translate-x-1'}`} />
@@ -943,8 +944,8 @@ const PropertyManagement: React.FC = () => {
                 </div>
 
                 <div className="flex justify-end pt-4">
-                    <Button onClick={handleSaveProperty} disabled={loading}>
-                        {loading ? 'Saving...' : 'Save Changes'}
+                    <Button onClick={handleSaveProperty} disabled={saving}>
+                        {saving ? 'Saving...' : 'Save Changes'}
                     </Button>
                 </div>
             </div>
@@ -1431,7 +1432,5 @@ const AdminSettings: React.FC = () => {
 };
 
 export default AdminSettings;
-function setLoading(arg0: boolean) {
-    throw new Error('Function not implemented.');
-}
+
 
