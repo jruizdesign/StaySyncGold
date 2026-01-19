@@ -12,6 +12,20 @@ const getReservations = async (req, res, next) => {
   }
 };
 
+// Helper for System Logging
+const logSystemEvent = async (client, level, message, type, event, property_id, user_id, details) => {
+  try {
+    await client.query(
+      `INSERT INTO system_logs (level, message, type, event, property_id, user_id, details, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())`,
+      [level, message, type, event, property_id, user_id, JSON.stringify(details)]
+    );
+  } catch (err) {
+    console.error('Failed to write system log:', err);
+    // Don't block main flow if logging fails
+  }
+};
+
 // @desc    Get single reservation
 // @route   GET /api/reservations/:id
 // @access  Public
@@ -100,7 +114,7 @@ const updateReservation = async (req, res, next) => {
     const { id } = req.params;
     console.log('[DEBUG] updateReservation called for ID:', id);
     console.log('[DEBUG] Request Body:', req.body);
-    const { property_id, guest_id, room_id, check_in, check_out, status, total_price } = req.body;
+    const { property_id, guest_id, room_id, check_in, check_out, status, total_price, modified_by, modifier_name } = req.body;
 
     await db.query('BEGIN');
 
@@ -221,6 +235,22 @@ const updateReservation = async (req, res, next) => {
       // For now, let's leave it as is to avoid overwriting housekeeping flows inadvertently.
     }
 
+
+
+    // System Log
+    if (modified_by) {
+      await logSystemEvent(
+        db,
+        'INFO',
+        `Reservation updated by ${modifier_name || 'Staff'}: ${guestName} (${status})`,
+        'RESERVATION',
+        'RESERVATION_UPDATE',
+        property_id,
+        modified_by,
+        { reservation_id: id, status, total_price }
+      );
+    }
+
     await db.query('COMMIT');
     res.status(200).json(rows[0]);
   } catch (error) {
@@ -235,6 +265,8 @@ const updateReservation = async (req, res, next) => {
 const deleteReservation = async (req, res, next) => {
   try {
     const { id } = req.params;
+    const { modified_by, modifier_name } = req.query; // Get from query params for DELETE
+
     await db.query('BEGIN');
 
     const { rowCount } = await db.query('DELETE FROM Reservations WHERE id = $1', [id]);
@@ -245,6 +277,20 @@ const deleteReservation = async (req, res, next) => {
 
     // Delete from bookings
     await db.query('DELETE FROM bookings WHERE channel_booking_id = $1', [`local_${id}`]);
+
+    // System Log
+    if (modified_by) {
+      await logSystemEvent(
+        db,
+        'WARNING',
+        `Reservation deleted by ${modifier_name || 'Staff'} (ID: ${id})`,
+        'RESERVATION',
+        'RESERVATION_DELETE',
+        null, // Property ID might be hard to get if we deleted it, but we could fetch before delete if needed. efficient for now to omit or modify flow. 
+        modified_by,
+        { reservation_id: id }
+      );
+    }
 
     await db.query('COMMIT');
     res.status(204).send();
