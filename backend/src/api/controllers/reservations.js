@@ -114,24 +114,45 @@ const updateReservation = async (req, res, next) => {
     }
 
     // Sync to Bookings table
+    // Fetch details needed for bookings table
     const guestRes = await db.query('SELECT first_name, last_name FROM Guests WHERE id = $1', [guest_id]);
     const roomRes = await db.query('SELECT type FROM rooms WHERE id = $1', [room_id]);
 
     const guestName = guestRes.rows.length > 0 ? `${guestRes.rows[0].first_name} ${guestRes.rows[0].last_name}` : 'Unknown Guest';
     const roomType = roomRes.rows.length > 0 ? roomRes.rows[0].type : 'Standard';
 
-    await db.query(
-      `UPDATE bookings SET 
-            total_price = $1, 
-            status = $2, 
-            arrival_date = $3, 
-            departure_date = $4,
-            guest_name = $5,
-            room_type = $6,
+    // ROBUST SYNC: Try to find booking by local ID OR by raw_data->>'id'
+    // This allows syncing reservations created by seed/external sources if they carry the ID in raw_data
+    const bookingSearch = await db.query(
+      `SELECT channel_booking_id FROM bookings 
+       WHERE channel_booking_id = $1 OR raw_data->>'id' = $2`,
+      [`local_${id}`, id]
+    );
+
+    let targetBookingId = `local_${id}`;
+    if (bookingSearch.rows.length > 0) {
+      targetBookingId = bookingSearch.rows[0].channel_booking_id;
+    } else {
+      console.warn(`[SYNC] No matching booking found for Reservation ${id}. Sync skipped.`);
+      // Optional: Insert new booking here if missing? 
+      // For now, assume it should exist.
+    }
+
+    if (bookingSearch.rows.length > 0) {
+      await db.query(
+        `UPDATE bookings SET 
+            total_price = COALESCE($1, total_price), 
+            status = COALESCE($2, status), 
+            arrival_date = COALESCE($3, arrival_date), 
+            departure_date = COALESCE($4, departure_date),
+            guest_name = COALESCE($5, guest_name),
+            room_type = COALESCE($6, room_type),
             updated_at = NOW()
         WHERE channel_booking_id = $7`,
-      [total_price || 0, status, check_in, check_out, guestName, roomType, `local_${id}`]
-    );
+        [total_price, status, check_in, check_out, guestName, roomType, targetBookingId]
+      );
+      console.log(`[SYNC] Updated booking ${targetBookingId} for Reservation ${id}`);
+    }
 
     // 3. Handle Room Status Changes (Check-in/Check-out)
     if (status === 'Checked In') {
