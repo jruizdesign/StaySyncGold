@@ -341,7 +341,7 @@ router.post('/sync', async (req, res) => {
 
         await db.query('COMMIT');
 
-        console.log(`[Channex Sync] Saved ${bookingsCount} bookings for property ${property_id}`);
+
 
         // 4. Update last_sync timestamp
         await db.query(
@@ -792,7 +792,7 @@ router.get('/test_connection/', validateChannexIncoming, (req, res) => {
 
 // GET /api/channex/mapping_details/
 router.get('/mapping_details/', validateChannexIncoming, async (req, res) => {
-    console.log(`[Channex] Fetching mapping details for property: ${req.property_id}`);
+
     try {
         // 1. Fetch Room Types
         // We group by 'type' to represent Room Types.
@@ -835,7 +835,7 @@ router.get('/mapping_details/', validateChannexIncoming, async (req, res) => {
 router.post('/changes/', validateChannexIncoming, (req, res) => {
     // Channex pushes availability/rate updates here? 
     // Or maybe we push to them. The doc says "receive changes that has happened at the property state".
-    console.log('Received changes from Channex:', req.body);
+
     res.json({ success: true });
 });
 
