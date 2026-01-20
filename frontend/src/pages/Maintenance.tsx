@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { Card, Button, Input, Badge } from '../components/UIComponents';
 import { Plus, Wrench, CheckCircle, Clock, Sparkles } from 'lucide-react';
+import ResolveMaintenanceModal from '../components/ResolveMaintenanceModal';
 
 interface MaintenanceTicket {
     id: string;
@@ -30,7 +31,9 @@ const Maintenance: React.FC = () => {
     const [selectedRoomId, setSelectedRoomId] = useState('');
     const [priority, setPriority] = useState<string>('Medium');
     const [description, setDescription] = useState('');
+    const [description, setDescription] = useState('');
     const [creating, setCreating] = useState(false);
+    const [resolveModalTicketId, setResolveModalTicketId] = useState<string | null>(null);
 
     useEffect(() => {
         if (user?.propertyId) {
@@ -98,6 +101,11 @@ const Maintenance: React.FC = () => {
     };
 
     const handleUpdateStatus = async (id: string, newStatus: string) => {
+        if (newStatus === 'Resolved') {
+            setResolveModalTicketId(id);
+            return;
+        }
+
         try {
             const { error } = await supabase
                 .from('maintenance')
@@ -270,6 +278,16 @@ const Maintenance: React.FC = () => {
                     ))
                 )}
             </div>
+            {/* Resolution Modal */}
+            <ResolveMaintenanceModal
+                isOpen={!!resolveModalTicketId}
+                onClose={() => setResolveModalTicketId(null)}
+                ticketId={resolveModalTicketId || undefined}
+                onSuccess={() => {
+                    fetchData();
+                    setResolveModalTicketId(null);
+                }}
+            />
         </div>
     );
 };

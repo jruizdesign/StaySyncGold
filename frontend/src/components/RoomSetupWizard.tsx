@@ -46,6 +46,22 @@ const RoomSetupWizard: React.FC<RoomSetupWizardProps> = ({ onClose, onComplete }
     const handleGenerate = async () => {
         if (!user?.propertyId) return;
 
+        // 1. Check for dependencies that would block deletion
+        try {
+            const { count: reservationCount } = await supabase
+                .from('reservations')
+                .select('*', { count: 'exact', head: true })
+                .eq('property_id', user.propertyId)
+                .not('status', 'eq', 'cancelled'); // Assuming cancelled might be irrelevant, but safer to check all
+
+            if (reservationCount && reservationCount > 0) {
+                alert(`Cannot reset rooms: You have ${reservationCount} active reservations. Please archive or delete them first to prevent data loss.`);
+                return;
+            }
+        } catch (err) {
+            console.error("Error checking dependencies:", err);
+        }
+
         // Safety Layer: Explicit Confirmation
         const confirmed = window.confirm(
             "⚠️ WARNING: This will DELETE ALL EXISTING ROOMS for this property and replace them with the generated inventory.\n\nThis action cannot be undone. Are you sure you want to proceed?"
@@ -55,15 +71,21 @@ const RoomSetupWizard: React.FC<RoomSetupWizardProps> = ({ onClose, onComplete }
         setLoading(true);
 
         try {
-            // 1. Wipe existing rooms first
+            // 2. Wipe existing rooms first
             const { error: deleteError } = await supabase
                 .from('rooms')
                 .delete()
                 .eq('property_id', user.propertyId);
 
-            if (deleteError) throw deleteError;
+            if (deleteError) {
+                // Handle FK violation explicitly if it slipped through
+                if (deleteError.code === '23503') { // Foreign key violation
+                    throw new Error("Cannot delete rooms because they are referenced by other data (Reservations, Maintenance Tickets, etc).");
+                }
+                throw deleteError;
+            }
 
-            // 2. Insert new rooms
+            // 3. Insert new rooms
             const roomsToInsert = generatedRooms.map(room => ({
                 ...room,
                 property_id: user.propertyId,
@@ -93,7 +115,7 @@ const RoomSetupWizard: React.FC<RoomSetupWizardProps> = ({ onClose, onComplete }
                 property_id: user.propertyId,
                 details: { error: error.message }
             });
-            alert('Failed to create rooms. Please try again.');
+            alert(`Failed to create rooms: ${error.message}`);
         } finally {
             setLoading(false);
         }

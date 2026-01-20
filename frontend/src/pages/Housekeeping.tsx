@@ -4,6 +4,7 @@ import { Plus, Wand2, BedDouble, AlertCircle, Loader, CheckCircle } from 'lucide
 import { RoomStatus, Room } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
+import ResolveMaintenanceModal from '../components/ResolveMaintenanceModal';
 import RoomSetupWizard from '../components/RoomSetupWizard';
 import ReportIssueModal from '../components/ReportIssueModal';
 
@@ -15,6 +16,7 @@ const Housekeeping: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
   const [showWizard, setShowWizard] = useState(false);
+  const [resolveModalRoomId, setResolveModalRoomId] = useState<string | null>(null);
 
   const filters = [
     { label: 'ALL', value: 'ALL' },
@@ -309,7 +311,7 @@ const Housekeeping: React.FC = () => {
                   </div>
                 ) : room.status === RoomStatus.OOO ? (
                   <button
-                    onClick={() => handleUpdateStatus(room.id, RoomStatus.CLEAN)}
+                    onClick={() => setResolveModalRoomId(room.id)}
                     className="w-full py-2.5 bg-slate-800 hover:bg-slate-900 text-white font-medium rounded-lg transition-colors shadow-sm text-sm"
                   >
                     Mark Fixed (Ready)

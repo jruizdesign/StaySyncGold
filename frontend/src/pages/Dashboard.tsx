@@ -125,29 +125,28 @@ const Dashboard: React.FC = () => {
     cleaningSub: "Active Tasks"
   };
 
-  // Urgent Tickets Fetching
-  const [urgentTickets, setUrgentTickets] = React.useState<any[]>([]);
+  // Maintenance Feed State
+  const [maintenanceFeed, setMaintenanceFeed] = React.useState<any[]>([]);
 
   React.useEffect(() => {
-    const fetchUrgent = async () => {
+    const fetchFeed = async () => {
       if (!user?.propertyId) return;
       const { data } = await supabase
         .from('maintenance')
         .select('*, rooms(number)')
         .eq('property_id', user.propertyId)
-        .in('priority', ['Critical', 'High'])
-        .neq('status', 'Resolved')
-        .limit(3);
-      setUrgentTickets(data || []);
+        .order('updated_at', { ascending: false }) // Show most recently updated first
+        .limit(10);
+      setMaintenanceFeed(data || []);
     };
 
-    fetchUrgent();
+    fetchFeed();
 
-    // Subscribe to new urgent tickets
+    // Subscribe to ALL changes (INSERT, UPDATE)
     const channel = supabase
-      .channel('dashboard-urgent')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'maintenance', filter: `property_id=eq.${user?.propertyId}` },
-        () => fetchUrgent()
+      .channel('dashboard-maintenance')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'maintenance', filter: `property_id=eq.${user?.propertyId}` },
+        () => fetchFeed() // Simple re-fetch to ensure relations (rooms) are loaded
       )
       .subscribe();
 
@@ -167,7 +166,10 @@ const Dashboard: React.FC = () => {
         loading={loadingInsights}
         error={aiInsights?.error}
         timestamp={aiInsights?.generatedAt}
-        onAction={() => window.location.href = '/maintenance'} // Navigate based on context in future
+        onAction={() => {
+          const query = encodeURIComponent(`How to fix ${aiInsights?.message || 'hotel maintenance issue'}`);
+          window.open(`https://www.google.com/search?q=${query}`, '_blank');
+        }}
       />
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -216,45 +218,44 @@ const Dashboard: React.FC = () => {
           <LiveActivityFeed />
         </Card>
 
-        <Card title="Urgent Attention">
-          <div className="space-y-4">
-            {user?.isDemoMode ? (
-              <>
-                <div className="flex items-start gap-3">
-                  <AlertCircle className="w-5 h-5 text-red-500 mt-0.5" />
-                  <div>
-                    <p className="text-sm font-medium text-slate-900">Room 304 - Maintenance</p>
-                    <p className="text-xs text-slate-500 mt-1">AC Failure reported by guest. Priority: High</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <AlertCircle className="w-5 h-5 text-amber-500 mt-0.5" />
-                  <div>
-                    <p className="text-sm font-medium text-slate-900">Staff Shortage</p>
-                    <p className="text-xs text-slate-500 mt-1">2 Housekeepers called in sick today.</p>
-                  </div>
-                </div>
-              </>
-            ) : (
-              urgentTickets.length > 0 ? (
-                urgentTickets.map(t => (
-                  <div key={t.id} className="flex items-start gap-3 p-3 bg-red-50 rounded-lg border border-red-100">
-                    <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 shrink-0" />
-                    <div>
-                      <p className="text-sm font-bold text-slate-900">Room {t.rooms?.number} - {t.category || 'Maintenance'}</p>
-                      <p className="text-xs text-slate-600 mt-0.5">{t.ai_summary || t.description}</p>
-                      <div className="mt-1 flex gap-2">
-                        <Badge color="red">{t.priority}</Badge>
-                      </div>
+        <Card title="Live Maintenance Feed" className="h-[400px] flex flex-col">
+          <div className="flex-1 overflow-y-auto pr-2 space-y-3">
+            {maintenanceFeed.length > 0 ? (
+              maintenanceFeed.map(t => (
+                <div key={t.id} className="flex items-start gap-3 p-3 bg-white rounded-lg border border-slate-100 hover:border-blue-100 transition-colors">
+                  <div className={`mt-1 w-2 h-2 rounded-full shrink-0 ${t.status === 'Resolved' ? 'bg-emerald-500' :
+                    t.status === 'In Progress' ? 'bg-amber-500' :
+                      'bg-red-500'
+                    }`} />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex justify-between items-start mb-1">
+                      <p className="text-sm font-semibold text-slate-900 truncate">
+                        Room {t.rooms?.number}
+                        <span className="ml-2 text-xs font-normal text-slate-500">
+                          {t.category || 'Maintenance'}
+                        </span>
+                      </p>
+                      <Badge color={
+                        t.status === 'Resolved' ? 'green' :
+                          t.status === 'In Progress' ? 'yellow' :
+                            'red'
+                      }>{t.status}</Badge>
+                    </div>
+                    <p className="text-xs text-slate-600 line-clamp-2">
+                      {t.ai_summary || t.description}
+                    </p>
+                    <div className="mt-2 flex items-center justify-between text-[10px] text-slate-400">
+                      <span>Priority: {t.priority}</span>
+                      <span>{new Date(t.updated_at || t.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                     </div>
                   </div>
-                ))
-              ) : (
-                <div className="text-center py-6">
-                  <CheckCircle className="w-8 h-8 text-emerald-400 mx-auto mb-2 opacity-50" />
-                  <p className="text-slate-500 text-sm">No urgent issues requiring attention.</p>
                 </div>
-              )
+              ))
+            ) : (
+              <div className="text-center py-12">
+                <CheckCircle className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                <p className="text-slate-500 text-sm">No recent activity</p>
+              </div>
             )}
           </div>
         </Card>
