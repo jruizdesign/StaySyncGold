@@ -179,7 +179,8 @@ const Dashboard: React.FC = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card title="Weekly Revenue Overview">
-          <div className="h-80">
+          <div className="h-80 w-full min-h-[320px]">
+            {/* Recharts ResponsiveContainer needs explicit dimensions if parent flex/grid is unstable */}
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
@@ -196,7 +197,7 @@ const Dashboard: React.FC = () => {
         </Card>
 
         <Card title="Occupancy Trends">
-          <div className="h-80">
+          <div className="h-80 w-full min-h-[320px]">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />

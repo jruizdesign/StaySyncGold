@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
 import { Hotel, Mail, Lock, Loader2, AlertCircle, Check } from 'lucide-react';
@@ -6,12 +7,22 @@ import { Button, Input } from '../components/UIComponents';
 import { logger } from '../lib/logger';
 
 const Login: React.FC = () => {
+    const { user, loading: authLoading } = useAuth(); // Get auth state
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [keepLoggedIn, setKeepLoggedIn] = useState(true);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const navigate = useNavigate();
+
+    // Redirect if already logged in
+    React.useEffect(() => {
+        console.log('[Login] Check redirect. Loading:', authLoading, 'User:', user?.email);
+        if (!authLoading && user) {
+            console.log('[Login] Redirecting to dashboard...');
+            navigate('/dashboard', { replace: true });
+        }
+    }, [user, authLoading, navigate]);
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -80,6 +91,7 @@ const Login: React.FC = () => {
                                 onChange={(e) => setEmail(e.target.value)}
                                 className="bg-white"
                                 icon={Mail}
+                                autoComplete="email"
                             />
 
                             <Input
@@ -91,6 +103,7 @@ const Login: React.FC = () => {
                                 onChange={(e) => setPassword(e.target.value)}
                                 className="bg-white"
                                 icon={Lock}
+                                autoComplete="current-password"
                             />
                         </div>
 

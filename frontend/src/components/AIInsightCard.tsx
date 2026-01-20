@@ -9,11 +9,12 @@ interface AIInsightCardProps {
     onAction?: () => void;
     variant?: 'default' | 'success' | 'alert';
     loading?: boolean;
+    error?: boolean;
     timestamp?: string;
 }
 
 export const AIInsightCard = ({
-    title = "Operational Intel", subtitle = "Financial And Property Analysis", message = "Unable to generate AI brief. Please check manual Arrears and Maintenance logs below.", actionLabel = "Review open maintenance tickets.", onAction, variant = 'default', loading = false, timestamp
+    title = "Operational Intel", subtitle = "Financial And Property Analysis", message = "Unable to generate AI brief. Please check manual Arrears and Maintenance logs below.", actionLabel = "Review open maintenance tickets.", onAction, variant = 'default', loading = false, error, timestamp
 }: AIInsightCardProps) => {
     // Determine styles based on variant
     const variantStyles = {

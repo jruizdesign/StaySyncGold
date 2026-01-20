@@ -198,8 +198,29 @@ async function analyzeMaintenanceRequest(description) {
     }
 }
 
+async function generateChatResponse(userPrompt, context) {
+    try {
+        const model = genAI.getGenerativeModel({ model: 'gemini-3-flash-preview' });
+
+        const systemPrompt = `System: You are an AI assistant for a hotel PMS called StaySyncGold. 
+      Use the following context to answer the user's question concisely.
+      
+      Context: ${context}
+      
+      User: ${userPrompt}`;
+
+        const result = await model.generateContent(systemPrompt);
+        const response = await result.response;
+        return response.text();
+    } catch (error) {
+        console.error("AI Chat Error:", error);
+        return "Sorry, I encountered an error communicating with the AI service.";
+    }
+}
+
 module.exports = {
     generatePropertyInsights,
     generateFinancialBriefing,
-    analyzeMaintenanceRequest
+    analyzeMaintenanceRequest,
+    generateChatResponse
 };

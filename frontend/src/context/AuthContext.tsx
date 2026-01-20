@@ -18,15 +18,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // 1. Check active session
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            setSession(session);
-            if (session?.user) {
-                fetchUserProfile(session.user.id, session.user.email!);
-            } else {
-                setLoading(false);
-            }
-        });
+        // 1. Check active session - REMOVED (Redundant with onAuthStateChange)
+        // supabase.auth.getSession().then(({ data: { session } }) => {
+        //     setSession(session);
+        //     if (session?.user) {
+        //         fetchUserProfile(session.user.id, session.user.email!);
+        //     } else {
+        //         setLoading(false);
+        //     }
+        // });
 
         // 2. Listen for changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {

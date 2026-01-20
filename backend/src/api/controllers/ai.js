@@ -132,7 +132,28 @@ const analyzeIssue = async (req, res) => {
     }
 };
 
+/**
+ * @desc    Handle generic AI chat interaction
+ * @route   POST /api/ai/chat
+ * @access  Public
+ */
+const answerChat = async (req, res) => {
+    try {
+        const { prompt, context } = req.body;
+        if (!prompt) {
+            return res.status(400).json({ error: 'Prompt is required' });
+        }
+
+        const response = await aiService.generateChatResponse(prompt, context);
+        res.status(200).json({ message: response });
+    } catch (error) {
+        console.error('Chat Error:', error);
+        res.status(500).json({ error: 'Chat failed' });
+    }
+};
+
 module.exports = {
     getPropertyInsights,
-    analyzeIssue
+    analyzeIssue,
+    answerChat
 };

@@ -12,4 +12,9 @@ router.get('/insights/:propertyId', getPropertyInsights);
 // @access  Public
 router.post('/analyze-issue', analyzeIssue);
 
+// @route   POST /api/ai/chat
+// @desc    Generic AI chat
+// @access  Public
+router.post('/chat', require('../controllers/ai').answerChat);
+
 module.exports = router;

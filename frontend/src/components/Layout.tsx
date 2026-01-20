@@ -52,7 +52,10 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const navigate = useNavigate();
 
   // Hide standard layout for Kiosk, Login, and Landing modes including new Digital Services pages
-  if (['/kiosk', '/login', '/', '/landing', '/it-security', '/digital-solutions'].includes(location.pathname)) {
+  const publicPaths = ['/kiosk', '/login', '/', '/landing', '/it-security', '/digital-solutions'];
+  const isPublicPath = publicPaths.includes(location.pathname) || publicPaths.some(path => path !== '/' && location.pathname.startsWith(path + '/'));
+
+  if (isPublicPath) {
     return <>{children}</>;
   }
 
