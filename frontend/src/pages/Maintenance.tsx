@@ -31,7 +31,6 @@ const Maintenance: React.FC = () => {
     const [selectedRoomId, setSelectedRoomId] = useState('');
     const [priority, setPriority] = useState<string>('Medium');
     const [description, setDescription] = useState('');
-    const [description, setDescription] = useState('');
     const [creating, setCreating] = useState(false);
     const [resolveModalTicketId, setResolveModalTicketId] = useState<string | null>(null);
 

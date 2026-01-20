@@ -31,7 +31,7 @@ export interface Room {
   number: string;
   type: string;
   status: RoomStatus;
-  rate: number;
+  price_per_night: number;
   floor: number;
   capacity: number;
 }

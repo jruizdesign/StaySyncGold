@@ -30,7 +30,7 @@ export const analyzeIncidentReport = async (description: string): Promise<Incide
   }
 };
 
-export const generateShiftSummary = async (stats: any): Promise<string> => {
+export const generateShiftSummary = async (_stats: any): Promise<string> => {
   // Placeholder: Shift summary logic should also be moved to backend if needed.
   // For now, we'll return a static message or implement a backend route later.
   console.warn("generateShiftSummary: Client-side storage of keys is deprecated. Please implement backend route.");

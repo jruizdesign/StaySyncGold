@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Plus, Trash2, DollarSign, CheckCircle, Calculator } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { Button, Input } from './UIComponents';
+import { Button } from './UIComponents';
 import { useAuth } from '../context/AuthContext';
 
 interface ExpenseItem {
@@ -49,7 +49,7 @@ const ResolveMaintenanceModal: React.FC<ResolveMaintenanceModalProps> = ({
     const fetchActiveTicketForRoom = async (rid: string) => {
         setFetchingTicket(true);
         try {
-            const { data, error } = await supabase
+            const { data, error: _error } = await supabase
                 .from('maintenance')
                 .select('id')
                 .eq('room_id', rid)
@@ -187,7 +187,7 @@ const ResolveMaintenanceModal: React.FC<ResolveMaintenanceModalProps> = ({
                         {/* Itemized Expenses */}
                         <div className="space-y-3">
                             <div className="flex justify-between items-center">
-                                <label className="block text-sm font-medium text-slate-700 flex items-center gap-2">
+                                <label className="text-sm font-medium text-slate-700 flex items-center gap-2">
                                     <DollarSign className="w-4 h-4 text-slate-400" /> Itemized Costs
                                 </label>
                                 <button
@@ -200,7 +200,7 @@ const ResolveMaintenanceModal: React.FC<ResolveMaintenanceModalProps> = ({
                             </div>
 
                             <div className="space-y-2">
-                                {expenses.map((expense, index) => (
+                                {expenses.map((expense) => (
                                     <div key={expense.id} className="flex gap-2 items-start">
                                         <input
                                             placeholder="Item (e.g. New Faucet)"

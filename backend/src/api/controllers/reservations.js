@@ -125,13 +125,36 @@ const updateReservation = async (req, res, next) => {
     console.log('[DEBUG] updateReservation called for ID:', id);
     console.log('[DEBUG] Request Body:', req.body);
     const { property_id, guest_id, room_id, check_in, check_out, status, total_price, modified_by, modifier_name, daily_price, is_indefinite } = req.body;
+    let finalTotalPrice = total_price;
 
-    // actingUser removed. Relying on database permissions.
+    // Start transaction
     await client.query('BEGIN');
+
+    // EARLY CHECKOUT LOGIC: Recalculate price if checking out
+    if (status === 'Checked Out') {
+      try {
+        const { rows: roomRows } = await client.query('SELECT price_per_night FROM rooms WHERE id = $1', [room_id]);
+        if (roomRows.length > 0) {
+          const pricePerNight = Number(roomRows[0].price_per_night) || 0;
+
+          const start = new Date(check_in);
+          const end = new Date(check_out);
+          const diffTime = end.getTime() - start.getTime();
+          const diffDays = Math.ceil(diffTime / (1000 * 3600 * 24));
+          const nights = diffDays < 1 ? 1 : diffDays;
+
+          finalTotalPrice = nights * pricePerNight;
+          console.log(`[Early Checkout] Recalculated: ${nights} nights @ $${pricePerNight} = $${finalTotalPrice}`);
+        }
+      } catch (err) {
+        console.error("Error recalculating price:", err);
+        // Fallback to original total_price if error
+      }
+    }
 
     const { rows } = await client.query(
       'UPDATE Reservations SET property_id = $1, guest_id = $2, room_id = $3, check_in = $4, check_out = $5, status = $6, total_amount = $8 WHERE id = $7 RETURNING *',
-      [property_id, guest_id, room_id, check_in, check_out, status, id, total_price]
+      [property_id, guest_id, room_id, check_in, check_out, status, id, finalTotalPrice]
     );
     if (rows.length === 0) {
       await client.query('ROLLBACK');

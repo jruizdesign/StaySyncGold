@@ -481,7 +481,7 @@ const Reservations: React.FC = () => {
           guest_id: res.guestId,
           room_id: res.roomId,
           check_in: res.checkIn,
-          check_out: res.checkOut,
+          check_out: newStatus === 'Checked Out' ? new Date().toISOString().split('T')[0] : res.checkOut,
           status: newStatus,
           total_price: res.totalAmount,
           modified_by: user?.id,

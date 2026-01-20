@@ -282,7 +282,7 @@ const Housekeeping: React.FC = () => {
                 </div>
                 <div className="flex justify-between text-slate-600">
                   <span>Rate:</span>
-                  <span className="font-medium text-slate-900">${room.rate || 0}/night</span>
+                  <span className="font-medium text-slate-900">${room.price_per_night || 0}/night</span>
                 </div>
               </div>
 
@@ -370,7 +370,19 @@ const Housekeeping: React.FC = () => {
           onSubmit={handleSubmitIssue}
         />
       )}
-    </div >
+      {!!resolveModalRoomId && (
+        <ResolveMaintenanceModal
+          isOpen={!!resolveModalRoomId}
+          onClose={() => setResolveModalRoomId(null)}
+          ticketId={getActiveTicketForRoom(resolveModalRoomId)?.id}
+          roomId={resolveModalRoomId}
+          onSuccess={() => {
+            setResolveModalRoomId(null);
+            handleUpdateStatus(resolveModalRoomId!, RoomStatus.CLEAN);
+          }}
+        />
+      )}
+    </div>
   );
 };
 
