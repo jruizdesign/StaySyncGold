@@ -1,6 +1,6 @@
+require('dotenv').config();
 const express = require('express');
 const db = require('./config/database');
-require('dotenv').config();
 const helmet = require('helmet');
 
 const reservationsRouter = require('./api/routes/reservations');
