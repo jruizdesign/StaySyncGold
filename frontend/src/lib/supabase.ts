@@ -9,4 +9,8 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 
 // Provide fallback placeholders to prevent the client from crashing the app on initialization
-export const supabase = createClient(supabaseUrl || 'https://placeholder.supabase.co', supabaseAnonKey || 'placeholder');
+export const supabase = createClient(supabaseUrl || 'https://placeholder.supabase.co', supabaseAnonKey || 'placeholder', {
+    realtime: {
+        log_level: 'error', // Silence info/debug logs
+    },
+});

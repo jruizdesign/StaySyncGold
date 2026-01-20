@@ -43,7 +43,7 @@ const Financials: React.FC = () => {
         .select(`
             *,
             reservations:res_id (
-              rooms:room_id (name, number),
+              rooms:room_id (number, type),
               guests:guest_id (first_name, last_name)
             )
           `)
@@ -66,7 +66,7 @@ const Financials: React.FC = () => {
         const guest = p.reservations?.guests;
         const room = p.reservations?.rooms;
         const guestName = guest ? `${guest.first_name} ${guest.last_name}` : 'Unknown Guest';
-        const roomInfo = room ? `Room ${room.number}` : 'Unknown Room';
+        const roomInfo = room ? `Room ${room.number} (${room.type})` : 'Unknown Room';
 
         return {
           id: p.id,
