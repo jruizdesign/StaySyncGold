@@ -110,15 +110,17 @@ const getDashboardStats = async (req, res, next) => {
     // Cleaning (Rooms with status 'dirty', 'cleaning', 'maintenance')
     // We assume 'rooms' table has 'status'. If strict schema fails, strict SQL might fail.
     // Safe fallback: assume 0 if query fails? No, let's try strict.
+    // Cleaning (Rooms with status 'dirty', 'cleaning', 'maintenance')
+    // Handled case-insensitivity by converting column to lower case for check
     let cleaning = 0;
     try {
       const cleaningRes = await db.query(
-        "SELECT COUNT(*) FROM rooms WHERE property_id = $1 AND status IN ('dirty', 'cleaning', 'maintenance')",
+        "SELECT COUNT(*) FROM rooms WHERE property_id = $1 AND LOWER(status) IN ('dirty', 'cleaning', 'maintenance')",
         [property_id]
       );
       cleaning = parseInt(cleaningRes.rows[0].count);
     } catch (err) {
-      console.warn("Could not fetch cleaning stats (schema mismatch?):", err.message);
+      console.warn("Could not fetch cleaning stats:", err.message);
     }
 
     // Occupancy (Active Bookings / Total Rooms)
@@ -132,16 +134,15 @@ const getDashboardStats = async (req, res, next) => {
     const occupiedRooms = parseInt(activeBookingsRes.rows[0].count);
     const occupancyRate = Math.round((occupiedRooms / totalRooms) * 100);
 
-    // Total Revenue (All Time)
+    // Total Revenue (All Time) -> NOW FETCHING FROM PAYMENTS
     const revenueRes = await db.query(
-      "SELECT SUM(total_price) FROM bookings WHERE property_id = $1 AND status != 'cancelled'",
+      "SELECT SUM(amount) FROM payments WHERE property_id = $1",
       [property_id]
     );
     const totalRevenue = parseFloat(revenueRes.rows[0].sum) || 0;
 
 
     // 2. CHART DATA (Last 7 Days)
-    // Generate dates
     const chartData = [];
     for (let i = 6; i >= 0; i--) {
       const d = new Date();
@@ -149,17 +150,15 @@ const getDashboardStats = async (req, res, next) => {
       const dateStr = d.toISOString().split('T')[0];
       const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
 
-      // Daily Revenue
-      // Note: This matches bookings created/arriving on that day? 
-      // Or revenue recognized that day?
-      // Simple View: Sum of total_price for bookings ARRIVING that day (or created? usually arrival for forecast)
+      // Daily Revenue -> FROM PAYMENTS (created_at matches dateStr)
+      // Note: created_at is timestamptz, so we cast to date
       const dayRevRes = await db.query(
-        "SELECT SUM(total_price) FROM bookings WHERE property_id = $1 AND arrival_date = $2 AND status != 'cancelled'",
+        "SELECT SUM(amount) FROM payments WHERE property_id = $1 AND DATE(created_at) = $2",
         [property_id, dateStr]
       );
       const dayRevenue = parseFloat(dayRevRes.rows[0].sum) || 0;
 
-      // Daily Occupancy
+      // Daily Occupancy (Remains Booking driven)
       const dayOccRes = await db.query(
         "SELECT COUNT(*) FROM bookings WHERE property_id = $1 AND arrival_date <= $2 AND departure_date > $2 AND status != 'cancelled'",
         [property_id, dateStr]

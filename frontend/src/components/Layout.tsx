@@ -88,7 +88,8 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
         <nav className="flex-1 px-3 py-6 space-y-1 overflow-y-auto custom-scrollbar">
           <SidebarLink to="/dashboard" icon={LayoutDashboard} label="Dashboard" />
-          <SidebarLink to="/reservations" icon={CalendarRange} label="Reservations" />
+          <SidebarLink to="/calendar" icon={CalendarRange} label="Calendar" />
+          <SidebarLink to="/reservations" icon={Users} label="Reservations List" />
           <SidebarLink to="/guests" icon={Users} label="Guests" />
           <SidebarLink to="/housekeeping" icon={BedDouble} label="Rooms" />
           <SidebarLink to="/maintenance" icon={Wrench} label="Maintenance" />
