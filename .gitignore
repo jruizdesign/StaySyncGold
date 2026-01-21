@@ -10,3 +10,4 @@ coverage
 .idea
 backend/.env
 backend/.env
+backend/.env.production.example
