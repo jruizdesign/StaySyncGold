@@ -1,6 +1,6 @@
 import React from 'react';
 import { Card, Badge } from '../components/UIComponents';
-import { CheckCircle, TrendingUp, Users, BedDouble, AlertCircle, DollarSign } from 'lucide-react';
+import { CheckCircle, TrendingUp, Users, BedDouble, DollarSign } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { LiveActivityFeed } from '../components/LiveActivityFeed';
 import { AIInsightCard } from '../components/AIInsightCard';
@@ -12,9 +12,9 @@ const StatCard: React.FC<{ title: string, value: string, sub: string, icon: any,
   <Card className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
     <div className="flex items-start justify-between">
       <div>
-        <p className="text-sm font-medium text-slate-500 tracking-wide uppercase">{title}</p>
+        <p className="text-sm font-medium text-slate-600 tracking-wide uppercase">{title}</p>
         <h3 className="text-3xl font-bold text-slate-900 mt-2 tracking-tight">{value}</h3>
-        <p className={`text-xs mt-2 font-medium flex items-center gap-1 ${sub.includes('+') ? 'text-emerald-600' : 'text-slate-400'}`}>
+        <p className={`text-xs mt-2 font-medium flex items-center gap-1 ${sub.includes('+') ? 'text-emerald-700' : 'text-slate-500'}`}>
           {sub.includes('+') && <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />}
           {sub}
         </p>
@@ -59,13 +59,11 @@ const Dashboard: React.FC = () => {
 
   // Data Fetching
   const [statsData, setStatsData] = React.useState<any>(null);
-  const [loadingStats, setLoadingStats] = React.useState(true);
 
   React.useEffect(() => {
     const fetchStats = async () => {
       if (!user?.propertyId) return;
       try {
-        setLoadingStats(true); // Don't block UI entirely, maybe show spinner in cards
         const res = await fetch(`/api/reports/dashboard-stats?property_id=${user.propertyId}`);
         const data = await res.json();
         if (data.success) {
@@ -73,8 +71,6 @@ const Dashboard: React.FC = () => {
         }
       } catch (error) {
         console.error("Error fetching dashboard stats:", error);
-      } finally {
-        setLoadingStats(false);
       }
     };
 
@@ -85,13 +81,6 @@ const Dashboard: React.FC = () => {
     const interval = setInterval(fetchStats, 60000);
     return () => clearInterval(interval);
   }, [user?.propertyId]);
-
-  // Mock Data (Demo Mode Fallback)
-  const mockData = [
-    { name: 'Mon', revenue: 4000, occupancy: 65 },
-    { name: 'Tue', revenue: 3000, occupancy: 55 },
-    // ... rest of mock data can stay if we want fallback, but let's simplify
-  ];
 
   // Determine Display Data
   // If demo mode, use Hardcoded Mock. If Real, use API data.

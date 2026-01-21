@@ -1,17 +1,16 @@
 require('dotenv').config();
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+const { GoogleGenAI } = require('@google/genai');
 
-async function testModel(modelName) {
-    console.log(`Testing model: ${modelName}...`);
+async function testModel(modelName)g model: ${ modelName }...`);
     try {
-        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+        const genAI = new GoogleGenAI(process.env.GEMINI_API_KEY);
         const model = genAI.getGenerativeModel({ model: modelName });
         const result = await model.generateContent("Hello, are you there?");
         const response = await result.response;
-        console.log(`✅ Success with ${modelName}:`, response.text());
+        console.log(`✅ Success with ${ modelName }: `, response.text());
         return true;
     } catch (error) {
-        console.error(`❌ Failed with ${modelName}:`, error.message);
+        console.error(`❌ Failed with ${ modelName }: `, error.message);
         return false;
     }
 }

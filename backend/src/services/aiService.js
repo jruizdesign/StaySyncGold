@@ -1,9 +1,8 @@
-const { GoogleGenerativeAI, SchemaType } = require('@google/generative-ai');
-
+import { GoogleGenAI } from '@google/genai';
 // ... (existing code)
 
-// Initialize Gemini AI
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+// Initialize Gemini GoogleGenAI
+const ai = new GoogleGenAI(process.env.GEMINI_API_KEY);
 
 /**
  * Generate AI insights for a property based on operational data
@@ -16,9 +15,16 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
  */
 async function generatePropertyInsights(propertyData) {
     try {
-        const model = genAI.getGenerativeModel({ model: 'gemini-3-flash-preview' });
+        const model = genAI.getGenerativeModel({
+            model: 'gemini-3-flash-preview',
+            systemInstruction: 'You are an AI assistant for a hotel property management system called StaySync. Analyze the following operational data and provide a brief, actionable insight for the property manager.'
+        });
 
-        // Build context from property data
+        // Initial content to prime the model (optional, but good for setting tone)
+        // const initialResponse = await model.generateContent('Hello, ready for daily insights?');
+        // console.log('Initial AI response:', initialResponse.response.text());
+
+        // Build context from property data for the main prompt
         const context = buildPropertyContext(propertyData);
 
         const prompt = `You are an AI assistant for a hotel property management system called StaySync. 
@@ -38,7 +44,6 @@ Provide your response in the following JSON format:
 Keep it professional, concise, and actionable. Focus on the most important operational priority.`;
 
         const result = await model.generateContent(prompt);
-        const response = await result.response;
         const text = response.text();
 
         // Parse JSON response
@@ -152,7 +157,7 @@ async function analyzeMaintenanceRequest(description) {
         const model = genAI.getGenerativeModel({
             model: 'gemini-3-flash-preview',
             generationConfig: {
-                responseMimeType: "application/json",
+                responseMimeType: "application/json", // Use responseMimeType for JSON output
                 responseSchema: {
                     type: SchemaType.OBJECT,
                     properties: {
