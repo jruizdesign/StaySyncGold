@@ -1,16 +1,19 @@
 require('dotenv').config();
 const { GoogleGenAI } = require('@google/genai');
 
-async function testModel(modelName)g model: ${ modelName }...`);
+async function testModel(modelName) {
+    console.log(`Testing model: ${modelName}...`);
     try {
-        const genAI = new GoogleGenAI(process.env.GEMINI_API_KEY);
-        const model = genAI.getGenerativeModel({ model: modelName });
-        const result = await model.generateContent("Hello, are you there?");
-        const response = await result.response;
-        console.log(`✅ Success with ${ modelName }: `, response.text());
+        const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+        const result = await genAI.models.generateContent({
+            model: modelName,
+            contents: "Hello, are you there?"
+        });
+        const responseText = result.text;
+        console.log(`✅ Success with ${modelName}: `, responseText);
         return true;
     } catch (error) {
-        console.error(`❌ Failed with ${ modelName }: `, error.message);
+        console.error(`❌ Failed with ${modelName}: `, error.message, error);
         return false;
     }
 }
@@ -22,9 +25,9 @@ async function run() {
     }
 
     await testModel('gemini-3-flash-preview');
-    await testModel('gemini-3.0-flash-001');
-    await testModel('gemini-2.0-flash-exp');
-    await testModel('gemini-1.5-flash');
+    // Keeping older models just in case for testing, but 3 is priority
+    // await testModel('gemini-2.0-flash-exp');
+    // await testModel('gemini-1.5-flash');
 }
 
 run();

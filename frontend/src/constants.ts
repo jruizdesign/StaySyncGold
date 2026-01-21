@@ -10,7 +10,7 @@ export const MOCK_ROOMS: Room[] = Array.from({ length: 20 }, (_, i) => ({
       i % 7 === 0 ? RoomStatus.INSPECT :
         i % 11 === 0 ? RoomStatus.OOO :
           i % 3 === 0 ? RoomStatus.OCCUPIED : RoomStatus.CLEAN,
-  rate: i % 3 === 0 ? 350 : 180,
+  price_per_night: i % 3 === 0 ? 350 : 180,
   floor: 1,
   capacity: i % 3 === 0 ? 4 : 2
 }));
