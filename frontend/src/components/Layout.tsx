@@ -32,7 +32,7 @@ const SidebarLink: React.FC<SidebarLinkProps> = ({ to, icon: Icon, label }) => {
       to={to}
       className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${isActive
         ? 'bg-gold-500 text-white shadow-sm'
-        : 'text-slate-400 hover:text-white hover:bg-slate-800'
+        : 'text-slate-300 hover:text-white hover:bg-slate-800'
         }`}
     >
       <Icon className="w-5 h-5" />
@@ -104,7 +104,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         <div className="p-4 border-t border-slate-800">
           <button
             onClick={handleSignOut}
-            className="flex items-center gap-3 w-full px-4 py-3 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+            className="flex items-center gap-3 w-full px-4 py-3 text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
           >
             <LogOut className="w-5 h-5" />
             <span className="font-medium">Sign Out</span>
