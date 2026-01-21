@@ -27,7 +27,7 @@ async function run() {
     await testModel('gemini-3-flash-preview');
     // Keeping older models just in case for testing, but 3 is priority
     // await testModel('gemini-2.0-flash-exp');
-    // await testModel('gemini-1.5-flash');
+    // await testModel('gemini-3-flash-preview');
 }
 
 run();

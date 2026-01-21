@@ -2,14 +2,13 @@
 
 // Define mocks *before* they are used in the mock factory
 const mockGenerateContent = jest.fn();
-const mockGetGenerativeModel = jest.fn(() => ({
-    generateContent: mockGenerateContent,
-}));
 
 // Mock the '@google/genai' library. This is hoisted.
 jest.mock('@google/genai', () => ({
     GoogleGenAI: jest.fn(() => ({
-        getGenerativeModel: mockGetGenerativeModel,
+        models: {
+            generateContent: mockGenerateContent
+        }
     })),
 }));
 
@@ -25,7 +24,6 @@ describe('AI Service', () => {
     beforeEach(() => {
         // Clear mock history before each test
         mockGenerateContent.mockClear();
-        mockGetGenerativeModel.mockClear();
     });
 
     describe('generatePropertyInsights', () => {
@@ -52,7 +50,7 @@ describe('AI Service', () => {
 
             const insights = await generatePropertyInsights(propertyData);
 
-            expect(mockGetGenerativeModel).toHaveBeenCalledWith(expect.objectContaining({ model: 'gemini-1.5-flash-latest' }));
+            expect(mockGenerateContent).toHaveBeenCalledWith(expect.objectContaining({ model: 'gemini-3-flash-preview' }));
             expect(mockGenerateContent).toHaveBeenCalledTimes(1);
             expect(insights).toHaveProperty('title', 'High Priority Maintenance');
             expect(insights).toHaveProperty('subtitle', 'MAINTENANCE');
@@ -61,7 +59,7 @@ describe('AI Service', () => {
         });
 
         it('should return fallback insights on failure', async () => {
-            const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+            const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
             mockGenerateContent.mockRejectedValue(new Error('API Error'));
 
             const insights = await generatePropertyInsights({});
@@ -87,13 +85,13 @@ describe('AI Service', () => {
             const dailyData = { revenue: 5000, debt: 100 };
             const briefing = await generateFinancialBriefing(dailyData);
 
-            expect(mockGetGenerativeModel).toHaveBeenCalledWith({ model: 'gemini-1.5-flash-latest' });
+            expect(mockGenerateContent).toHaveBeenCalledWith(expect.objectContaining({ model: 'gemini-3-flash-preview' }));
             expect(mockGenerateContent).toHaveBeenCalledTimes(1);
             expect(briefing).toBe(briefingText);
         });
 
         it('should return a fallback message on failure', async () => {
-            const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+            const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
             mockGenerateContent.mockRejectedValue(new Error('API Error'));
             const briefing = await generateFinancialBriefing({});
             expect(briefing).toBe('Unable to generate financial briefing. AI Service Unavailable.');
@@ -119,13 +117,13 @@ describe('AI Service', () => {
             const description = 'The main water pipe is leaking in the basement.';
             const result = await analyzeMaintenanceRequest(description);
 
-            expect(mockGetGenerativeModel).toHaveBeenCalledWith(expect.objectContaining({ model: 'gemini-1.5-flash-latest' }));
+            expect(mockGenerateContent).toHaveBeenCalledWith(expect.objectContaining({ model: 'gemini-3-flash-preview' }));
             expect(mockGenerateContent).toHaveBeenCalledTimes(1);
             expect(result).toEqual(analysis);
         });
 
         it('should return a fallback analysis on failure', async () => {
-            const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+            const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
             mockGenerateContent.mockRejectedValue(new Error('API Error'));
             const description = 'The TV remote is missing.';
             const result = await analyzeMaintenanceRequest(description);
@@ -154,13 +152,13 @@ describe('AI Service', () => {
             const context = 'Occupancy: 15/20 rooms (75%)';
             const response = await generateChatResponse(userPrompt, context);
 
-            expect(mockGetGenerativeModel).toHaveBeenCalledWith({ model: 'gemini-1.5-flash-latest' });
+            expect(mockGenerateContent).toHaveBeenCalledWith(expect.objectContaining({ model: 'gemini-3-flash-preview' }));
             expect(mockGenerateContent).toHaveBeenCalledTimes(1);
             expect(response).toBe(responseText);
         });
 
         it('should return a fallback message on failure', async () => {
-            const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+            const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
             mockGenerateContent.mockRejectedValue(new Error('API Error'));
             const response = await generateChatResponse('Hi', '');
             expect(response).toBe('Sorry, I encountered an error communicating with the AI service.');

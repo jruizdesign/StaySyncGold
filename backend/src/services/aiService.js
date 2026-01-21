@@ -1,7 +1,7 @@
 const { GoogleGenAI } = require('@google/genai');
 
 // Initialize Gemini GoogleGenAI
-const genAI = new GoogleGenAI(process.env.GEMINI_API_KEY);
+const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 /**
  * Generate AI insights for a property based on operational data
@@ -33,13 +33,15 @@ Provide your response in the following JSON format:
 
 Keep it professional, concise, and actionable. Focus on the most important operational priority.`;
 
-        const model = genAI.getGenerativeModel({
-            model: 'gemini-1.5-flash-latest',
-            systemInstruction: 'You are an AI assistant for a hotel property management system called StaySync. Analyze the following operational data and provide a brief, actionable insight for the property manager.'
+        const result = await genAI.models.generateContent({
+            model: 'gemini-3-flash-preview',
+            contents: prompt,
+            config: {
+                systemInstruction: 'You are an AI assistant for a hotel property management system called StaySync. Analyze the following operational data and provide a brief, actionable insight for the property manager.'
+            }
         });
 
-        const result = await model.generateContent(prompt);
-        const text = result.response.text();
+        const text = result.text;
 
         // Parse JSON response
         const jsonMatch = text.match(/\{[\s\S]*\}/);
@@ -113,8 +115,6 @@ function buildPropertyContext(data) {
  */
 async function generateFinancialBriefing(dailyData) {
     try {
-        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash-latest' });
-
         const prompt = `
             You are a specialized Financial Analyst for a Hotel Manager.
             Analyze the following daily financial data and provide a strictly formatted EXECUTIVE BRIEFING.
@@ -130,8 +130,11 @@ async function generateFinancialBriefing(dailyData) {
             Keep it concise, professional, and actionable. Do not use markdown headers other than bold keys.
         `;
 
-        const result = await model.generateContent(prompt);
-        return result.response.text();
+        const result = await genAI.models.generateContent({
+            model: 'gemini-3-flash-preview',
+            contents: prompt
+        });
+        return result.text;
     } catch (error) {
         console.error("AI Financial Briefing Error:", error);
         return "Unable to generate financial briefing. AI Service Unavailable.";
@@ -146,11 +149,6 @@ async function generateFinancialBriefing(dailyData) {
  */
 async function analyzeMaintenanceRequest(description) {
     try {
-        const model = genAI.getGenerativeModel({
-            model: 'gemini-1.5-flash-latest',
-            generationConfig: { responseMimeType: 'application/json' },
-        });
-
         const prompt = `Analyze the following hotel room issue report and return a JSON object with your analysis.
 
 Issue Description: "${description}"
@@ -164,8 +162,14 @@ Return a JSON object with the following structure:
 }
 `;
 
-        const result = await model.generateContent(prompt);
-        const text = result.response.text();
+        const result = await genAI.models.generateContent({
+            model: 'gemini-3-flash-preview',
+            contents: prompt,
+            config: {
+                responseMimeType: 'application/json'
+            }
+        });
+        const text = result.text;
         return JSON.parse(text);
     } catch (error) {
         console.error("AI Maintenance Analysis Error:", error);
@@ -181,7 +185,6 @@ Return a JSON object with the following structure:
 
 async function generateChatResponse(userPrompt, context) {
     try {
-        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash-latest' });
         const systemPrompt = `System: You are an AI assistant for a hotel PMS called StaySyncGold. 
       Use the following context to answer the user's question concisely.
       
@@ -189,8 +192,11 @@ async function generateChatResponse(userPrompt, context) {
       
       User: ${userPrompt}`;
 
-        const result = await model.generateContent(systemPrompt);
-        return result.response.text();
+        const result = await genAI.models.generateContent({
+            model: 'gemini-3-flash-preview',
+            contents: systemPrompt
+        });
+        return result.text;
     } catch (error) {
         console.error("AI Chat Error:", error);
         return "Sorry, I encountered an error communicating with the AI service.";
