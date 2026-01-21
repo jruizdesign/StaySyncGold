@@ -6,6 +6,8 @@ import { Database, Users, Building, ShieldCheck, Plus, Layout, Globe, Loader, Gi
 import { Property, ChannelSetting } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { CommitTracker } from '../components/CommitTracker';
+import { createStaff } from '../services/staff';
+
 
 // --- Sub-Components ---
 
@@ -165,23 +167,24 @@ const UserManagement: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [showAddForm, setShowAddForm] = useState(false);
     const [submitting, setSubmitting] = useState(false);
-    const [newStaff, setNewStaff] = useState({ firstname: '', last_name: '', email: '', role: 'Front Desk' });
+    const [newStaff, setNewStaff] = useState({ firstname: '', last_name: '', email: '', role: 'Front Desk', pin: '' });
 
     const handleAddStaff = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!user?.propertyId) return;
         setSubmitting(true);
         try {
-            const { error } = await supabase.from('staff').insert([{
+            await createStaff({
                 property_id: user.propertyId,
                 firstname: newStaff.firstname,
                 last_name: newStaff.last_name,
                 email: newStaff.email,
                 role: newStaff.role,
-                status: 'Active'
-            }]);
-            if (error) throw error;
-            setNewStaff({ firstname: '', last_name: '', email: '', role: 'Front Desk' });
+                pin: newStaff.pin,
+                phone_num: '' // Default empty phone
+            });
+
+            setNewStaff({ firstname: '', last_name: '', email: '', role: 'Front Desk', pin: '' });
             setShowAddForm(false);
             fetchUsers();
             alert('Staff member added successfully');
@@ -223,14 +226,30 @@ const UserManagement: React.FC = () => {
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <Input label="Email" type="email" value={newStaff.email} onChange={e => setNewStaff({ ...newStaff, email: e.target.value })} required />
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">Role</label>
-                                    <select className="w-full p-2 border rounded-md" value={newStaff.role} onChange={e => setNewStaff({ ...newStaff, role: e.target.value })}>
-                                        <option>Front Desk</option>
-                                        <option>Housekeeper</option>
-                                        <option>Manager</option>
-                                        <option>Maintenance</option>
-                                    </select>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 mb-1">Role</label>
+                                        <select className="w-full p-2 border rounded-md" value={newStaff.role} onChange={e => setNewStaff({ ...newStaff, role: e.target.value })}>
+                                            <option>Front Desk</option>
+                                            <option>Housekeeper</option>
+                                            <option>Manager</option>
+                                            <option>Maintenance</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 mb-1">PIN (4-digits)</label>
+                                        <input
+                                            type="text"
+                                            className="w-full p-2 border border-slate-300 rounded-md"
+                                            value={newStaff.pin}
+                                            onChange={e => {
+                                                const val = e.target.value.replace(/\D/g, '').slice(0, 4);
+                                                setNewStaff({ ...newStaff, pin: val });
+                                            }}
+                                            required
+                                            placeholder="1234"
+                                        />
+                                    </div>
                                 </div>
                             </div>
                             <div className="flex justify-end">

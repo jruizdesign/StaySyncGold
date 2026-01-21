@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { getProperties, createProperty, assignUserRole } from '../../services/admin';
 import { getUsers } from '../../services/users';
+import { createStaff } from '../../services/staff';
 
 const AdminControlCenterPage = () => {
   const [properties, setProperties] = useState([]);

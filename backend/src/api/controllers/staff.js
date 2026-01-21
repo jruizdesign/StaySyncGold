@@ -100,7 +100,7 @@ const clockOut = async (req, res, next) => {
 const getClockHistory = async (req, res, next) => {
   try {
     // Assuming property_id is passed in the request, e.g., from a middleware
-    const { property_id } = req.query; // Or req.user.property_id after auth
+    const { property_id, staff_id } = req.query; // Or req.user.property_id after auth
     if (!property_id) {
       return res.status(400).json({ message: 'Property ID is required' });
     }
@@ -116,8 +116,9 @@ const getClockHistory = async (req, res, next) => {
       FROM staff_clock_events sce
       JOIN staff s ON sce.staff_id = s.id
       WHERE sce.property_id = $1
+      ${staff_id ? 'AND sce.staff_id = $2' : ''}
       ORDER BY sce.timestamp DESC`,
-      [property_id]
+      staff_id ? [property_id, staff_id] : [property_id]
     );
     res.status(200).json(rows);
   } catch (error) {

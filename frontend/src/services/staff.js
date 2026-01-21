@@ -78,9 +78,13 @@ export const clockOut = async (pin, property_id) => {
   }
 };
 
-export const getClockHistory = async (property_id) => {
+export const getClockHistory = async (property_id, staff_id = null) => {
   try {
-    const response = await fetch(`${API_URL}/clock-history?property_id=${property_id}`);
+    let url = `${API_URL}/clock-history?property_id=${property_id}`;
+    if (staff_id) {
+      url += `&staff_id=${staff_id}`;
+    }
+    const response = await fetch(url);
     if (!response.ok) {
       throw new Error('Failed to fetch clock history');
     }

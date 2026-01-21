@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Button, Modal } from '../components/UIComponents';
 import StaffCard from '../components/StaffCard';
-import { Clock, LogOut, ArrowLeft, Loader, Coffee, Play, ChevronLeft, User } from 'lucide-react';
+import { Clock, LogOut, ArrowLeft, Loader, Coffee, Play, ChevronLeft, Search, User, Lock } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { Staff, StaffShift } from '../types';
+
+// --- Sub-Components ---
 
 const ShiftTimer: React.FC<{ startTime: string }> = ({ startTime }) => {
   const [duration, setDuration] = useState('');
@@ -21,34 +23,14 @@ const ShiftTimer: React.FC<{ startTime: string }> = ({ startTime }) => {
     };
 
     updateTimer();
-    const interval = setInterval(updateTimer, 60000); // Update every minute
+    const interval = setInterval(updateTimer, 60000);
     return () => clearInterval(interval);
   }, [startTime]);
 
-  return <h3 className="text-3xl font-bold text-slate-800">{duration}</h3>;
+  return <h3 className="text-4xl font-bold text-slate-900 tracking-tight">{duration}</h3>;
 };
 
-const LuminaClock: React.FC = () => {
-  const [time, setTime] = useState(new Date());
-
-  useEffect(() => {
-    const timer = setInterval(() => setTime(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
-
-  const hours = time.getHours().toString().padStart(2, '0');
-  const minutes = time.getMinutes().toString().padStart(2, '0');
-  const seconds = time.getSeconds().toString().padStart(2, '0');
-
-  return (
-    <>
-      <span className="text-white">{hours}:{minutes}</span>
-      <span className="text-3xl text-slate-500 font-bold self-end mb-2">:{seconds}</span>
-    </>
-  );
-};
-
-const RealtimeClock: React.FC = () => {
+const BigClock: React.FC = () => {
   const [time, setTime] = useState(new Date());
 
   useEffect(() => {
@@ -57,69 +39,62 @@ const RealtimeClock: React.FC = () => {
   }, []);
 
   return (
-    <div className="flex flex-col items-center justify-center p-6 bg-slate-900 rounded-2xl text-white shadow-lg border border-slate-700">
-      <h2 className="text-5xl font-mono font-bold tracking-wider text-gold-500">
-        {time.toLocaleTimeString([], { hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+    <div className="flex flex-col items-center justify-center">
+      <h2 className="text-[8rem] leading-none font-bold tracking-tighter text-white font-mono">
+        {time.toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit' })}
       </h2>
-      <p className="text-slate-400 mt-2 font-medium uppercase tracking-widest text-sm">
+      <p className="text-2xl text-slate-400 font-medium uppercase tracking-[0.2em] mt-2">
         {time.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}
       </p>
     </div>
   );
 };
 
+// --- Main Layout ---
+
 const StaffKiosk: React.FC = () => {
   const { user } = useAuth();
   const [staffList, setStaffList] = useState<Staff[]>([]);
+  const [filteredStaff, setFilteredStaff] = useState<Staff[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+
   const [selectedStaff, setSelectedStaff] = useState<Staff | null>(null);
   const [loading, setLoading] = useState(true);
-  const [showPinModal, setShowPinModal] = useState(false);
+
+  // Auth State
   const [pin, setPin] = useState('');
-  const [error, setError] = useState('');
+  const [authError, setAuthError] = useState('');
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
   const [currentShift, setCurrentShift] = useState<StaffShift | null>(null);
-  const [view, setView] = useState<'grid' | 'personal'>('grid');
 
-  const [stats, setStats] = useState({ active: 0, onBreak: 0 });
-
+  // Initial Load
   useEffect(() => {
     fetchStaff();
-    fetchStats();
-
-    // Refresh stats every minute
-    const interval = setInterval(fetchStats, 60000);
-    return () => clearInterval(interval);
   }, [user?.propertyId]);
 
-  const fetchStats = async () => {
-    if (!user?.propertyId) return;
-    try {
-      // Get active shifts (status='active')
-      const { count: activeCount, error: activeError } = await supabase
-        .from('staff_shifts')
-        .select('*', { count: 'exact', head: true })
-        .eq('property_id', user.propertyId)
-        .eq('status', 'active')
-        .is('clock_out', null);
-
-      // Get break shifts (status='on_break')
-      const { count: breakCount, error: breakError } = await supabase
-        .from('staff_shifts')
-        .select('*', { count: 'exact', head: true })
-        .eq('property_id', user.propertyId)
-        .eq('status', 'on_break')
-        .is('clock_out', null);
-
-      if (activeError) throw activeError;
-      if (breakError) throw breakError;
-
-      setStats({
-        active: activeCount || 0,
-        onBreak: breakCount || 0
-      });
-    } catch (err) {
-      console.error('Error fetching stats:', err);
+  // Search Filter
+  useEffect(() => {
+    if (!searchQuery) {
+      setFilteredStaff(staffList);
+    } else {
+      const lower = searchQuery.toLowerCase();
+      setFilteredStaff(staffList.filter(s =>
+        (s.name || '').toLowerCase().includes(lower) ||
+        (s.firstname || '').toLowerCase().includes(lower)
+      ));
     }
-  };
+  }, [searchQuery, staffList]);
+
+  // Reset state when selecting new staff
+  useEffect(() => {
+    if (selectedStaff) {
+      setPin('');
+      setAuthError('');
+      setIsAuthenticated(false);
+      setCurrentShift(null);
+    }
+  }, [selectedStaff]);
 
   const fetchStaff = async () => {
     if (!user?.propertyId) return;
@@ -131,16 +106,14 @@ const StaffKiosk: React.FC = () => {
 
       if (error) throw error;
 
-      // Map DB fields to UI type if needed
       const mappedData = (data || []).map((s: any) => ({
         ...s,
         name: s.name || `${s.firstname || ''} ${s.last_name || ''}`.trim() || 'Unknown Staff'
       }));
 
-      // Sort by name
       mappedData.sort((a: Staff, b: Staff) => (a.name || '').localeCompare(b.name || ''));
-
       setStaffList(mappedData);
+      setFilteredStaff(mappedData);
     } catch (err) {
       console.error('Error fetching staff:', err);
     } finally {
@@ -149,38 +122,25 @@ const StaffKiosk: React.FC = () => {
   };
 
   const fetchCurrentShift = async (staffId: string) => {
-    // Find active shift (not completed)
     try {
       const { data, error } = await supabase
         .from('staff_shifts')
         .select('*')
         .eq('staff_id', staffId)
-        .is('clock_out', null) // Still open
+        .is('clock_out', null)
         .single();
 
-      if (error && error.code !== 'PGRST116') throw error; // PGRST116 is "no rows found"
+      if (error && error.code !== 'PGRST116') throw error;
       setCurrentShift(data || null);
     } catch (err) {
       console.error('Error fetching shift:', err);
     }
   };
 
-  const handleStaffClick = (staff: Staff) => {
-    setSelectedStaff(staff);
-    setPin('');
-    setError('');
-    setShowPinModal(true);
-  };
-
   const handlePinSubmit = async () => {
     if (!selectedStaff || !user?.propertyId) return;
 
-    // In real app, verify PIN securely. For demo, matching local state or assuming success if non-empty
-    // Simple check against fetched staff record (WARNING: Sensitive data should be handled carefully)
-    // Here we assume the staff record fetched includes the 'pin' field.
-    // If Supabase RLS policies are good, we can verify by trying to SELECT with PIN match.
-
-    // Re-verify with DB to be safe
+    // Verify PIN against DB
     const { data } = await supabase
       .from('staff')
       .select('id')
@@ -189,14 +149,13 @@ const StaffKiosk: React.FC = () => {
       .single();
 
     if (!data) {
-      setError('Invalid PIN');
+      setAuthError('Invalid PIN');
       setPin('');
       return;
     }
 
-    setShowPinModal(false);
     await fetchCurrentShift(selectedStaff.id);
-    setView('personal');
+    setIsAuthenticated(true);
   };
 
   const handleClockIn = async () => {
@@ -215,7 +174,6 @@ const StaffKiosk: React.FC = () => {
 
       if (error) throw error;
       setCurrentShift(data);
-      // Update local staff list status for UI immediately?
     } catch (err) {
       console.error('Clock in error:', err);
       alert('Failed to clock in');
@@ -234,9 +192,12 @@ const StaffKiosk: React.FC = () => {
         .eq('id', currentShift.id);
 
       if (error) throw error;
-      setCurrentShift(null);
-      // Auto-return to grid after a delay?
-      setTimeout(() => setView('grid'), 2000);
+
+      // Logout after clock out
+      setTimeout(() => {
+        setSelectedStaff(null);
+      }, 1500);
+      setCurrentShift(null); // Clear UI immediately to show filtered state
     } catch (err) {
       console.error('Clock out error:', err);
     }
@@ -247,7 +208,6 @@ const StaffKiosk: React.FC = () => {
     const newStatus = start ? 'on_break' : 'active';
 
     try {
-      // Update main shift status
       const { error: shiftError } = await supabase
         .from('staff_shifts')
         .update({ status: newStatus })
@@ -256,16 +216,11 @@ const StaffKiosk: React.FC = () => {
       if (shiftError) throw shiftError;
 
       if (start) {
-        // Create break record
-        await supabase
-          .from('staff_breaks')
-          .insert({
-            shift_id: currentShift.id,
-            start_time: new Date().toISOString()
-          });
+        await supabase.from('staff_breaks').insert({
+          shift_id: currentShift.id,
+          start_time: new Date().toISOString()
+        });
       } else {
-        // Close open break record
-        // Find the open break for this shift
         const { data: openBreak } = await supabase
           .from('staff_breaks')
           .select('id')
@@ -274,271 +229,251 @@ const StaffKiosk: React.FC = () => {
           .single();
 
         if (openBreak) {
-          await supabase
-            .from('staff_breaks')
-            .update({ end_time: new Date().toISOString() })
-            .eq('id', openBreak.id);
+          await supabase.from('staff_breaks').update({ end_time: new Date().toISOString() }).eq('id', openBreak.id);
         }
       }
 
-      // Refresh shift
       setCurrentShift(prev => prev ? { ...prev, status: newStatus } : null);
     } catch (err) {
       console.error('Break toggle error:', err);
     }
   };
 
-  const renderPersonalDashboard = () => (
-    <div className="max-w-6xl mx-auto w-full animate-fadeIn pb-20">
-      <button onClick={() => setView('grid')} className="mb-6 flex items-center text-slate-500 hover:text-slate-900 transition-colors">
-        <ChevronLeft className="w-5 h-5" /> Back to Staff List
-      </button>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Left Column: Identity & Time */}
-        <div className="space-y-6">
-          <div className="bg-white rounded-3xl p-1 shadow-xl shadow-slate-200/50">
-            {selectedStaff && (
-              <StaffCard
-                staff={selectedStaff}
-                onClick={() => { }} // No-op for display
-                status={currentShift ? currentShift.status as any : 'idle'}
-              />
-            )}
-          </div>
-
-          <RealtimeClock />
-
-          <div className="bg-white rounded-2xl p-6 shadow-md border border-slate-100">
-            <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-2">Current Status</h3>
-            <div className={`p-4 rounded-xl flex items-center gap-3 ${!currentShift ? 'bg-slate-100 text-slate-500' :
-              currentShift.status === 'active' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' :
-                'bg-amber-50 text-amber-600 border border-amber-100'
-              }`}>
-              <div className={`w-3 h-3 rounded-full ${!currentShift ? 'bg-slate-400' :
-                currentShift.status === 'active' ? 'bg-emerald-500 animate-pulse' :
-                  'bg-amber-500 animate-pulse'
-                }`} />
-              <span className="font-bold text-lg">
-                {!currentShift ? 'Off Duty' : currentShift.status === 'active' ? 'Active Shift' : 'On Break'}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Right Column: Actions */}
-        <div className="space-y-6">
-          <div className="bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-100 h-full flex flex-col">
-            <div className="p-8 flex-1 flex flex-col justify-center">
-              {!currentShift ? (
-                <button onClick={handleClockIn} className="w-full py-12 bg-emerald-500 hover:bg-emerald-600 active:scale-[0.99] text-white rounded-2xl flex flex-col items-center justify-center gap-4 transition-all shadow-lg shadow-emerald-500/30 hover:shadow-xl hover:shadow-emerald-500/40">
-                  <Clock className="w-16 h-16" />
-                  <div className="text-center">
-                    <span className="block text-3xl font-bold">Start Shift</span>
-                    <span className="text-emerald-100">Record accurate start time</span>
-                  </div>
-                </button>
-              ) : (
-                <div className="space-y-4">
-                  <button
-                    onClick={() => handleBreak(currentShift.status === 'active')}
-                    className={`w-full py-8 rounded-2xl flex flex-col items-center justify-center gap-3 transition-all shadow-lg active:scale-[0.99] ${currentShift.status === 'active'
-                      ? 'bg-amber-500 hover:bg-amber-600 text-white shadow-amber-500/30'
-                      : 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-emerald-500/30'
-                      }`}
-                  >
-                    {currentShift.status === 'active' ? <Coffee className="w-10 h-10" /> : <Play className="w-10 h-10" />}
-                    <span className="text-2xl font-bold">{currentShift.status === 'active' ? 'Start Break' : 'End Break'}</span>
-                  </button>
-
-                  <button
-                    onClick={handleClockOut}
-                    className="w-full py-8 bg-rose-500 hover:bg-rose-600 active:scale-[0.99] text-white rounded-2xl flex flex-col items-center justify-center gap-3 transition-all shadow-lg shadow-rose-500/30 hover:shadow-xl hover:shadow-rose-500/40"
-                  >
-                    <LogOut className="w-10 h-10" />
-                    <span className="text-2xl font-bold">End Shift</span>
-                  </button>
-
-                  {/* Stats Card */}
-                  <Card className="flex flex-col justify-center items-center bg-slate-50 border-none shadow-inner py-6 mt-4">
-                    <p className="text-slate-500 text-sm font-medium uppercase tracking-wider mb-1">Shift Duration</p>
-                    <ShiftTimer startTime={currentShift.clock_in} />
-                  </Card>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+  const handleLogout = () => {
+    setSelectedStaff(null);
+  };
 
   if (loading) {
-    return <div className="min-h-screen bg-slate-100 flex items-center justify-center"><Loader className="w-8 h-8 animate-spin text-slate-400" /></div>;
+    return <div className="min-h-screen bg-slate-950 flex items-center justify-center"><Loader className="w-8 h-8 animate-spin text-gold-500" /></div>;
   }
 
   return (
-    <div className="min-h-screen bg-slate-100 flex flex-col">
-      <div className="bg-white border-b border-slate-200 px-8 py-5 flex justify-between items-center sticky top-0 z-40 bg-white/80 backdrop-blur-lg">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-slate-900 rounded-lg text-gold-500">
-            <Clock className="w-6 h-6" />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold text-slate-900">Staff Kiosk</h1>
-            <p className="text-xs text-slate-500 font-medium">
-              {new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}
-            </p>
+    <div className="min-h-screen bg-slate-950 grid grid-cols-12 overflow-hidden font-sans">
+
+      {/* --- LEFT COLUMN: Staff List --- */}
+      <div className="col-span-4 border-r border-slate-800 bg-slate-900 flex flex-col h-screen">
+        {/* Header */}
+        <div className="p-6 border-b border-slate-800 bg-slate-900/50 backdrop-blur-md sticky top-0 z-10">
+          <Link to="/dashboard" className="flex items-center text-slate-400 hover:text-white mb-6 text-sm font-medium transition-colors">
+            <ArrowLeft className="w-4 h-4 mr-2" /> Exit Kiosk
+          </Link>
+          <h1 className="text-2xl font-bold text-white mb-1">Staff Access</h1>
+          <p className="text-slate-500 text-sm mb-4">Select your profile to begin</p>
+
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+            <input
+              type="text"
+              placeholder="Search staff..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              className="w-full bg-slate-800 border border-slate-700 rounded-lg py-3 pl-10 pr-4 text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-gold-500/50"
+            />
           </div>
         </div>
-        <Link to="/dashboard" className="text-slate-400 hover:text-slate-900 flex items-center gap-2 text-sm font-medium transition-colors">
-          <ArrowLeft className="w-4 h-4" /> Exit Kiosk
-        </Link>
+
+        {/* List */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
+          {filteredStaff.length === 0 ? (
+            <div className="text-center py-12 text-slate-600">
+              <User className="w-12 h-12 mx-auto mb-3 opacity-20" />
+              <p>No staff found</p>
+            </div>
+          ) : (
+            filteredStaff.map(staff => (
+              <button
+                key={staff.id}
+                onClick={() => setSelectedStaff(staff)}
+                className={`w-full p-4 rounded-xl flex items-center gap-4 transition-all border ${selectedStaff?.id === staff.id
+                  ? 'bg-gold-500 text-white border-gold-400 shadow-lg shadow-gold-500/20'
+                  : 'bg-slate-800/50 text-slate-300 border-slate-700 hover:bg-slate-800 hover:border-slate-600'
+                  }`}
+              >
+                <div className={`w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold ${selectedStaff?.id === staff.id ? 'bg-white/20 text-white' : 'bg-slate-700 text-slate-400'
+                  }`}>
+                  {staff.firstname?.[0]}{staff.last_name?.[0]}
+                </div>
+                <div className="text-left">
+                  <h3 className="font-bold text-lg">{staff.firstname} {staff.last_name}</h3>
+                  <p className={`text-sm ${selectedStaff?.id === staff.id ? 'text-gold-100' : 'text-slate-500'}`}>{staff.role}</p>
+                </div>
+                {selectedStaff?.id === staff.id && <ChevronLeft className="w-5 h-5 ml-auto rotate-180" />}
+              </button>
+            ))
+          )}
+        </div>
       </div>
 
-      <div className="flex-1 p-8 overflow-y-auto">
-        {view === 'grid' ? (
-          <div className="max-w-6xl mx-auto">
-            {/* Lumina Kiosk Banner */}
-            <div className="bg-[#0B1120] rounded-3xl p-8 mb-10 text-white relative overflow-hidden shadow-2xl">
-              <div className="flex flex-col md:flex-row justify-between items-center gap-8 relative z-10">
-
-                {/* Left Side: Title & Stats */}
-                <div className="flex-1">
-                  <h1 className="text-4xl font-black tracking-tight mb-2">STAFF KIOSK</h1>
-                  <p className="text-slate-400 text-xs font-bold tracking-[0.2em] uppercase mb-8">
-                    Property Staff Verification Engine
-                  </p>
-
-                  <div className="flex gap-4">
-                    {/* Active Duty Stat */}
-                    <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4 min-w-[140px] backdrop-blur-sm">
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Active Duty</p>
-                      <div className="flex items-center gap-3">
-                        <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-                        <span className="text-2xl font-bold">
-                          {stats.active}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* On Break Stat */}
-                    <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4 min-w-[140px] backdrop-blur-sm">
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">On Break</p>
-                      <div className="flex items-center gap-3">
-                        <div className="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]" />
-                        <span className="text-2xl font-bold">
-                          {stats.onBreak}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Right Side: Large Clock */}
-                <div className="text-right">
-                  <div className="font-mono text-8xl font-bold tracking-tighter leading-none flex items-baseline justify-end gap-2">
-                    {/* We can use the RealtimeClock component logic here or inline it for custom styling */}
-                    <LuminaClock />
-                  </div>
-                  <div className="flex items-center justify-end gap-2 mt-4 text-emerald-500/80">
-                    <div className="w-3 h-3 border-2 border-current rounded-[3px] flex items-center justify-center">
-                      <div className="w-1.5 h-2 bg-current rounded-t-[1px]" />
-                      {/* Simple lock icon representation or use Lucide */}
-                    </div>
-                    <span className="text-[10px] font-bold tracking-[0.2em] uppercase">Secure Terminal Verified</span>
-                  </div>
-                </div>
+      {/* --- RIGHT COLUMN: Workspace --- */}
+      <div className="col-span-8 bg-slate-950 relative flex flex-col h-screen">
+        {!selectedStaff ? (
+          // STATE: IDLE
+          <div className="flex-1 flex flex-col items-center justify-center p-12 text-center animate-fadeIn">
+            <div className="mb-12">
+              <BigClock />
+            </div>
+            <div className="bg-slate-900 border border-slate-800 p-8 rounded-2xl max-w-md w-full">
+              <div className="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Lock className="w-8 h-8 text-slate-500" />
               </div>
+              <h3 className="text-xl font-bold text-white mb-2">Terminal Locked</h3>
+              <p className="text-slate-500">Please select your profile from the list on the left to clock in or manage your shift.</p>
+            </div>
+          </div>
+        ) : !isAuthenticated ? (
+          // STATE: PIN ENTRY
+          <div className="flex-1 flex flex-col items-center justify-center p-12 animate-fadeIn">
+            <div className="text-center mb-8">
+              <div className="w-24 h-24 bg-slate-800 rounded-full mx-auto mb-6 flex items-center justify-center text-3xl font-bold text-gold-500 border-4 border-slate-700">
+                {selectedStaff.firstname?.[0]}{selectedStaff.last_name?.[0]}
+              </div>
+              <h2 className="text-3xl font-bold text-white">Welcome, {selectedStaff.firstname}</h2>
+              <p className="text-slate-400 mt-2">Enter your PIN to continue</p>
             </div>
 
-            {staffList.length === 0 ? (
-              <div className="text-center py-20 bg-white rounded-3xl border border-slate-100 shadow-sm">
-                <User className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-                <h3 className="text-xl font-bold text-slate-900">No Staff Members Found</h3>
-                <p className="text-slate-500 max-w-md mx-auto mt-2">
-                  There are no staff members associated with this property yet.
-                  Please go to the <Link to="/staff" className="text-gold-600 hover:text-gold-700 font-semibold">Staff Management</Link> page to add your team.
-                </p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {staffList.map(staff => (
-                  <StaffCard
-                    key={staff.id}
-                    staff={staff}
-                    onClick={() => handleStaffClick(staff)}
-                    // In real app, fetch and pass actual status per card or via context. 
-                    // For now, idle default.
-                    status="idle"
-                  />
+            <div className="bg-slate-900 p-8 rounded-3xl border border-slate-800 shadow-2xl max-w-[400px] w-full">
+              {/* PIN Display */}
+              <div className="flex justify-center gap-4 mb-8">
+                {[...Array(4)].map((_, i) => (
+                  <div key={i} className={`w-14 h-16 rounded-xl flex items-center justify-center text-3xl font-bold transition-all border-2 ${pin.length > i
+                    ? 'border-gold-500 bg-gold-500/10 text-gold-500'
+                    : 'border-slate-700 bg-slate-800 text-slate-600'
+                    }`}>
+                    {pin.length > i && '•'}
+                  </div>
                 ))}
               </div>
-            )}
 
-            <div className="mt-12 text-center opacity-50 hover:opacity-100 transition-opacity">
-              <Link to="/time-tracking" className="inline-flex items-center text-slate-400 hover:text-slate-600 font-medium transition-colors text-sm">
-                Manager Access
-              </Link>
+              {/* Keypad */}
+              <div className="grid grid-cols-3 gap-4 mb-6">
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
+                  <button
+                    key={num}
+                    onClick={() => setPin(p => p.length < 4 ? p + num : p)}
+                    className="h-20 rounded-xl bg-slate-800 hover:bg-slate-700 active:bg-gold-500 active:text-white border border-slate-700 text-2xl font-bold text-white transition-all shadow-lg active:scale-95"
+                  >
+                    {num}
+                  </button>
+                ))}
+                <div className="col-span-1"></div>
+                <button
+                  onClick={() => setPin(p => p.length < 4 ? p + '0' : p)}
+                  className="h-20 rounded-xl bg-slate-800 hover:bg-slate-700 active:bg-gold-500 active:text-white border border-slate-700 text-2xl font-bold text-white transition-all shadow-lg active:scale-95"
+                >
+                  0
+                </button>
+                <button
+                  onClick={() => setPin(p => p.slice(0, -1))}
+                  className="h-20 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white border border-slate-700 transition-all flex items-center justify-center active:scale-95"
+                >
+                  <ChevronLeft className="w-8 h-8" />
+                </button>
+              </div>
+
+              {authError && <p className="text-red-500 text-center mb-4 animate-shake font-medium">{authError}</p>}
+
+              <button
+                onClick={handlePinSubmit}
+                disabled={pin.length !== 4}
+                className="w-full py-4 bg-gold-500 hover:bg-gold-400 disabled:opacity-50 disabled:hover:bg-gold-500 text-white font-bold rounded-xl text-lg transition-colors"
+              >
+                Verify Identity
+              </button>
             </div>
           </div>
         ) : (
-          renderPersonalDashboard()
+          // STATE: AUTHENTICATED DASHBOARD
+          <div className="flex-1 p-12 flex flex-col animate-slideUp">
+            <div className="flex justify-between items-start mb-12">
+              <div>
+                <h2 className="text-4xl font-bold text-white mb-2">Hello, {selectedStaff.firstname}</h2>
+                <p className="text-slate-400 text-lg">
+                  {currentShift ? 'You are currently clocked in.' : 'Ready to start your shift?'}
+                </p>
+              </div>
+              <button
+                onClick={handleLogout}
+                className="px-6 py-3 bg-slate-800 hover:bg-slate-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
+              >
+                <LogOut className="w-5 h-5" /> Sign Out
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-8 flex-1">
+              {/* Left: Status Card */}
+              <div className="bg-slate-900 rounded-3xl p-8 border border-slate-800 flex flex-col">
+                <h3 className="text-slate-500 font-bold uppercase tracking-wider text-sm mb-6">Current Status</h3>
+
+                <div className="flex-1 flex flex-col items-center justify-center">
+                  <div className={`w-32 h-32 rounded-full flex items-center justify-center mb-6 shadow-2xl ${!currentShift ? 'bg-slate-800 text-slate-500' :
+                    currentShift.status === 'active' ? 'bg-emerald-500 text-white shadow-emerald-500/50 animate-pulse-slow' :
+                      'bg-amber-500 text-white shadow-amber-500/50 animate-pulse-slow'
+                    }`}>
+                    {!currentShift ? <Clock className="w-12 h-12" /> :
+                      currentShift.status === 'active' ? <Clock className="w-12 h-12" /> :
+                        <Coffee className="w-12 h-12" />
+                    }
+                  </div>
+                  <h2 className="text-3xl font-bold text-white mb-2">
+                    {!currentShift ? 'Off Duty' : currentShift.status === 'active' ? 'Active Shift' : 'On Break'}
+                  </h2>
+                  {currentShift && (
+                    <div className="bg-slate-800 px-6 py-3 rounded-xl mt-4 border border-slate-700">
+                      <ShiftTimer startTime={currentShift.clock_in} />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Right: Actions */}
+              <div className="space-y-6 flex flex-col">
+                {!currentShift ? (
+                  <button
+                    onClick={handleClockIn}
+                    className="flex-1 bg-emerald-600 hover:bg-emerald-500 active:scale-[0.98] text-white rounded-3xl p-8 flex flex-col items-center justify-center gap-4 transition-all shadow-xl shadow-emerald-900/20 group"
+                  >
+                    <div className="w-20 h-20 rounded-full bg-emerald-500/30 flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <Clock className="w-10 h-10" />
+                    </div>
+                    <div className="text-center">
+                      <span className="block text-3xl font-bold">Start Shift</span>
+                      <span className="text-emerald-100">Record start time</span>
+                    </div>
+                  </button>
+                ) : (
+                  <>
+                    <button
+                      onClick={() => handleBreak(currentShift.status === 'active')}
+                      className={`flex-1 rounded-3xl p-6 flex items-center justify-center gap-6 transition-all shadow-xl active:scale-[0.98] ${currentShift.status === 'active'
+                        ? 'bg-amber-600 hover:bg-amber-500 text-white shadow-amber-900/20'
+                        : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-900/20'
+                        }`}
+                    >
+                      {currentShift.status === 'active' ? <Coffee className="w-12 h-12" /> : <Play className="w-12 h-12" />}
+                      <div className="text-left">
+                        <span className="block text-2xl font-bold">{currentShift.status === 'active' ? 'Start Break' : 'End Break'}</span>
+                        <span className="opacity-80">Pause tracking</span>
+                      </div>
+                    </button>
+
+                    <button
+                      onClick={handleClockOut}
+                      className="flex-1 bg-rose-600 hover:bg-rose-500 active:scale-[0.98] text-white rounded-3xl p-6 flex items-center justify-center gap-6 transition-all shadow-xl shadow-rose-900/20"
+                    >
+                      <LogOut className="w-12 h-12" />
+                      <div className="text-left">
+                        <span className="block text-2xl font-bold">End Shift</span>
+                        <span className="text-rose-100">Clock out now</span>
+                      </div>
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
         )}
       </div>
-
-      <Modal isOpen={showPinModal} onClose={() => setShowPinModal(false)} title={`Enter PIN for ${selectedStaff?.name}`}>
-        <div className="p-4 pt-0">
-          <div className="flex justify-center gap-4 mb-8 mt-4">
-            {[...Array(4)].map((_, i) => (
-              <div key={i} className={`w-12 h-14 rounded-lg flex items-center justify-center text-2xl font-bold transition-all border-2 ${pin.length > i
-                ? 'border-gold-500 bg-gold-50 text-gold-600 scale-105'
-                : 'border-slate-100 bg-slate-50 text-slate-300'
-                }`}>
-                {pin.length > i ? '•' : ''}
-              </div>
-            ))}
-          </div>
-
-          <div className="grid grid-cols-3 gap-3 max-w-[280px] mx-auto">
-            {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
-              <button
-                key={num}
-                onClick={() => setPin(p => p.length < 4 ? p + num : p)}
-                className="h-14 rounded-xl bg-slate-50 hover:bg-white hover:shadow-md border border-slate-100 text-xl font-semibold text-slate-700 transition-all active:scale-95"
-              >
-                {num}
-              </button>
-            ))}
-            <div className="col-span-1"></div>
-            <button
-              onClick={() => setPin(p => p.length < 4 ? p + '0' : p)}
-              className="h-14 rounded-xl bg-slate-50 hover:bg-white hover:shadow-md border border-slate-100 text-xl font-semibold text-slate-700 transition-all active:scale-95"
-            >
-              0
-            </button>
-            <button
-              onClick={() => setPin(p => p.slice(0, -1))}
-              className="h-14 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 transition-all flex items-center justify-center active:scale-95"
-            >
-              <ChevronLeft className="w-6 h-6" />
-            </button>
-          </div>
-
-          {error && <p className="text-red-500 text-center mt-6 font-medium text-sm animate-pulse">{error}</p>}
-
-          <div className="mt-8">
-            <Button
-              className="w-full py-4 text-lg"
-              disabled={pin.length !== 4}
-              onClick={handlePinSubmit}
-            >
-              Continue
-            </Button>
-          </div>
-        </div>
-      </Modal>
-    </div >
+    </div>
   );
 };
 
