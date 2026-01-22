@@ -18,26 +18,11 @@ export const LiveActivityFeed: React.FC = () => {
 
         fetchRecentActivity();
 
-        const channel = supabase
-            .channel('sidebar-activity')
-            .on(
-                'postgres_changes',
-                {
-                    event: 'INSERT',
-                    schema: 'public',
-                    table: 'system_logs',
-                    filter: user.propertyId ? `property_id=eq.${user.propertyId}` : undefined
-                },
-                (payload) => {
-                    setActivities((prev) => [payload.new as Log, ...prev].slice(0, 5));
-                }
-            )
-            .subscribe();
+        // Polling instead of Realtime to prevent DB overload on high-traffic log table
+        const interval = setInterval(fetchRecentActivity, 30000);
 
-        return () => {
-            supabase.removeChannel(channel);
-        };
-    }, [user]);
+        return () => clearInterval(interval);
+    }, [user, user?.propertyId]);
 
     const fetchRecentActivity = async () => {
         let query = supabase

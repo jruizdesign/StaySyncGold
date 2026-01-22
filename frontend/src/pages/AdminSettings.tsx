@@ -1,3 +1,4 @@
+import React, { useState, useEffect } from 'react';
 import { API_BASE_URL } from '../config';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
@@ -1122,26 +1123,7 @@ const SystemLogs: React.FC = () => {
 
     useEffect(() => {
         fetchLogs();
-
-        // Realtime listener for system logs
-        const channel = supabase
-            .channel('public:system_logs')
-            .on(
-                'postgres_changes',
-                {
-                    event: 'INSERT',
-                    schema: 'public',
-                    table: 'system_logs'
-                },
-                (payload) => {
-                    setLogs((currentLogs) => [payload.new, ...currentLogs].slice(0, 100));
-                }
-            )
-            .subscribe();
-
-        return () => {
-            supabase.removeChannel(channel);
-        };
+        // Removed Realtime listener for system_logs to prevent database DoS
     }, [filterLevel, user?.propertyId]);
 
     const fetchLogs = async () => {
@@ -1335,19 +1317,11 @@ const FeatureRequests: React.FC = () => {
     );
 };
 
-// Import logger to log 'Admin Page Viewed' (Example usage, though we handle this in useEffect) 
-import { logger } from '../lib/logger';
-import { useState, useEffect } from 'react';
-
 const AdminSettings: React.FC = () => {
-    const { user } = useAuth(); // Global Auth
-
-    // Determine permissions based on user role (Mock or real)
-    // If user.isAdmin exists -> Super Admin
-    // If user.propertyId exists -> Manager/Owner of that property
+    const { user } = useAuth();
     const isAdmin = !!user?.isAdmin;
     const isManager = !!user?.isManager;
-    const isManagement = isManager || isAdmin; // Managers and Admins can see property settings
+    const isManagement = isManager || isAdmin;
 
     const [activeTab, setActiveTab] = useState<'database' | 'users' | 'property' | 'rooms' | 'channel' | 'superadmin' | 'updates' | 'features' | 'logs'>('property');
     const [searchParams] = useSearchParams();
@@ -1358,18 +1332,6 @@ const AdminSettings: React.FC = () => {
             setActiveTab(tab as any);
         }
     }, [searchParams]);
-
-    // Log access
-    useEffect(() => {
-        if (user) {
-            logger.info('User accessed Admin Settings', {
-                type: 'NAVIGATION',
-                event: 'PAGE_VIEW',
-                user_id: user.id,
-                property_id: user.propertyId
-            });
-        }
-    }, [user]);
 
     return (
         <div className="space-y-6 animate-fadeIn transition-all duration-500">
