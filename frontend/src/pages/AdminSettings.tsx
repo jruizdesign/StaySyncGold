@@ -3,11 +3,11 @@ import { API_BASE_URL } from '../config';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { Button, Card, Input, Select, Badge } from '../components/UIComponents';
-import { Database, Users, Building, ShieldCheck, Plus, Layout, Globe, Loader, GitBranch } from 'lucide-react';
+import { Database, Users, Building, ShieldCheck, Plus, Layout, Globe, Loader, GitBranch, Trash2, Edit } from 'lucide-react';
 import { Property, ChannelSetting } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { CommitTracker } from '../components/CommitTracker';
-import { createStaff } from '../services/staff';
+import { createStaff, updateStaff, deleteStaff } from '../services/staff';
 
 
 // --- Sub-Components ---
@@ -168,31 +168,76 @@ const UserManagement: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [showAddForm, setShowAddForm] = useState(false);
     const [submitting, setSubmitting] = useState(false);
+
     const [newStaff, setNewStaff] = useState({ firstname: '', last_name: '', email: '', role: 'Front Desk', pin: '' });
+    const [isEditingStaff, setIsEditingStaff] = useState(false);
+    const [editingStaffId, setEditingStaffId] = useState<string | null>(null);
 
     const handleAddStaff = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!user?.propertyId) return;
         setSubmitting(true);
         try {
-            await createStaff({
-                property_id: user.propertyId,
-                firstname: newStaff.firstname,
-                last_name: newStaff.last_name,
-                email: newStaff.email,
-                role: newStaff.role,
-                pin: newStaff.pin,
-                phone_num: '' // Default empty phone
-            });
+            if (isEditingStaff && editingStaffId) {
+                // Update Logic
+                await updateStaff(editingStaffId, {
+                    property_id: user.propertyId,
+                    firstname: newStaff.firstname,
+                    last_name: newStaff.last_name,
+                    email: newStaff.email,
+                    role: newStaff.role,
+                    pin: newStaff.pin, // Optional update handled by backend
+                    phone_num: ''
+                });
+                alert('Staff member updated successfully');
+            } else {
+                // Create Logic
+                await createStaff({
+                    property_id: user.propertyId,
+                    firstname: newStaff.firstname,
+                    last_name: newStaff.last_name,
+                    email: newStaff.email,
+                    role: newStaff.role,
+                    pin: newStaff.pin,
+                    phone_num: ''
+                });
+                alert('Staff member added successfully');
+            }
 
             setNewStaff({ firstname: '', last_name: '', email: '', role: 'Front Desk', pin: '' });
             setShowAddForm(false);
+            setIsEditingStaff(false);
+            setEditingStaffId(null);
             fetchUsers();
-            alert('Staff member added successfully');
+
         } catch (err: any) {
-            alert('Error adding staff: ' + err.message);
+            alert('Error saving staff: ' + err.message);
         } finally {
             setSubmitting(false);
+        }
+    };
+
+    const handleEditClick = (staff: any) => {
+        setNewStaff({
+            firstname: staff.firstname,
+            last_name: staff.last_name,
+            email: staff.email || '', // Email might be missing in some schemas/mock
+            role: staff.role,
+            pin: '' // Don't show existing PIN for security, simple logic: empty = no change
+        });
+        setEditingStaffId(staff.id);
+        setIsEditingStaff(true);
+        setShowAddForm(true);
+    };
+
+    const handleDeleteClick = async (staffId: string) => {
+        if (!window.confirm('Are you sure you want to delete this staff member? This action cannot be undone.')) return;
+
+        try {
+            await deleteStaff(staffId);
+            fetchUsers(); // Refresh list
+        } catch (err: any) {
+            alert('Failed to delete staff: ' + err.message);
         }
     };
 
@@ -215,11 +260,23 @@ const UserManagement: React.FC = () => {
     };
 
     return (
-        <Card title="Staff Management" action={<Button icon={Plus} onClick={() => setShowAddForm(!showAddForm)}>{showAddForm ? 'Cancel' : 'Add Staff'}</Button>}>
+        <Card title="Staff Management" action={
+            <Button icon={Plus} onClick={() => {
+                setShowAddForm(!showAddForm);
+                if (!showAddForm) {
+                    // Reset if opening
+                    setNewStaff({ firstname: '', last_name: '', email: '', role: 'Front Desk', pin: '' });
+                    setIsEditingStaff(false);
+                    setEditingStaffId(null);
+                }
+            }}>
+                {showAddForm ? 'Cancel' : 'Add Staff'}
+            </Button>
+        }>
             <div className="space-y-4">
                 {showAddForm && (
                     <div className="p-4 border border-slate-200 rounded-lg bg-slate-50 mb-4 animate-fadeIn">
-                        <h4 className="font-semibold text-slate-800 mb-3">Add New Staff Member</h4>
+                        <h4 className="font-semibold text-slate-800 mb-3">{isEditingStaff ? 'Edit Staff Member' : 'Add New Staff Member'}</h4>
                         <form onSubmit={handleAddStaff} className="space-y-4">
                             <div className="grid grid-cols-2 gap-4">
                                 <Input label="First Name" value={newStaff.firstname} onChange={e => setNewStaff({ ...newStaff, firstname: e.target.value })} required />
@@ -238,7 +295,7 @@ const UserManagement: React.FC = () => {
                                         </select>
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-slate-700 mb-1">PIN (4-digits)</label>
+                                        <label className="block text-sm font-medium text-slate-700 mb-1">PIN (4-digits) {isEditingStaff && <span className="text-xs text-slate-500 font-normal">(Leave blank to keep unchanged)</span>}</label>
                                         <input
                                             type="text"
                                             className="w-full p-2 border border-slate-300 rounded-md"
@@ -247,7 +304,7 @@ const UserManagement: React.FC = () => {
                                                 const val = e.target.value.replace(/\D/g, '').slice(0, 4);
                                                 setNewStaff({ ...newStaff, pin: val });
                                             }}
-                                            required
+                                            required={!isEditingStaff}
                                             placeholder="1234"
                                         />
                                     </div>
@@ -273,13 +330,29 @@ const UserManagement: React.FC = () => {
                                 </div>
                             </div>
                             <div className="flex items-center gap-3">
-                                <Badge color="green">Active</Badge> {/* Mock status status */}
-                                <Button variant="ghost" className="text-sm">Edit</Button>
+                                <div className="flex items-center gap-3">
+                                    <Badge color="green">Active</Badge>
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={() => handleEditClick(staff)}
+                                            className="p-1 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                                            title="Edit Staff"
+                                        >
+                                            <Edit className="w-4 h-4" />
+                                        </button>
+                                        <button
+                                            onClick={() => handleDeleteClick(staff.id)}
+                                            className="p-1 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                                            title="Delete Staff"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
                     ))}
-                    {!loading && users.length === 0 && <p className="text-slate-500 text-center py-4">No staff found.</p>}
-                </div>
+                            {!loading && users.length === 0 && <p className="text-slate-500 text-center py-4">No staff found.</p>}
+                        </div>
             </div>
         </Card>
     );
