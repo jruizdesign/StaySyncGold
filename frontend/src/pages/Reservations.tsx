@@ -4,6 +4,7 @@ import { Plus, Search, MoreVertical, Loader, Edit, Trash2 } from 'lucide-react';
 import { ReservationStatus, Reservation } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
+import { generateInvoicePDF, generateReceiptPDF } from '../utils/pdfGenerator';
 
 const Reservations: React.FC = () => {
   const { user } = useAuth();
@@ -77,16 +78,17 @@ const Reservations: React.FC = () => {
 
       if (data) {
         // Map Supabase result to Reservation interface
-        const mappedReservations: Reservation[] = data.map((folder: any) => ({
-          id: folder.id,
-          guestId: folder.guest_id || '',
-          roomId: folder.room_id || '',
-          checkIn: folder.check_in,
-          checkOut: folder.check_out,
-          status: folder.status as ReservationStatus,
-          totalAmount: folder.total_amount || 0, // Placeholder as schema might not have this yet
-          guestName: folder.guests ? `${folder.guests.first_name} ${folder.guests.last_name}` : 'Unknown Guest',
-          roomNumber: folder.rooms ? folder.rooms.number : 'N/A'
+        const mappedReservations: Reservation[] = data.map((r: any) => ({
+          id: r.id,
+          friendlyId: r.friendly_id,
+          guestId: r.guest_id || '',
+          roomId: r.room_id || '',
+          checkIn: r.check_in,
+          checkOut: r.check_out,
+          status: r.status as ReservationStatus,
+          totalAmount: r.total_amount || 0, // Placeholder as schema might not have this yet
+          guestName: r.guests ? `${r.guests.first_name} ${r.guests.last_name}` : 'Unknown Guest',
+          roomNumber: r.rooms ? r.rooms.number : 'N/A'
         }));
         setReservations(mappedReservations);
       }
@@ -513,6 +515,34 @@ const Reservations: React.FC = () => {
       fetchReservations();
       if (user) fetchRooms();
 
+      // If Checking Out, Generate Invoice
+      if (newStatus === 'Checked Out') {
+        const fullGuest = guests.find(g => g.id === res.guestId) || { id: res.guestId, fullName: res.guestName, email: '', phone: '', propertyId: user?.propertyId || '', vipStatus: false, notes: '' };
+
+        try {
+          const pdfBlob = generateInvoicePDF(res, fullGuest, user?.propertyName, user?.email || 'System');
+          const fileName = `Invoice_${res.id}.pdf`;
+          const filePath = `${res.guestId}/${fileName}`;
+
+          // Upload
+          const { error: uploadError } = await supabase.storage
+            .from('guest_documents')
+            .upload(filePath, pdfBlob, {
+              contentType: 'application/pdf',
+              upsert: true
+            });
+
+          if (uploadError) {
+            console.error("Failed to upload invoice:", uploadError);
+          } else {
+            console.log("Invoice uploaded successfully");
+          }
+
+        } catch (pdfErr) {
+          console.error("Failed to generate PDF:", pdfErr);
+        }
+      }
+
     } catch (err: any) {
       console.error("Error updating status:", err);
       alert("Failed to update status: " + err.message);
@@ -560,8 +590,6 @@ const Reservations: React.FC = () => {
     // Determine if indefinite
     // Simple check: is checkOut far in future? Or logic from DB? 
     // Ideally we pass is_indefinite from DB.
-    // Let's assume standard date for now unless we have is_indefinite in Reservation type.
-    // Note: The Reservation type mapped in fetchReservations needs to include is_indefinite if we want to restore that state perfectly.
     // For now, just set dates.
     setIsIndefinite(false);
     setIsBookingModalOpen(true);
@@ -584,6 +612,36 @@ const Reservations: React.FC = () => {
 
       if (error) throw error;
 
+      // Generate Receipt PDF
+      try {
+        const guestName = selectedResForPayment.guestName;
+        // Construct payment object for receipt (since we only have form data)
+        const paymentObj = {
+          id: 'REF-' + Date.now().toString().slice(-6), // Temporary ID reference
+          amount: parseFloat(paymentForm.amount),
+          method: paymentForm.method,
+          notes: paymentForm.notes
+        };
+
+        const pdfBlob = generateReceiptPDF(paymentObj, guestName, user?.propertyName);
+        const fileName = `Receipt_${Date.now()}.pdf`;
+        const filePath = `${selectedResForPayment.guestId}/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('guest_documents')
+          .upload(filePath, pdfBlob, {
+            contentType: 'application/pdf',
+            upsert: true
+          });
+
+        if (uploadError) console.error("Receipt upload failed:", uploadError);
+
+      } catch (pdfErr) {
+        console.error("Receipt generation failed:", pdfErr);
+      }
+
+      if (error) throw error;
+
       alert("Payment recorded successfully!");
       setIsPaymentModalOpen(false);
       setPaymentForm({ amount: '', method: 'Card', notes: '' });
@@ -598,7 +656,8 @@ const Reservations: React.FC = () => {
 
   const filteredReservations = reservations.filter(r =>
     r.guestName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    r.roomNumber.includes(searchTerm)
+    r.roomNumber.includes(searchTerm) ||
+    (r.friendlyId && r.friendlyId.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   const getStatusColor = (status: ReservationStatus) => {
@@ -894,6 +953,7 @@ const Reservations: React.FC = () => {
                 <thead className="bg-slate-50 border-b border-slate-200">
                   <tr>
                     <th className="px-6 py-4 font-semibold text-slate-700">Guest</th>
+                    <th className="px-6 py-4 font-semibold text-slate-700">Reservation ID</th>
                     <th className="px-6 py-4 font-semibold text-slate-700">Room</th>
                     <th className="px-6 py-4 font-semibold text-slate-700">Check In</th>
                     <th className="px-6 py-4 font-semibold text-slate-700">Check Out</th>
@@ -907,7 +967,9 @@ const Reservations: React.FC = () => {
                     <tr key={res.id} className="hover:bg-slate-50 transition-colors">
                       <td className="px-6 py-4">
                         <div className="font-medium text-slate-900">{res.guestName}</div>
-                        <div className="text-xs text-slate-500">ID: {res.id.substring(0, 8)}...</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="font-medium text-slate-900">{res.friendlyId || res.id.slice(0, 8).toUpperCase()}</span>
                       </td>
                       <td className="px-6 py-4 font-mono text-slate-600">#{res.roomNumber}</td>
                       <td className="px-6 py-4 text-slate-600">{new Date(res.checkIn).toLocaleDateString()}</td>

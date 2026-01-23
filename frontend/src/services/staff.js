@@ -95,3 +95,38 @@ export const getClockHistory = async (property_id, staff_id = null) => {
     throw error;
   }
 };
+export const updateStaff = async (id, staffData) => {
+  try {
+    const response = await fetch(`${API_URL}/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(staffData),
+    });
+    if (!response.ok) {
+      throw new Error('Failed to update staff member');
+    }
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error updating staff member:', error);
+    throw error;
+  }
+};
+
+export const deleteStaff = async (id) => {
+  try {
+    const response = await fetch(`${API_URL}/${id}`, {
+      method: 'DELETE',
+    });
+    if (!response.ok) {
+      throw new Error('Failed to delete staff member');
+    }
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error deleting staff member:', error);
+    throw error;
+  }
+};

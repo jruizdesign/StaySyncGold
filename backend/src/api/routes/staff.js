@@ -7,9 +7,16 @@ const {
   clockIn,
   clockOut,
   getClockHistory,
+  updateStaff,
+  deleteStaff
 } = require('../controllers/staff');
 
 router.route('/').get(getStaff).post(createStaff);
+
+router.route('/:id')
+  .put(updateStaff)
+  .delete(deleteStaff);
+
 router.route('/clock-in').post(clockIn);
 router.route('/clock-out').post(clockOut);
 router.route('/clock-history').get(getClockHistory);

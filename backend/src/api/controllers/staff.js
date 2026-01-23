@@ -127,9 +127,70 @@ const getClockHistory = async (req, res, next) => {
 };
 
 
+// @desc    Update a staff member
+// @route   PUT /api/staff/:id
+// @access  Public (should be protected)
+const updateStaff = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { property_id, role, firstname, last_name, phone_num, pin } = req.body;
+
+    // Hash PIN if it's being updated
+    let hashedPin;
+    if (pin) {
+      const salt = await bcrypt.genSalt(10);
+      hashedPin = await bcrypt.hash(pin, salt);
+    }
+
+    // Build the query dynamically
+    let query = 'UPDATE staff SET role = $1, firstname = $2, last_name = $3, phone_num = $4';
+    let params = [role, firstname, last_name, phone_num];
+    let paramIndex = 5;
+
+    if (hashedPin) {
+      query += `, pin = $${paramIndex}`;
+      params.push(hashedPin);
+      paramIndex++;
+    }
+
+    query += ` WHERE id = $${paramIndex} RETURNING *`;
+    params.push(id);
+
+    const { rows } = await db.query(query, params);
+
+    if (rows.length === 0) {
+      return res.status(404).json({ message: 'Staff member not found' });
+    }
+
+    res.status(200).json(rows[0]);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// @desc    Delete a staff member
+// @route   DELETE /api/staff/:id
+// @access  Public (should be protected)
+const deleteStaff = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { rowCount } = await db.query('DELETE FROM staff WHERE id = $1', [id]);
+
+    if (rowCount === 0) {
+      return res.status(404).json({ message: 'Staff member not found' });
+    }
+
+    res.status(200).json({ message: 'Staff member deleted' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 module.exports = {
   getStaff,
   createStaff,
+  updateStaff,
+  deleteStaff,
   clockIn,
   clockOut,
   getClockHistory,
