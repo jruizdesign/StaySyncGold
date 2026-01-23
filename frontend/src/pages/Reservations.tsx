@@ -231,6 +231,31 @@ const Reservations: React.FC = () => {
 
     setLoading(true);
     try {
+      // 0. Double Booking Prevention
+      // Check for any reservation that overlaps with the requested dates for this room
+      // that is NOT Cancelled or Checked Out.
+      const { data: overlap, error: overlapError } = await supabase
+        .from('reservations')
+        .select('id')
+        .eq('room_id', bookingForm.roomId)
+        .neq('status', 'Cancelled')
+        .neq('status', 'Checked Out')
+        // Overlap logic: (StartA <= EndB) and (EndA >= StartB)
+        // creating_check_in <= existing_check_out AND creating_check_out >= existing_check_in
+        .or(`and(check_in.lte.${bookingForm.checkOut},check_out.gte.${bookingForm.checkIn})`)
+        .limit(1);
+
+      if (overlapError) throw overlapError;
+
+      // If we are editing, we must exclude our own ID from the check
+      const isSelfOverlap = overlap && overlap.length > 0 && editingReservationId && overlap[0].id === editingReservationId;
+
+      if (overlap && overlap.length > 0 && !isSelfOverlap) {
+        alert("This room is already booked for the selected dates!");
+        setLoading(false);
+        return;
+      }
+
       let guest_id = bookingForm.guestId;
 
       // 1. Create Guest if New

@@ -7,6 +7,7 @@ import { supabase } from '../lib/supabase';
 import ResolveMaintenanceModal from '../components/ResolveMaintenanceModal';
 import RoomSetupWizard from '../components/RoomSetupWizard';
 import ReportIssueModal from '../components/ReportIssueModal';
+import RoomDetailsModal from '../components/RoomDetailsModal';
 
 const Housekeeping: React.FC = () => {
   const { user } = useAuth();
@@ -17,6 +18,8 @@ const Housekeeping: React.FC = () => {
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
   const [showWizard, setShowWizard] = useState(false);
   const [resolveModalRoomId, setResolveModalRoomId] = useState<string | null>(null);
+  const [showRoomDetails, setShowRoomDetails] = useState(false);
+  const [roomForDetails, setRoomForDetails] = useState<Room | null>(null);
 
   const filters = [
     { label: 'ALL', value: 'ALL' },
@@ -257,7 +260,14 @@ const Housekeeping: React.FC = () => {
         {filteredRooms.map(room => {
           const activeTicket = getActiveTicketForRoom(room.id);
           return (
-            <div key={room.id} className="bg-white rounded-xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow duration-200 overflow-hidden flex flex-col">
+            <div
+              key={room.id}
+              onClick={() => {
+                setRoomForDetails(room);
+                setShowRoomDetails(true);
+              }}
+              className="bg-white rounded-xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow duration-200 overflow-hidden flex flex-col cursor-pointer"
+            >
               <div className="p-5 flex justify-between items-start">
                 <div>
                   <h3 className="text-lg font-bold text-slate-900">Room {room.number}</h3>
@@ -380,6 +390,18 @@ const Housekeeping: React.FC = () => {
             setResolveModalRoomId(null);
             handleUpdateStatus(resolveModalRoomId!, RoomStatus.CLEAN);
           }}
+        />
+      )}
+
+      {/* Room Details Modal */}
+      {roomForDetails && (
+        <RoomDetailsModal
+          isOpen={showRoomDetails}
+          onClose={() => {
+            setShowRoomDetails(false);
+            setRoomForDetails(null);
+          }}
+          room={roomForDetails}
         />
       )}
     </div>
