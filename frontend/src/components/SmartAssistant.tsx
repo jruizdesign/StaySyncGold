@@ -1,13 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { MessageSquare, X, Send, Sparkles, Loader2 } from 'lucide-react';
+import { X, Send, Sparkles, Loader2 } from 'lucide-react';
 import { Button } from './UIComponents';
-import { generateSmartResponse } from '../services/aiService';
+
 import { MOCK_GUESTS, MOCK_RESERVATIONS, MOCK_ROOMS } from '../constants';
 
 export const SmartAssistant: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState('');
-  const [messages, setMessages] = useState<{role: 'user' | 'system', text: string}[]>([
+  const [messages, setMessages] = useState<{ role: 'user' | 'system', text: string }[]>([
     { role: 'system', text: 'Hi! I am the StaySync AI. Ask me about occupancy, guest details, or draft an email.' }
   ]);
   const [loading, setLoading] = useState(false);
@@ -35,8 +35,14 @@ export const SmartAssistant: React.FC = () => {
       Recent Guests VIP status: ${MOCK_GUESTS.filter(g => g.vipStatus).map(g => g.fullName).join(', ')}
     `;
 
-    const response = await generateSmartResponse(userMsg, context);
-    setMessages(prev => [...prev, { role: 'system', text: response }]);
+    try {
+      const { generateSmartResponse } = await import('../services/aiService');
+      const response = await generateSmartResponse(userMsg, context);
+      setMessages(prev => [...prev, { role: 'system', text: response }]);
+    } catch (error) {
+      console.error("AI Service Error:", error);
+      setMessages(prev => [...prev, { role: 'system', text: "Sorry, I'm having trouble connecting to my brain right now." }]);
+    }
     setLoading(false);
   };
 
@@ -65,15 +71,14 @@ export const SmartAssistant: React.FC = () => {
               <X className="w-5 h-5" />
             </button>
           </div>
-          
+
           <div className="flex-1 overflow-y-auto p-4 bg-slate-50 space-y-4" ref={scrollRef}>
             {messages.map((msg, i) => (
               <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[80%] p-3 rounded-2xl text-sm ${
-                  msg.role === 'user' 
-                    ? 'bg-gold-500 text-white rounded-br-none' 
-                    : 'bg-white border border-slate-200 text-slate-700 rounded-bl-none shadow-sm'
-                }`}>
+                <div className={`max-w-[80%] p-3 rounded-2xl text-sm ${msg.role === 'user'
+                  ? 'bg-gold-500 text-white rounded-br-none'
+                  : 'bg-white border border-slate-200 text-slate-700 rounded-bl-none shadow-sm'
+                  }`}>
                   {msg.text}
                 </div>
               </div>
@@ -81,8 +86,8 @@ export const SmartAssistant: React.FC = () => {
             {loading && (
               <div className="flex justify-start">
                 <div className="bg-white border border-slate-200 p-3 rounded-2xl rounded-bl-none shadow-sm flex items-center gap-2">
-                   <Loader2 className="w-4 h-4 animate-spin text-gold-500" />
-                   <span className="text-xs text-slate-500">Thinking...</span>
+                  <Loader2 className="w-4 h-4 animate-spin text-gold-500" />
+                  <span className="text-xs text-slate-500">Thinking...</span>
                 </div>
               </div>
             )}
@@ -90,7 +95,7 @@ export const SmartAssistant: React.FC = () => {
 
           <div className="p-4 bg-white border-t border-slate-100">
             <div className="flex gap-2">
-              <input 
+              <input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSend()}
