@@ -330,29 +330,28 @@ const UserManagement: React.FC = () => {
                                 </div>
                             </div>
                             <div className="flex items-center gap-3">
-                                <div className="flex items-center gap-3">
-                                    <Badge color="green">Active</Badge>
-                                    <div className="flex gap-2">
-                                        <button
-                                            onClick={() => handleEditClick(staff)}
-                                            className="p-1 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                                            title="Edit Staff"
-                                        >
-                                            <Edit className="w-4 h-4" />
-                                        </button>
-                                        <button
-                                            onClick={() => handleDeleteClick(staff.id)}
-                                            className="p-1 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
-                                            title="Delete Staff"
-                                        >
-                                            <Trash2 className="w-4 h-4" />
-                                        </button>
-                                    </div>
+                                <Badge color="green">Active</Badge>
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={() => handleEditClick(staff)}
+                                        className="p-1 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                                        title="Edit Staff"
+                                    >
+                                        <Edit className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                        onClick={() => handleDeleteClick(staff.id)}
+                                        className="p-1 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                                        title="Delete Staff"
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                    </button>
                                 </div>
                             </div>
-                    ))}
-                            {!loading && users.length === 0 && <p className="text-slate-500 text-center py-4">No staff found.</p>}
                         </div>
+                    ))}
+                    {!loading && users.length === 0 && <p className="text-slate-500 text-center py-4">No staff found.</p>}
+                </div>
             </div>
         </Card>
     );
