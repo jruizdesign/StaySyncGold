@@ -33,10 +33,22 @@ const getMaintenanceLog = async (req, res, next) => {
 // @access  Public
 const createMaintenanceLog = async (req, res, next) => {
   try {
-    const { property_id, room_id, status } = req.body;
+    const { property_id, room_id, status, description, priority, category, expenses, total_cost } = req.body;
+
     const { rows } = await db.query(
-      'INSERT INTO Maintenance (property_id, room_id, status, created_at) VALUES ($1, $2, $3, NOW()) RETURNING *',
-      [property_id, room_id, status]
+      `INSERT INTO Maintenance (
+        property_id, room_id, status, description, priority, category, expenses, total_cost, created_at
+       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW()) RETURNING *`,
+      [
+        property_id,
+        room_id,
+        status || 'Open',
+        description,
+        priority || 'Medium',
+        category || 'General',
+        JSON.stringify(expenses || []),
+        total_cost || 0
+      ]
     );
     res.status(201).json(rows[0]);
   } catch (error) {
@@ -50,11 +62,31 @@ const createMaintenanceLog = async (req, res, next) => {
 const updateMaintenanceLog = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { property_id, room_id, status } = req.body;
-    const { rows } = await db.query(
-      'UPDATE Maintenance SET property_id = $1, room_id = $2, status = $3 WHERE id = $4 RETURNING *',
-      [property_id, room_id, status, id]
-    );
+    const { property_id, room_id, status, resolution_notes, expenses, total_cost } = req.body;
+
+    // Build the update query dynamically or just update all relevant fields
+    // Assuming we want to update everything passed
+    const query = `
+      UPDATE Maintenance 
+      SET 
+        status = COALESCE($1, status),
+        resolution_notes = COALESCE($2, resolution_notes),
+        expenses = COALESCE($3, expenses),
+        total_cost = COALESCE($4, total_cost)
+      WHERE id = $5 
+      RETURNING *
+    `;
+
+    const values = [
+      status,
+      resolution_notes,
+      expenses ? JSON.stringify(expenses) : null,
+      total_cost,
+      id
+    ];
+
+    const { rows } = await db.query(query, values);
+
     if (rows.length === 0) {
       return res.status(404).json({ message: 'Maintenance log not found' });
     }

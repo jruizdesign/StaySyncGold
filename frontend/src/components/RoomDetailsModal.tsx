@@ -49,9 +49,11 @@ const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({ isOpen, onClose, ro
         setLoading(true);
         try {
             // 1. Fetch Active Reservation (Checked In or Confirmed overlapping today)
+            console.log("DEBUG: Fetching details for room", room.id);
             const today = new Date().toISOString().split('T')[0];
 
-            const { data: resData, error: resError } = await supabase
+            // Fetch ALL active-status reservations for this room to handle overlaps/dates in JS
+            const { data: reservations, error: resError } = await supabase
                 .from('reservations')
                 .select(`
                     *,
@@ -63,12 +65,26 @@ const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({ isOpen, onClose, ro
                     )
                 `)
                 .eq('room_id', room.id)
-                .in('status', ['Checked In', 'Confirmed'])
-                .lte('check_in', today)
-                .gte('check_out', today)
-                .maybeSingle();
+                .in('status', ['Checked In', 'Confirmed']);
 
             if (resError) throw resError;
+
+            console.log("DEBUG: Raw reservations found:", reservations);
+
+            // Filter for effective dates in JS (Active today)
+            // Logic: Check-in is today or before, Check-out is TODAY or after.
+            // Note: If you check out today, you are still "in" the system until actual check out,
+            // but status usually updates to Checked Out.
+            // We filtered status above, so effectively this finds who is physically supposed to be there.
+            const activeRes = reservations?.filter(r => r.check_in <= today && r.check_out >= today);
+
+            // Sort by check_in descending to prioritize the latest one (e.g. today's check-in over yesterday's lingering stay)
+            activeRes?.sort((a, b) => b.check_in.localeCompare(a.check_in));
+
+            const resData = activeRes && activeRes.length > 0 ? activeRes[0] : null;
+            console.log("DEBUG: Selected Active Reservation:", resData);
+
+
 
             if (resData) {
                 setReservation(resData);

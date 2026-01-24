@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { AnimatePresence } from 'framer-motion';
+import PageTransition from './PageTransition';
 import {
   LayoutDashboard,
+
   CalendarRange,
   Users,
   BedDouble,
@@ -145,7 +148,11 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         {/* Content Scroll Area */}
         <main className="flex-1 overflow-y-auto p-4 lg:p-8">
           <div className="max-w-7xl mx-auto space-y-6">
-            {children}
+            <AnimatePresence mode="wait">
+              <PageTransition key={location.pathname}>
+                {children}
+              </PageTransition>
+            </AnimatePresence>
 
             <footer className="pt-10 pb-6 text-center">
               <p className="text-sm text-slate-400">

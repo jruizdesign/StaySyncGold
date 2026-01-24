@@ -89,12 +89,12 @@ const ResolveMaintenanceModal: React.FC<ResolveMaintenanceModalProps> = ({
         e.preventDefault();
 
         if (!activeTicketId) {
-            // Fallback: If no ticket exists but we are in "Room" mode (Housekeeping), 
-            // maybe we just mark the room clean?
-            // User requested "Notes stored with the ticket". Ideally we need a ticket.
-            // If none exists, we create a "Ghost" resolved ticket or just error?
-            // Let's create a resolved log if no ticket exists.
             alert("No active maintenance ticket found for this room.");
+            return;
+        }
+
+        if (!user?.propertyId) {
+            alert("Error: Property ID missing. Please refresh functionality.");
             return;
         }
 
@@ -115,33 +115,45 @@ const ResolveMaintenanceModal: React.FC<ResolveMaintenanceModalProps> = ({
             if (ticketError) throw ticketError;
 
             // 2. If room_id is involved (Housekeeping context), ensure room is marked clean/available
-            // We can do this if we know the room_id from props or by fetching it from ticket
             if (roomId) {
                 await supabase
                     .from('rooms')
-                    .update({ status: 'Clean' }) // Or 'Available'? Housekeeping usually marks 'Clean' then 'Available' logic handles rest.
+                    .update({ status: 'Clean' })
                     .eq('id', roomId);
             }
+
             // 3. Record Expense in Financial Ledger
             if (activeTicketId && totalCost > 0) {
-                await supabase
+                console.log("[ResolveMaintenance] Inserting financial transaction:", {
+                    totalCost,
+                    user: user?.id,
+                    property: user?.propertyId
+                });
+
+                const { error: financeError } = await supabase
                     .from('financial_transactions')
                     .insert({
                         type: 'Expense',
                         category: 'Maintenance',
                         amount: totalCost,
                         description: `Maintenance Fix: ${resolutionNotes.substring(0, 50)}...`,
-                        created_by: user?.id,
+                        created_by: user?.id, // Supabase will error if this is invalid UUID, ensure it's not undefined
+                        property_id: user.propertyId,
                         processed_at: new Date().toISOString()
-                        // reservation_id is unavailable here unless we link tickets to reservations? usually handled per room.
                     });
+
+                if (financeError) {
+                    console.error("Failed to record expense:", financeError);
+                    alert(`Maintenance resolved, but failed to record expense: ${financeError.message}`);
+                    // Don't throw, let the resolution succeed at least
+                }
             }
 
             onSuccess();
             onClose();
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error resolving ticket:", error);
-            alert("Failed to save resolution details.");
+            alert(`Failed to save resolution details: ${error.message}`);
         } finally {
             setLoading(false);
         }
