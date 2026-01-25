@@ -5,9 +5,51 @@ const db = require('../../config/database');
 // @access  Public
 const getReservations = async (req, res, next) => {
   try {
-    const { rows } = await db.query('SELECT * FROM Reservations');
+    const { status, type, limit_years } = req.query;
+
+    let query = 'SELECT * FROM Reservations';
+    const params = [];
+    const conditions = [];
+
+    // Filter by single status or multiple (comma separated)
+    if (status) {
+      const statuses = status.split(',').map(s => s.trim());
+      params.push(statuses);
+      conditions.push(`status = ANY($${params.length})`);
+    }
+
+    // "Archived" type shorthand
+    if (type === 'archived') {
+      // Checked Out or Cancelled
+      const archivedStatuses = ['Checked Out', 'Cancelled'];
+      // Avoid conflict if status is also passed, but usually one or other
+      if (!status) {
+        params.push(archivedStatuses);
+        conditions.push(`status = ANY($${params.length})`);
+      }
+
+      // Limit to last 3 years (or limit_years param)
+      const years = parseInt(limit_years) || 3;
+      params.push(`${years} years`);
+      conditions.push(`check_out >= NOW() - $${params.length}::INTERVAL`);
+    } else if (type === 'active') {
+      const activeStatuses = ['Confirmed', 'Checked In', 'Pending'];
+      if (!status) {
+        params.push(activeStatuses);
+        conditions.push(`status = ANY($${params.length})`);
+      }
+    }
+
+    if (conditions.length > 0) {
+      query += ' WHERE ' + conditions.join(' AND ');
+    }
+
+    query += ' ORDER BY check_in DESC';
+
+    const { rows } = await db.query(query, params);
     res.status(200).json(rows);
   } catch (error) {
+    console.error("Error fetching reservations:", error);
     res.status(500).json({ error: error.message });
   }
 };

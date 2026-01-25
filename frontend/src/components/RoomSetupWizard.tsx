@@ -52,10 +52,10 @@ const RoomSetupWizard: React.FC<RoomSetupWizardProps> = ({ onClose, onComplete }
                 .from('reservations')
                 .select('*', { count: 'exact', head: true })
                 .eq('property_id', user.propertyId)
-                .not('status', 'eq', 'cancelled'); // Assuming cancelled might be irrelevant, but safer to check all
+                .in('status', ['Confirmed', 'Checked In', 'Pending']);
 
             if (reservationCount && reservationCount > 0) {
-                alert(`Cannot reset rooms: You have ${reservationCount} active reservations. Please archive or delete them first to prevent data loss.`);
+                alert(`Cannot reset rooms: You have ${reservationCount} active reservations (Confirmed, Checked In, or Pending). Please archive or delete them first to prevent data loss.`);
                 return;
             }
         } catch (err) {

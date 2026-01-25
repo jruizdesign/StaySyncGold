@@ -12,6 +12,7 @@ const Reservations: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<'active' | 'archived'>('active');
 
   // Rates & Revenue State
   const [roomTypes, setRoomTypes] = useState<string[]>([]);
@@ -50,7 +51,7 @@ const Reservations: React.FC = () => {
     if (user) {
       fetchReservations();
     }
-  }, [user]);
+  }, [user, activeTab]);
 
   const fetchReservations = async () => {
     setLoading(true);
@@ -70,6 +71,20 @@ const Reservations: React.FC = () => {
         setReservations([]);
         setLoading(false);
         return;
+      }
+
+      // Filter based on Tab
+      if (activeTab === 'active') {
+        // Active: Confirmed, Checked In
+        query = query.in('status', ['Confirmed', 'Checked In', 'Pending']); // Added Pending just in case
+      } else {
+        // Archived: Checked Out, Cancelled
+        // AND check_out >= 3 years ago
+        const threeYearsAgo = new Date();
+        threeYearsAgo.setFullYear(threeYearsAgo.getFullYear() - 3);
+
+        query = query.in('status', ['Checked Out', 'Cancelled'])
+          .gte('check_out', threeYearsAgo.toISOString());
       }
 
       const { data, error } = await query;
@@ -711,8 +726,30 @@ const Reservations: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="flex items-center gap-2 bg-white p-1 rounded-lg border border-slate-200">
-          <div className="flex items-center gap-2 bg-white p-1 rounded-lg border border-slate-200">
+        <div className="flex flex-col gap-4">
+          {/* Tabs */}
+          <div className="flex border-b border-slate-200">
+            <button
+              onClick={() => setActiveTab('active')}
+              className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 ${activeTab === 'active'
+                  ? 'border-gold-500 text-gold-600'
+                  : 'border-transparent text-slate-500 hover:text-slate-700'
+                }`}
+            >
+              Active
+            </button>
+            <button
+              onClick={() => setActiveTab('archived')}
+              className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 ${activeTab === 'archived'
+                  ? 'border-gold-500 text-gold-600'
+                  : 'border-transparent text-slate-500 hover:text-slate-700'
+                }`}
+            >
+              Archived
+            </button>
+          </div>
+
+          <div className="flex items-center gap-2 bg-white p-1 rounded-lg border border-slate-200 w-fit">
             <button
               onClick={() => setView('list')}
               className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${view === 'list' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-50'}`}
@@ -738,13 +775,15 @@ const Reservations: React.FC = () => {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <input
               type="text"
-              placeholder="Search guest or room..."
+              placeholder={`Search ${activeTab === 'archived' ? 'archived ' : ''}reservations...`}
               className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gold-500 text-sm"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <Button icon={Plus} onClick={() => setIsBookingModalOpen(true)}>New Booking</Button>
+          {activeTab === 'active' && (
+            <Button icon={Plus} onClick={() => setIsBookingModalOpen(true)}>New Booking</Button>
+          )}
         </div>
       </div>
 

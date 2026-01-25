@@ -64,6 +64,7 @@ app.use('/api/users', usersRouter);
 app.use('/api/channex', channexRouter);
 app.use('/api/ai', aiRouter);
 app.use('/api/accounting', accountingRouter);
+app.use('/api/overview', require('./api/routes/overview'));
 
 app.get('/', (req, res) => {
   res.send('Welcome to the StaySyncGold API!');
