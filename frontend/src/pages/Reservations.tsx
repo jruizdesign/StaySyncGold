@@ -409,6 +409,22 @@ const Reservations: React.FC = () => {
     }
   };
 
+  // Assuming a Reservation interface exists elsewhere, it would look something like this:
+  // interface Reservation {
+  //   id: string;
+  //   propertyId: string;
+  //   guestId: string;
+  //   roomId: string;
+  //   checkIn: string;
+  //   checkOut: string;
+  //   status: string;
+  //   totalAmount: number;
+  //   totalPaid?: number; // Added as per instruction
+  //   guestName: string;
+  //   roomNumber: string;
+  //   // ... other properties
+  // }
+
   const calculateTotalAmount = async (roomId: string, checkIn: string, checkOut: string) => {
     // 1. Get Room Type
     const room = rooms.find(r => r.id === roomId);
