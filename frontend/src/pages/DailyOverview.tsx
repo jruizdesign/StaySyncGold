@@ -17,23 +17,28 @@ interface OverviewItem {
 }
 
 const DailyOverview: React.FC = () => {
-    const { user } = useAuth();
+    const { user, session } = useAuth();
     const [data, setData] = useState<OverviewItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        if (user?.propertyId) {
+        if (user?.propertyId && session?.access_token) {
             fetchData();
         }
-    }, [user]);
+    }, [user, session]);
 
     const fetchData = async () => {
         setLoading(true);
         try {
+            if (!session?.access_token) {
+                console.error("No access token available");
+                return;
+            }
+
             const res = await fetch(`${API_BASE_URL}/api/overview/daily-overview?property_id=${user?.propertyId}`, {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}` // Ensure auth if needed by backend middleware
+                    'Authorization': `Bearer ${session.access_token}`
                 }
             });
 
