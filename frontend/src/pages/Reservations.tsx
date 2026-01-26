@@ -67,8 +67,9 @@ const Reservations: React.FC = () => {
         .from('reservations')
         .select(`
           *,
-          guests:guest_id (first_name, last_name),
-          rooms:room_id (number)
+          guests(first_name, last_name),
+          rooms(number),
+          financial_transactions(amount)
         `);
 
       if (user?.propertyId) {
@@ -79,6 +80,7 @@ const Reservations: React.FC = () => {
         setLoading(false);
         return;
       }
+      query = query.order('check_in', { ascending: false });
 
       // Filter based on Tab
       if (activeTab === 'active') {
@@ -108,7 +110,8 @@ const Reservations: React.FC = () => {
           checkIn: r.check_in,
           checkOut: r.check_out,
           status: r.status as ReservationStatus,
-          totalAmount: r.total_amount || 0, // Placeholder as schema might not have this yet
+          totalAmount: r.total_amount || 0,
+          totalPaid: r.financial_transactions ? r.financial_transactions.reduce((sum: number, t: any) => sum + (Number(t.amount) || 0), 0) : 0,
           guestName: r.guests ? `${r.guests.first_name} ${r.guests.last_name}` : 'Unknown Guest',
           roomNumber: r.rooms ? r.rooms.number : 'N/A'
         }));
@@ -750,6 +753,7 @@ const Reservations: React.FC = () => {
       setIsPaymentModalOpen(false);
       setPaymentForm({ amount: '', method: 'Card', notes: '' });
       // Ideally refresh reservations or financial stats
+      fetchReservations(); // Refresh reservations to update totalPaid
     } catch (e: any) {
       console.error("Payment Error:", e);
       alert("Failed to record payment: " + e.message);
@@ -1193,13 +1197,17 @@ const Reservations: React.FC = () => {
                             const room = rooms.find(r => r.id === res.roomId);
                             const price = room ? (Number(room.price_per_night) || 100) : 100;
                             const accrued = validDays * price;
+                            const balance = accrued - (res.totalPaid || 0);
 
-                            if (ms < 0) return `$${res.totalAmount}`; // Future indefinite, show stored/deposit
+                            if (ms < 0) return `$${res.totalAmount}`; // Future indefinite
 
                             return (
-                              <span title={`Accrued: ${validDays} days @ $${price}/night`}>
-                                ${accrued.toFixed(2)}*
-                              </span>
+                              <div className="flex flex-col items-end">
+                                <span className="text-xs text-slate-500">Accrued: ${accrued.toFixed(2)}</span>
+                                <span className={`font-bold ${balance > 0 ? 'text-red-600' : 'text-green-600'}`} title="Balance Due (Accrued - Paid)">
+                                  {balance > 0 ? `Due: $${balance.toFixed(2)}` : 'Paid'}
+                                </span>
+                              </div>
                             );
                           })()
                         ) : (
