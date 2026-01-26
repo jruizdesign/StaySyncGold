@@ -362,11 +362,32 @@ const UserManagement: React.FC = () => {
 
 const RoomWizard: React.FC = () => {
     const { user } = useAuth();
+    const [rooms, setRooms] = useState<any[]>([]);
     const [roomNumber, setRoomNumber] = useState('');
     const [type, setType] = useState('King Suite');
     const [price_per_night, setPrice] = useState('200');
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState('');
+
+    // Editing state
+    const [editingId, setEditingId] = useState<string | null>(null);
+    const [editForm, setEditForm] = useState({ number: '', type: '', price: '' });
+
+    const fetchRooms = async () => {
+        if (!user?.propertyId) return;
+        setLoading(true);
+        const { data, error } = await supabase
+            .from('rooms')
+            .select('*')
+            .eq('property_id', user.propertyId)
+            .order('number');
+        if (data) setRooms(data);
+        setLoading(false);
+    };
+
+    useEffect(() => {
+        if (user?.propertyId) fetchRooms();
+    }, [user?.propertyId]);
 
     const handleCreateRoom = async () => {
         if (!user?.propertyId) return;
@@ -386,6 +407,7 @@ const RoomWizard: React.FC = () => {
             if (error) throw error;
             setMessage('Room created successfully!');
             setRoomNumber('');
+            fetchRooms();
         } catch (e: any) {
             setMessage('Error: ' + e.message);
         } finally {
@@ -393,47 +415,154 @@ const RoomWizard: React.FC = () => {
         }
     };
 
+    const startEdit = (room: any) => {
+        setEditingId(room.id);
+        setEditForm({
+            number: room.number,
+            type: room.type,
+            price: room.price_per_night.toString()
+        });
+    };
+
+    const handleUpdateRoom = async () => {
+        if (!editingId) return;
+        setLoading(true);
+        try {
+            const { error } = await supabase
+                .from('rooms')
+                .update({
+                    number: editForm.number,
+                    type: editForm.type,
+                    price_per_night: parseFloat(editForm.price)
+                })
+                .eq('id', editingId);
+
+            if (error) throw error;
+            setMessage('Room updated successfully!');
+            setEditingId(null);
+            fetchRooms();
+        } catch (e: any) {
+            setMessage('Error updating: ' + e.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
-        <Card title="Quick Room Add">
-            <div className="max-w-2xl mx-auto space-y-6 py-4">
-                <div className="grid grid-cols-2 gap-4">
-                    <Input
-                        label="Room Number"
-                        placeholder="e.g. 101"
-                        value={roomNumber}
-                        onChange={(e) => setRoomNumber(e.target.value)}
-                    />
-                    <div className="space-y-1">
-                        <label className="block text-sm font-medium text-slate-700">Room Type</label>
-                        <select
-                            className="w-full p-2 border border-slate-300 rounded-md"
-                            value={type}
-                            onChange={(e) => setType(e.target.value)}
-                        >
-                            <option>King Suite</option>
-                            <option>Double Queen</option>
-                            <option>Standard</option>
-                        </select>
+        <div className="space-y-6">
+            <Card title="Quick Room Add">
+                <div className="max-w-2xl mx-auto space-y-6 py-4">
+                    <div className="grid grid-cols-2 gap-4">
+                        <Input
+                            label="Room Number"
+                            placeholder="e.g. 101"
+                            value={roomNumber}
+                            onChange={(e) => setRoomNumber(e.target.value)}
+                        />
+                        <div className="space-y-1">
+                            <label className="block text-sm font-medium text-slate-700">Room Type</label>
+                            <select
+                                className="w-full p-2 border border-slate-300 rounded-md"
+                                value={type}
+                                onChange={(e) => setType(e.target.value)}
+                            >
+                                <option>King Suite</option>
+                                <option>Double Queen</option>
+                                <option>Standard</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <Input
+                            label="Rate ($)"
+                            type="number"
+                            value={price_per_night}
+                            onChange={(e) => setPrice(e.target.value)}
+                        />
+                    </div>
+
+                    {message && <p className={`text-sm ${message.startsWith('Error') ? 'text-red-500' : 'text-green-500'}`}>{message}</p>}
+
+                    <div className="flex justify-end pt-4">
+                        <Button onClick={handleCreateRoom} disabled={loading}>
+                            {loading ? 'Adding...' : 'Add Room'}
+                        </Button>
                     </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                    <Input
-                        label="Rate ($)"
-                        type="number"
-                        value={price_per_night}
-                        onChange={(e) => setPrice(e.target.value)}
-                    />
-                </div>
+            </Card>
 
-                {message && <p className={`text-sm ${message.startsWith('Error') ? 'text-red-500' : 'text-green-500'}`}>{message}</p>}
-
-                <div className="flex justify-end pt-4">
-                    <Button onClick={handleCreateRoom} disabled={loading}>
-                        {loading ? 'Adding...' : 'Add Room'}
-                    </Button>
+            <Card title="Room List">
+                <div className="overflow-x-auto">
+                    <table className="w-full text-sm text-left text-slate-600">
+                        <thead className="bg-slate-50 text-slate-700 uppercase font-bold text-xs">
+                            <tr>
+                                <th className="px-6 py-3">Number</th>
+                                <th className="px-6 py-3">Type</th>
+                                <th className="px-6 py-3">Rate ($)</th>
+                                <th className="px-6 py-3">Status</th>
+                                <th className="px-6 py-3 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {rooms.map(room => (
+                                <tr key={room.id} className="border-b hover:bg-slate-50">
+                                    {editingId === room.id ? (
+                                        <>
+                                            <td className="px-6 py-4">
+                                                <input
+                                                    className="w-20 p-1 border rounded"
+                                                    value={editForm.number}
+                                                    onChange={e => setEditForm({ ...editForm, number: e.target.value })}
+                                                />
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <select
+                                                    className="p-1 border rounded"
+                                                    value={editForm.type}
+                                                    onChange={(e) => setEditForm({ ...editForm, type: e.target.value })}
+                                                >
+                                                    <option>King Suite</option>
+                                                    <option>Double Queen</option>
+                                                    <option>Standard</option>
+                                                </select>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <input
+                                                    type="number"
+                                                    className="w-24 p-1 border rounded"
+                                                    value={editForm.price}
+                                                    onChange={e => setEditForm({ ...editForm, price: e.target.value })}
+                                                />
+                                            </td>
+                                            <td className="px-6 py-4">{room.status}</td>
+                                            <td className="px-6 py-4 text-right space-x-2">
+                                                <button onClick={handleUpdateRoom} className="text-green-600 font-bold hover:underline">Save</button>
+                                                <button onClick={() => setEditingId(null)} className="text-slate-500 hover:underline">Cancel</button>
+                                            </td>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <td className="px-6 py-4 font-bold">{room.number}</td>
+                                            <td className="px-6 py-4">{room.type}</td>
+                                            <td className="px-6 py-4">${room.price_per_night}</td>
+                                            <td className="px-6 py-4"><Badge color={room.status === 'Clean' ? 'green' : 'amber'}>{room.status}</Badge></td>
+                                            <td className="px-6 py-4 text-right">
+                                                <button onClick={() => startEdit(room)} className="text-blue-600 hover:text-blue-800 font-medium hover:underline">Edit</button>
+                                            </td>
+                                        </>
+                                    )}
+                                </tr>
+                            ))}
+                            {rooms.length === 0 && (
+                                <tr>
+                                    <td colSpan={5} className="px-6 py-4 text-center text-slate-400">No rooms found. Add one above.</td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
                 </div>
-            </div>
-        </Card>
+            </Card>
+        </div>
     );
 };
 
