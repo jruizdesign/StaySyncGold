@@ -468,7 +468,7 @@ router.get('/rooms/local', async (req, res) => {
         if (!property_id) return res.status(400).json({ error: 'Property ID required' });
 
         const result = await db.query(
-            "SELECT DISTINCT type FROM rooms WHERE property_id = $1",
+            "SELECT name as type FROM room_types WHERE property_id = $1",
             [property_id]
         );
 
@@ -620,7 +620,7 @@ router.post('/mappings/auto-sync', async (req, res) => {
 
         // 3. Fetch Local Room Types
         const localResult = await db.query(
-            "SELECT DISTINCT type FROM rooms WHERE property_id = $1",
+            "SELECT name as type FROM room_types WHERE property_id = $1",
             [property_id]
         );
         const localRooms = localResult.rows.map(r => r.type);
@@ -701,15 +701,15 @@ router.post('/ari', async (req, res) => {
         );
 
         // 3. Get Availability (Capacity - Booked)
-        // This is complex. For now, we just fetch total capacity from rooms table.
-        // In a real system, you'd calculate: Total Rooms - Reservations = Availability.
-        // We will just send "Default Availability" (e.g. 5) or fetch room count.
+        // Correctly join with room_types (or fallback to type string if migration incomplete)
         const roomsRes = await db.query(
-            "SELECT type, COUNT(*) as count FROM rooms WHERE property_id = $1 GROUP BY type",
+            "SELECT rt.name as type, COUNT(r.id) as count FROM rooms r LEFT JOIN room_types rt ON r.room_type_id = rt.id WHERE r.property_id = $1 GROUP BY rt.name",
             [property_id]
         );
         const roomCounts = {};
-        roomsRes.rows.forEach(r => roomCounts[r.type] = parseInt(r.count));
+        roomsRes.rows.forEach(r => {
+            if (r.type) roomCounts[r.type] = parseInt(r.count);
+        });
 
         // 4. Transform to Channex ARI format
         const updates = [];

@@ -111,10 +111,10 @@ const createReservation = async (req, res, next) => {
     // 2. Sync to Bookings table (for Financials/Channex consistency)
     // Fetch details needed for bookings table
     const guestRes = await client.query('SELECT first_name, last_name FROM Guests WHERE id = $1', [guest_id]);
-    const roomRes = await client.query('SELECT type FROM rooms WHERE id = $1', [room_id]);
+    const roomRes = await client.query('SELECT rt.name as type FROM rooms r LEFT JOIN room_types rt ON r.room_type_id = rt.id WHERE r.id = $1', [room_id]);
 
     const guestName = guestRes.rows.length > 0 ? `${guestRes.rows[0].first_name} ${guestRes.rows[0].last_name}` : 'Unknown Guest';
-    const roomType = roomRes.rows.length > 0 ? roomRes.rows[0].type : 'Standard'; // Fallback
+    const roomType = (roomRes.rows.length > 0 && roomRes.rows[0].type) ? roomRes.rows[0].type : 'Standard'; // Fallback
 
     // Insert into bookings
     await client.query(
@@ -165,7 +165,8 @@ const updateReservation = async (req, res, next) => {
   try {
     const { id } = req.params;
     console.log('[DEBUG] updateReservation called for ID:', id);
-    console.log('[DEBUG] Request Body:', req.body);
+    console.log('[DEBUG] updateReservation called for ID:', id);
+    // console.log('[DEBUG] Request Body:', req.body); // REMOVED FOR SECURITY (PII PREV)
     const { property_id, guest_id, room_id, check_in, check_out, status, total_price, modified_by, modifier_name, daily_price, is_indefinite } = req.body;
     let finalTotalPrice = total_price;
 
@@ -206,10 +207,10 @@ const updateReservation = async (req, res, next) => {
     // Sync to Bookings table
     // Fetch details needed for bookings table
     const guestRes = await client.query('SELECT first_name, last_name FROM Guests WHERE id = $1', [guest_id]);
-    const roomRes = await client.query('SELECT type FROM rooms WHERE id = $1', [room_id]);
+    const roomRes = await client.query('SELECT rt.name as type FROM rooms r LEFT JOIN room_types rt ON r.room_type_id = rt.id WHERE r.id = $1', [room_id]);
 
     const guestName = guestRes.rows.length > 0 ? `${guestRes.rows[0].first_name} ${guestRes.rows[0].last_name}` : 'Unknown Guest';
-    const roomType = roomRes.rows.length > 0 ? roomRes.rows[0].type : 'Standard';
+    const roomType = (roomRes.rows.length > 0 && roomRes.rows[0].type) ? roomRes.rows[0].type : 'Standard';
 
     // ROBUST SYNC: Try to find booking by local ID OR by raw_data->>'id'
     // This allows syncing reservations created by seed/external sources if they carry the ID in raw_data

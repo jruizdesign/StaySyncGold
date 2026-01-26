@@ -3,12 +3,21 @@ const db = require('../../config/database');
 // @desc    Get Daily Overview (Checked-In Guests & Financial Status)
 // @route   GET /api/reports/daily-overview
 // @access  Protected
+const { validate: isUuid } = require('uuid'); // ensure uuid package is utilized if available, or regex
+// Since we might not have uuid package installed in this file scope or at all, let's use regex for safety
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 const getDailyOverview = async (req, res) => {
     try {
         const { property_id } = req.query;
 
         if (!property_id) {
             return res.status(400).json({ message: 'Property ID is required' });
+        }
+
+        if (!UUID_REGEX.test(property_id)) {
+            console.warn(`[DailyOverview] Invalid Property ID: ${property_id}`);
+            return res.status(400).json({ message: 'Invalid Property ID format' });
         }
 
         const query = `
@@ -28,7 +37,7 @@ const getDailyOverview = async (req, res) => {
       LEFT JOIN rooms rm ON r.room_id = rm.id
       LEFT JOIN payments p ON r.id = p.res_id
       WHERE r.property_id = $1
-        AND r.status = 'checked_in'
+        AND r.status = 'Checked In'
       GROUP BY r.id, g.id, rm.id
     `;
 
