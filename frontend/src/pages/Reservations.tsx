@@ -183,7 +183,22 @@ const Reservations: React.FC = () => {
       // So quote should probably show "Daily Rate"
 
       const start = new Date(checkIn);
-      const end = isIndefinite ? new Date(start.getTime() + 86400000) : new Date(checkOut); // Default 1 night for rate lookup if indefinite
+      // Indefinite Logic:
+      // If start is in the past, end is NOW (accrued).
+      // If start is in future, maybe show 1 night rate as estimate?
+      // User request: "calculate money owed up until the current date"
+      let end: Date;
+
+      if (isIndefinite) {
+        const now = new Date();
+        if (start < now) {
+          end = now; // Accrued until today
+        } else {
+          end = new Date(start.getTime() + 86400000); // 1 Night Estimate
+        }
+      } else {
+        end = new Date(checkOut);
+      }
 
       if (start >= end) {
         setQuote(null);
@@ -277,7 +292,7 @@ const Reservations: React.FC = () => {
       // 0. Double Booking Prevention
       // Check for any reservation that overlaps with the requested dates for this room
       // that is NOT Cancelled or Checked Out.
-      const effectiveCheckOut = isIndefinite ? '2030-01-01' : bookingForm.checkOut;
+      const effectiveCheckOut = isIndefinite ? '2099-12-31' : bookingForm.checkOut; // Use far future for collision check in DB, but display/financials handled differently
 
       const { data: overlap, error: overlapError } = await supabase
         .from('reservations')
@@ -929,42 +944,44 @@ const Reservations: React.FC = () => {
                 )}
                 {isIndefinite && (
                   <div className="p-2 bg-slate-100 text-xs text-slate-500 rounded border border-slate-200 mt-1">
-                    Guest will stay indefinitely. Billing will accrue daily.
-                  </div>
-                )}
-
-                {/* 28-Day Override Warning */}
-                {(!isIndefinite && bookingForm.checkIn && bookingForm.checkOut && Math.ceil(Math.abs(new Date(bookingForm.checkOut).getTime() - new Date(bookingForm.checkIn).getTime()) / (1000 * 60 * 60 * 24)) > 28) && (
-                  <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-md">
-                    <div className="flex items-start gap-2">
-                      <div className="text-red-600 font-bold text-xs mt-0.5">⚠️</div>
-                      <div>
-                        <h4 className="text-sm font-bold text-red-800">Extended Stay Warning</h4>
-                        <p className="text-xs text-red-600 mt-1">
-                          This reservation exceeds the 28-day policy limit.
-                          Tenancy rights may be established after 30 days.
-                        </p>
-                        <div className="flex items-center gap-2 mt-2">
-                          <input
-                            type="checkbox"
-                            id="override"
-                            checked={isOverride}
-                            onChange={(e) => setIsOverride(e.target.checked)}
-                            className="rounded border-red-300 text-red-600 focus:ring-red-500"
-                          />
-                          <label htmlFor="override" className="text-xs font-bold text-red-700">Authorize 28+ Day Stay Override</label>
-                        </div>
-                      </div>
-                    </div>
+                    Guest is staying indefinitely.
+                    {new Date(bookingForm.checkIn) < new Date() ?
+                      " Quote shows accrued balance up to today." :
+                      " Quote showing 1-night deposit estimate."
+                    }
                   </div>
                 )}
               </div>
             </div>
 
-
+            {/* 28-Day Override Warning */}
+            {(!isIndefinite && bookingForm.checkIn && bookingForm.checkOut && Math.ceil(Math.abs(new Date(bookingForm.checkOut).getTime() - new Date(bookingForm.checkIn).getTime()) / (1000 * 60 * 60 * 24)) > 28) && (
+              <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-md">
+                <div className="flex items-start gap-2">
+                  <div className="text-red-600 font-bold text-xs mt-0.5">⚠️</div>
+                  <div>
+                    <h4 className="text-sm font-bold text-red-800">Extended Stay Warning</h4>
+                    <p className="text-xs text-red-600 mt-1">
+                      This reservation exceeds the 28-day policy limit.
+                      Tenancy rights may be established after 30 days.
+                    </p>
+                    <div className="flex items-center gap-2 mt-2">
+                      <input
+                        type="checkbox"
+                        id="override"
+                        checked={isOverride}
+                        onChange={(e) => setIsOverride(e.target.checked)}
+                        className="rounded border-red-300 text-red-600 focus:ring-red-500"
+                      />
+                      <label htmlFor="override" className="text-xs font-bold text-red-700">Authorize 28+ Day Stay Override</label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
             {/* Auto-Calculating Quote Table */}
-            {(bookingForm.roomId && bookingForm.checkIn && bookingForm.checkOut) && (
-              <><div className="mt-4 bg-slate-50 p-3 rounded-lg border border-slate-200">
+            {(bookingForm.roomId && bookingForm.checkIn && (bookingForm.checkOut || isIndefinite)) && (
+              <div className="mt-4 bg-slate-50 p-3 rounded-lg border border-slate-200">
                 <h4 className="text-sm font-semibold text-slate-700 mb-2">Price Breakdown</h4>
                 {quoteLoading ? (
                   <div className="text-center py-2 text-slate-500 text-sm">Calculating...</div>
@@ -1003,14 +1020,14 @@ const Reservations: React.FC = () => {
                       </table>
                     </div>
                     <div className="flex justify-between items-center font-bold text-slate-900 pt-1">
-                      <span>Total ({quote.nights} nights)</span>
+                      <span>{isIndefinite ? (new Date(bookingForm.checkIn) < new Date() ? 'Accrued Total' : 'Est. 1st Night') : `Total (${quote.nights} nights)`}</span>
                       <span>${quote.total.toFixed(2)}</span>
                     </div>
                   </div>
                 ) : (
                   <div className="text-center py-2 text-slate-400 text-xs">Unable to calculate quote</div>
                 )}
-              </div></>
+              </div>
             )}
 
 
@@ -1020,7 +1037,7 @@ const Reservations: React.FC = () => {
               <Button onClick={handleCreateBooking}>{editingReservationId ? 'Update Booking' : 'Confirm Booking'}</Button>
             </div>
           </div>
-        </div>
+        </div >
       )
       }
 
@@ -1383,8 +1400,7 @@ const Reservations: React.FC = () => {
               </div>
             )}
           </>
-        )
-      }
+        )}
       <Modal
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
