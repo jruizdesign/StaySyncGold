@@ -3,7 +3,7 @@ const db = require('../../config/database');
 // @desc    Get Daily Overview (Checked-In Guests & Financial Status)
 // @route   GET /api/reports/daily-overview
 // @access  Protected
-const { validate: isUuid } = require('uuid'); // ensure uuid package is utilized if available, or regex
+// const { validate: isUuid } = require('uuid'); // Removed to avoid dependency error
 // Since we might not have uuid package installed in this file scope or at all, let's use regex for safety
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
