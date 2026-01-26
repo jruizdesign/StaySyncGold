@@ -101,8 +101,8 @@ const ResolveMaintenanceModal: React.FC<ResolveMaintenanceModalProps> = ({
         setLoading(true);
 
         try {
-            // 1. Update Ticket
-            const { error: ticketError } = await supabase
+            // 1. Update Ticket & Get Room ID
+            const { data: ticketData, error: ticketError } = await supabase
                 .from('maintenance')
                 .update({
                     status: 'Resolved',
@@ -110,16 +110,20 @@ const ResolveMaintenanceModal: React.FC<ResolveMaintenanceModalProps> = ({
                     expenses: expenses.filter(e => e.item.trim() !== ''), // Clean empty rows
                     total_cost: totalCost
                 })
-                .eq('id', activeTicketId);
+                .eq('id', activeTicketId)
+                .select('room_id')
+                .single();
 
             if (ticketError) throw ticketError;
 
-            // 2. If room_id is involved (Housekeeping context), ensure room is marked clean/available
-            if (roomId) {
+            // 2. Update Room Status (Use prop OR fetched ID)
+            const targetRoomId = roomId || ticketData?.room_id;
+
+            if (targetRoomId) {
                 await supabase
                     .from('rooms')
-                    .update({ status: 'Clean' })
-                    .eq('id', roomId);
+                    .update({ status: 'Clean' }) // Set to Clean/Available upon fix
+                    .eq('id', targetRoomId);
             }
 
             // 3. Record Expense in Financial Ledger

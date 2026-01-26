@@ -1087,6 +1087,7 @@ const Reservations: React.FC = () => {
                     <th className="px-6 py-4 font-semibold text-slate-700">Room</th>
                     <th className="px-6 py-4 font-semibold text-slate-700">Check In</th>
                     <th className="px-6 py-4 font-semibold text-slate-700">Check Out</th>
+                    <th className="px-6 py-4 font-semibold text-slate-700">Days Stayed</th>
                     <th className="px-6 py-4 font-semibold text-slate-700">Status</th>
                     <th className="px-6 py-4 font-semibold text-slate-700 text-right">Total</th>
                     <th className="px-6 py-4 font-semibold text-slate-700 text-center">Actions</th>
@@ -1120,6 +1121,33 @@ const Reservations: React.FC = () => {
                       <td className="px-6 py-4 font-mono text-slate-600">#{res.roomNumber}</td>
                       <td className="px-6 py-4 text-slate-600">{new Date(res.checkIn).toLocaleDateString()}</td>
                       <td className="px-6 py-4 text-slate-600">{new Date(res.checkOut).toLocaleDateString()}</td>
+                      <td className="px-6 py-4">
+                        {(() => {
+                          const start = new Date(res.checkIn);
+                          // Determine relevant end date for calculation
+                          // If checked in, we want "days so far" OR "projected total". 
+                          // User request: "max stay is 28 days... alerts before 28 days".
+                          // It is safer to show the TOTAL projected length for the reservation to see if they booked too long.
+                          // But for "force checkout", we might care about "current day count".
+                          // Let's show "Projected Total" and maybe highlight if current day is close.
+                          // Actually, let's show "Current / Total" if checked in? 
+                          // Let's stick to "Reserved Length" which determines the policy violation initially.
+
+                          const end = new Date(res.checkOut);
+                          const duration = Math.ceil(Math.abs(end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+
+                          let badgeColor = "bg-slate-100 text-slate-700"; // Default
+                          if (duration >= 28) badgeColor = "bg-red-100 text-red-700 font-bold border border-red-200";
+                          else if (duration >= 25) badgeColor = "bg-amber-100 text-amber-700 font-bold border border-amber-200";
+                          else badgeColor = "bg-green-50 text-green-700 border border-green-100";
+
+                          return (
+                            <div className={`inline-flex items-center px-2.5 py-0.5 rounded text-xs ${badgeColor}`}>
+                              {duration} Days
+                            </div>
+                          );
+                        })()}
+                      </td>
                       <td className="px-6 py-4">
                         <Badge color={getStatusColor(res.status)}>{res.status}</Badge>
                       </td>
@@ -1187,7 +1215,7 @@ const Reservations: React.FC = () => {
                   ))}
                   {filteredReservations.length === 0 && (
                     <tr>
-                      <td colSpan={7} className="px-6 py-12 text-center text-slate-500">
+                      <td colSpan={8} className="px-6 py-12 text-center text-slate-500">
                         No reservations found matching your search.
                       </td>
                     </tr>
