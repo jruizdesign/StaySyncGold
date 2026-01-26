@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { X, User, CreditCard, Calendar, Phone, Mail, DollarSign, Clock, BedDouble } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { Badge, Button } from './UIComponents';
+import AddChargeModal from './AddChargeModal';
 import { Room } from '../types';
 
 interface RoomDetailsModalProps {
@@ -38,6 +39,7 @@ const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({ isOpen, onClose, ro
     const [loading, setLoading] = useState(true);
     const [reservation, setReservation] = useState<ReservationDetails | null>(null);
     const [transactions, setTransactions] = useState<Transaction[]>([]);
+    const [isAddChargeModalOpen, setIsAddChargeModalOpen] = useState(false);
 
     useEffect(() => {
         if (isOpen && room) {
@@ -199,6 +201,11 @@ const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({ isOpen, onClose, ro
                                     <CreditCard className="w-5 h-5 text-emerald-500" />
                                     Financials
                                 </h3>
+                                <div className="flex justify-end mb-2">
+                                    <Button size="sm" variant="outline" icon={DollarSign} onClick={() => setIsAddChargeModalOpen(true)}>
+                                        Add Charge
+                                    </Button>
+                                </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                                     <div className="bg-slate-50 p-3 rounded-lg">
@@ -272,6 +279,15 @@ const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({ isOpen, onClose, ro
                     {reservation && <Button>View Full Reservation</Button>}
                 </div>
             </div>
+            {reservation && (
+                <AddChargeModal
+                    isOpen={isAddChargeModalOpen}
+                    onClose={() => setIsAddChargeModalOpen(false)}
+                    reservationId={reservation.id}
+                    currentTotal={reservation.total_amount}
+                    onChargeAdded={fetchRoomDetails}
+                />
+            )}
         </div>
     );
 };
