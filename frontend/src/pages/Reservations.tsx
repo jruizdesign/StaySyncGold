@@ -5,6 +5,7 @@ import { ReservationStatus, Reservation } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { generateInvoicePDF, generateReceiptPDF } from '../utils/pdfGenerator';
+import CheckInModal from '../components/CheckInModal';
 
 const Reservations: React.FC = () => {
   const { user } = useAuth();
@@ -44,7 +45,12 @@ const Reservations: React.FC = () => {
   const [editingReservationId, setEditingReservationId] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+
   const [reservationToDelete, setReservationToDelete] = useState<string | null>(null);
+
+  // Check In Modal State
+  const [isCheckInModalOpen, setIsCheckInModalOpen] = useState(false);
+  const [reservationToCheckIn, setReservationToCheckIn] = useState<Reservation | null>(null);
 
 
   useEffect(() => {
@@ -249,6 +255,8 @@ const Reservations: React.FC = () => {
       // 0. Double Booking Prevention
       // Check for any reservation that overlaps with the requested dates for this room
       // that is NOT Cancelled or Checked Out.
+      const effectiveCheckOut = isIndefinite ? '2030-01-01' : bookingForm.checkOut;
+
       const { data: overlap, error: overlapError } = await supabase
         .from('reservations')
         .select('id')
@@ -257,7 +265,7 @@ const Reservations: React.FC = () => {
         .neq('status', 'Checked Out')
         // Overlap logic: (StartA <= EndB) and (EndA >= StartB)
         // creating_check_in <= existing_check_out AND creating_check_out >= existing_check_in
-        .or(`and(check_in.lte.${bookingForm.checkOut},check_out.gte.${bookingForm.checkIn})`)
+        .or(`and(check_in.lte.${effectiveCheckOut},check_out.gte.${bookingForm.checkIn})`)
         .limit(1);
 
       if (overlapError) throw overlapError;
@@ -732,8 +740,8 @@ const Reservations: React.FC = () => {
             <button
               onClick={() => setActiveTab('active')}
               className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 ${activeTab === 'active'
-                  ? 'border-gold-500 text-gold-600'
-                  : 'border-transparent text-slate-500 hover:text-slate-700'
+                ? 'border-gold-500 text-gold-600'
+                : 'border-transparent text-slate-500 hover:text-slate-700'
                 }`}
             >
               Active
@@ -741,8 +749,8 @@ const Reservations: React.FC = () => {
             <button
               onClick={() => setActiveTab('archived')}
               className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 ${activeTab === 'archived'
-                  ? 'border-gold-500 text-gold-600'
-                  : 'border-transparent text-slate-500 hover:text-slate-700'
+                ? 'border-gold-500 text-gold-600'
+                : 'border-transparent text-slate-500 hover:text-slate-700'
                 }`}
             >
               Archived
@@ -1046,7 +1054,10 @@ const Reservations: React.FC = () => {
                         <div className="flex justify-center gap-2">
                           {res.status === 'Confirmed' && (
                             <button
-                              onClick={() => handleUpdateStatus(res.id, 'Checked In')}
+                              onClick={() => {
+                                setReservationToCheckIn(res);
+                                setIsCheckInModalOpen(true);
+                              }}
                               className="text-white bg-green-500 hover:bg-green-600 px-3 py-1 rounded-md text-xs font-bold transition-colors"
                               title="Check In"
                             >
@@ -1287,6 +1298,19 @@ const Reservations: React.FC = () => {
           </div>
         </div>
       </Modal>
+      <CheckInModal
+        isOpen={isCheckInModalOpen}
+        onClose={() => {
+          setIsCheckInModalOpen(false);
+          setReservationToCheckIn(null);
+        }}
+        reservation={reservationToCheckIn}
+        onConfirm={(id) => {
+          handleUpdateStatus(id, 'Checked In');
+          setIsCheckInModalOpen(false);
+          setReservationToCheckIn(null);
+        }}
+      />
     </div >
   );
 };
