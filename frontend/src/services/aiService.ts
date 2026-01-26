@@ -1,11 +1,12 @@
 import { API_BASE_URL } from '../config';
 
-export const generateSmartResponse = async (userPrompt: string, context: string): Promise<string> => {
+export const generateSmartResponse = async (userPrompt: string, context: string, token: string): Promise<string> => {
   try {
     const response = await fetch(`${API_BASE_URL}/api/ai/chat`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
       },
       body: JSON.stringify({ prompt: userPrompt, context }),
     });
@@ -35,9 +36,13 @@ export interface AIInsights {
 /**
  * Fetch AI-generated insights for a property from backend
  */
-export async function getPropertyInsights(propertyId: string): Promise<AIInsights> {
+export async function getPropertyInsights(propertyId: string, token: string): Promise<AIInsights> {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/ai/insights/${propertyId}`);
+    const response = await fetch(`${API_BASE_URL}/api/ai/insights/${propertyId}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
 
     if (!response.ok) {
       throw new Error(`Failed to fetch insights: ${response.statusText}`);

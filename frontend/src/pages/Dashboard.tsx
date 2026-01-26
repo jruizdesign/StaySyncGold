@@ -27,7 +27,7 @@ const StatCard: React.FC<{ title: string, value: string, sub: string, icon: any,
 );
 
 const Dashboard: React.FC = () => {
-  const { user } = useAuth();
+  const { user, session } = useAuth();
 
   // AI Insights State
   const [aiInsights, setAiInsights] = React.useState<any>(null);
@@ -40,8 +40,9 @@ const Dashboard: React.FC = () => {
 
       try {
         setLoadingInsights(true);
+        if (!session?.access_token) return;
         const { getPropertyInsights } = await import('../services/aiService');
-        const data = await getPropertyInsights(user.propertyId);
+        const data = await getPropertyInsights(user.propertyId, session.access_token);
         setAiInsights(data);
       } catch (err) {
         console.error('Failed to fetch AI insights:', err);
@@ -55,7 +56,7 @@ const Dashboard: React.FC = () => {
     // Refresh every 5 minutes
     const interval = setInterval(fetchInsights, 5 * 60 * 1000);
     return () => clearInterval(interval);
-  }, [user?.propertyId]);
+  }, [user?.propertyId, session?.access_token]);
 
   // Data Fetching
   const [statsData, setStatsData] = React.useState<any>(null);

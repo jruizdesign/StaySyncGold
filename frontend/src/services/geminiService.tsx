@@ -7,12 +7,13 @@ export interface IncidentAnalysis {
   suggestedAction: string;
 }
 
-export const analyzeIncidentReport = async (description: string): Promise<IncidentAnalysis | null> => {
+export const analyzeIncidentReport = async (description: string, token: string): Promise<IncidentAnalysis | null> => {
   try {
     const response = await fetch(`${API_BASE_URL}/api/ai/analyze-issue`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
       },
       body: JSON.stringify({ description }),
     });

@@ -1,10 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { X, Send, Sparkles, Loader2 } from 'lucide-react';
 import { Button } from './UIComponents';
+import { useAuth } from '../context/AuthContext';
 
 import { MOCK_GUESTS, MOCK_RESERVATIONS, MOCK_ROOMS } from '../constants';
 
 export const SmartAssistant: React.FC = () => {
+  const { session } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [messages, setMessages] = useState<{ role: 'user' | 'system', text: string }[]>([
@@ -37,7 +39,8 @@ export const SmartAssistant: React.FC = () => {
 
     try {
       const { generateSmartResponse } = await import('../services/aiService');
-      const response = await generateSmartResponse(userMsg, context);
+      const token = session?.access_token || '';
+      const response = await generateSmartResponse(userMsg, context, token);
       setMessages(prev => [...prev, { role: 'system', text: response }]);
     } catch (error) {
       console.error("AI Service Error:", error);

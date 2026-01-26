@@ -1,4 +1,5 @@
 import { analyzeIncidentReport } from '../services/geminiService';
+import { useAuth } from '../context/AuthContext';
 import React, { useState } from 'react';
 import { X, Sparkles, CheckCircle, Info } from 'lucide-react';
 
@@ -10,6 +11,7 @@ interface ReportIssueModalProps {
 }
 
 const ReportIssueModal: React.FC<ReportIssueModalProps> = ({ roomNumber, existingIssue, onClose, onSubmit }) => {
+    const { session } = useAuth();
     const [step, setStep] = useState(existingIssue ? 2 : 1);
     const [description, setDescription] = useState('');
     const [analyzing, setAnalyzing] = useState(false);
@@ -24,7 +26,8 @@ const ReportIssueModal: React.FC<ReportIssueModalProps> = ({ roomNumber, existin
         if (!description.trim()) return;
         setAnalyzing(true);
         try {
-            const result = await analyzeIncidentReport(description);
+            if (!session?.access_token) throw new Error("Authentication required for analysis");
+            const result = await analyzeIncidentReport(description, session.access_token);
             if (!result) throw new Error("AI Analysis returned null");
 
             setAnalysis({
