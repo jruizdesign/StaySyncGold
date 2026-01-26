@@ -163,7 +163,7 @@ const DatabaseInspector: React.FC = () => {
 };
 
 const UserManagement: React.FC = () => {
-    const { user } = useAuth();
+    const { user, session } = useAuth();
     const [users, setUsers] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [showAddForm, setShowAddForm] = useState(false);
@@ -180,6 +180,7 @@ const UserManagement: React.FC = () => {
         try {
             if (isEditingStaff && editingStaffId) {
                 // Update Logic
+                if (!session?.access_token) throw new Error("Authentication required");
                 await updateStaff(editingStaffId, {
                     property_id: user.propertyId,
                     firstname: newStaff.firstname,
@@ -188,10 +189,11 @@ const UserManagement: React.FC = () => {
                     role: newStaff.role,
                     pin: newStaff.pin, // Optional update handled by backend
                     phone_num: ''
-                });
+                }, session.access_token);
                 alert('Staff member updated successfully');
             } else {
                 // Create Logic
+                if (!session?.access_token) throw new Error("Authentication required");
                 await createStaff({
                     property_id: user.propertyId,
                     firstname: newStaff.firstname,
@@ -200,7 +202,7 @@ const UserManagement: React.FC = () => {
                     role: newStaff.role,
                     pin: newStaff.pin,
                     phone_num: ''
-                });
+                }, session.access_token);
                 alert('Staff member added successfully');
             }
 
@@ -234,7 +236,8 @@ const UserManagement: React.FC = () => {
         if (!window.confirm('Are you sure you want to delete this staff member? This action cannot be undone.')) return;
 
         try {
-            await deleteStaff(staffId);
+            if (!session?.access_token) throw new Error("Authentication required");
+            await deleteStaff(staffId, session.access_token);
             fetchUsers(); // Refresh list
         } catch (err: any) {
             alert('Failed to delete staff: ' + err.message);

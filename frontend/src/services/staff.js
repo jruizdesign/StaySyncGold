@@ -16,12 +16,13 @@ export const getStaff = async () => {
   }
 };
 
-export const createStaff = async (staffData) => {
+export const createStaff = async (staffData, token) => {
   try {
     const response = await fetch(API_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
       },
       body: JSON.stringify(staffData),
     });
@@ -95,12 +96,13 @@ export const getClockHistory = async (property_id, staff_id = null) => {
     throw error;
   }
 };
-export const updateStaff = async (id, staffData) => {
+export const updateStaff = async (id, staffData, token) => {
   try {
     const response = await fetch(`${API_URL}/${id}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
       },
       body: JSON.stringify(staffData),
     });
@@ -115,10 +117,13 @@ export const updateStaff = async (id, staffData) => {
   }
 };
 
-export const deleteStaff = async (id) => {
+export const deleteStaff = async (id, token) => {
   try {
     const response = await fetch(`${API_URL}/${id}`, {
       method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
     });
     if (!response.ok) {
       throw new Error('Failed to delete staff member');
