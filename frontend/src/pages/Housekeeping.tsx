@@ -307,10 +307,10 @@ const Housekeeping: React.FC = () => {
                 ) : room.status === RoomStatus.CLEAN ? (
                   <div className="grid grid-cols-2 gap-3">
                     <button
-                      disabled
-                      className="py-2.5 bg-slate-100 text-slate-400 font-medium rounded-lg text-sm cursor-not-allowed"
+                      onClick={() => handleUpdateStatus(room.id, RoomStatus.DIRTY)}
+                      className="py-2.5 bg-rose-50 border border-rose-200 hover:bg-rose-100 text-rose-700 font-medium rounded-lg transition-colors text-sm"
                     >
-                      Clean
+                      Mark Dirty
                     </button>
                     <button
                       onClick={() => handleUpdateStatus(room.id, RoomStatus.OOO)}
