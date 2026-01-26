@@ -13,16 +13,16 @@ const protect = async (req, res, next) => {
             const { data: { user }, error } = await supabase.auth.getUser(token);
 
             if (error || !user) {
-                console.error("Auth Fail:", error?.message);
-                return res.status(401).json({ success: false, error: 'Not authorized, token failed' });
+                console.error("Auth Fail: Token invalid or User not found.", error?.message);
+                return res.status(401).json({ success: false, error: 'Not authorized, token failed: ' + (error?.message || 'User not found') });
             }
 
             // Attach user to request
             req.user = user;
             next();
         } catch (error) {
-            console.error(error);
-            res.status(401).json({ success: false, error: 'Not authorized' });
+            console.error("Auth Middleware Exception:", error);
+            res.status(401).json({ success: false, error: 'Not authorized: ' + error.message });
         }
     } else {
         res.status(401).json({ success: false, error: 'Not authorized, no token' });
