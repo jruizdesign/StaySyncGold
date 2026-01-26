@@ -51,20 +51,22 @@ app.use(helmet({
   referrerPolicy: { policy: "strict-origin-when-cross-origin" },
 }));
 
-app.use('/api/reservations', reservationsRouter);
-app.use('/api/payments', paymentsRouter);
-app.use('/api/guests', guestsRouter);
-app.use('/api/housekeeping', housekeepingRouter);
-app.use('/api/maintenance', maintenanceRouter);
-app.use('/api/staff', staffRouter);
-app.use('/api/schedules', schedulesRouter);
-app.use('/api/reports', reportsRouter);
-app.use('/api/admin', adminRouter);
-app.use('/api/users', usersRouter);
-app.use('/api/channex', channexRouter);
-app.use('/api/ai', aiRouter);
-app.use('/api/accounting', accountingRouter);
-app.use('/api/overview', require('./api/routes/overview'));
+const { protect } = require('./middleware/auth');
+
+app.use('/api/reservations', protect, reservationsRouter);
+app.use('/api/payments', protect, paymentsRouter);
+app.use('/api/guests', protect, guestsRouter);
+app.use('/api/housekeeping', protect, housekeepingRouter);
+app.use('/api/maintenance', protect, maintenanceRouter);
+app.use('/api/staff', protect, staffRouter);
+app.use('/api/schedules', protect, schedulesRouter);
+app.use('/api/reports', protect, reportsRouter);
+app.use('/api/admin', protect, adminRouter);
+app.use('/api/users', protect, usersRouter);
+app.use('/api/channex', protect, channexRouter);
+app.use('/api/ai', protect, aiRouter); // Protected to save costs
+app.use('/api/accounting', protect, accountingRouter);
+app.use('/api/overview', protect, require('./api/routes/overview'));
 
 app.get('/', (req, res) => {
   res.send('Welcome to the StaySyncGold API!');
