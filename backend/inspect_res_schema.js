@@ -16,12 +16,26 @@ async function inspect() {
     const client = await pool.connect();
     try {
         console.log('🔍 Inspecting reservations...');
-        const resCols = await client.query(`
-            SELECT column_name, data_type 
-            FROM information_schema.columns 
-            WHERE table_name = 'reservations';
+        console.log('🔍 Inspecting RLS Policies for feature_requests...');
+        const policies = await client.query(`
+            SELECT policyname, cmd, roles, qual, with_check 
+            FROM pg_policies 
+            WHERE tablename = 'feature_requests';
         `);
-        resCols.rows.forEach(r => console.log(`Reservations: ${r.column_name} (${r.data_type})`));
+        if (policies.rows.length === 0) {
+            console.log('No policies found! (If RLS is enabled, this means DENY ALL)');
+        } else {
+            policies.rows.forEach(p => {
+                console.log(`Policy: ${p.policyname} | Action: ${p.cmd} | Roles: ${p.roles} | Using: ${p.qual}`);
+            });
+        }
+
+        const rlsEnabled = await client.query(`
+            SELECT relrowsecurity 
+            FROM pg_class 
+            WHERE relname = 'feature_requests';
+        `);
+        console.log('RLS Enabled:', rlsEnabled.rows[0]?.relrowsecurity);
 
         console.log('\n🔍 Inspecting payments...');
         const payCols = await client.query(`
