@@ -351,7 +351,7 @@ const Reservations: React.FC = () => {
             guest_id: guest_id,
             room_id: bookingForm.roomId,
             check_in: bookingForm.checkIn,
-            check_out: isIndefinite ? '2030-01-01' : bookingForm.checkOut,
+            check_out: isIndefinite ? '2099-12-31' : bookingForm.checkOut,
             // status: 'Confirmed', removed duplicate
 
             status: reservations.find(r => r.id === editingReservationId)?.status || 'Confirmed',
@@ -375,7 +375,7 @@ const Reservations: React.FC = () => {
             guest_id: guest_id,
             room_id: bookingForm.roomId,
             check_in: bookingForm.checkIn,
-            check_out: isIndefinite ? '2030-01-01' : bookingForm.checkOut,
+            check_out: isIndefinite ? '2099-12-31' : bookingForm.checkOut,
             is_indefinite: isIndefinite,
             status: 'Confirmed',
             total_price: quote ? quote.total : await calculateTotalAmount(bookingForm.roomId, bookingForm.checkIn, bookingForm.checkOut),
@@ -423,14 +423,23 @@ const Reservations: React.FC = () => {
     // 3. Calculate Daily Sum
     let total = 0;
     const start = new Date(checkIn);
-    const end = new Date(checkOut);
+    let end = new Date(checkOut);
+
+    // Indefinite Logic: If checkout is far future (e.g. 2099), clamp to NOW or 1 night
+    if (end.getFullYear() > 2050) {
+      const now = new Date();
+      if (start < now) {
+        end = now; // Accrued
+      } else {
+        end = new Date(start.getTime() + 86400000); // 1 Night Estimate for future booking
+      }
+    }
 
     for (let d = new Date(start); d < end; d.setDate(d.getDate() + 1)) {
       const dateStr = d.toISOString().split('T')[0];
       const rate = ratesData?.find(r => r.date === dateStr);
       // Fallback to base rate (assuming 100 if unknown for now, ideally room.price)
-      // We should add price to room table, but for now let's use a safe default or 0
-      total += rate ? Number(rate.price) : 100;
+      total += rate ? Number(rate.price) : (Number(room.price_per_night) || 100);
     }
     return total;
   };
@@ -1137,7 +1146,7 @@ const Reservations: React.FC = () => {
                       </td>
                       <td className="px-6 py-4 font-mono text-slate-600">#{res.roomNumber}</td>
                       <td className="px-6 py-4 text-slate-600">{new Date(res.checkIn).toLocaleDateString()}</td>
-                      <td className="px-6 py-4 text-slate-600">{new Date(res.checkOut).toLocaleDateString()}</td>
+                      <td className="px-6 py-4 text-slate-600">{new Date(res.checkOut).getFullYear() > 2025 ? <span className="italic text-slate-400">Indefinite</span> : new Date(res.checkOut).toLocaleDateString()}</td>
                       <td className="px-6 py-4">
                         {(() => {
                           const start = new Date(res.checkIn);
@@ -1168,7 +1177,35 @@ const Reservations: React.FC = () => {
                       <td className="px-6 py-4">
                         <Badge color={getStatusColor(res.status)}>{res.status}</Badge>
                       </td>
-                      <td className="px-6 py-4 text-right font-medium text-slate-900">${res.totalAmount}</td>
+                      <td className="px-6 py-4 text-right font-medium text-slate-900">
+                        {new Date(res.checkOut).getFullYear() > 2050 ? (
+                          // Indefinite: Calc Accrued
+                          (() => {
+                            const start = new Date(res.checkIn);
+                            const now = new Date();
+                            // Accrued days: (Now - Start). If start > now, 0.
+                            const ms = now.getTime() - start.getTime();
+                            const days = Math.ceil(ms / (1000 * 3600 * 24));
+                            const validDays = Math.max(1, days); // Show at least 1 day charge? Or 0 if future? User said "accrued ... started before today".
+
+                            // We need room price. filteredReservations doesn't have it joined, but we have `rooms` state.
+                            // res.roomId matches rooms.id
+                            const room = rooms.find(r => r.id === res.roomId);
+                            const price = room ? (Number(room.price_per_night) || 100) : 100;
+                            const accrued = validDays * price;
+
+                            if (ms < 0) return `$${res.totalAmount}`; // Future indefinite, show stored/deposit
+
+                            return (
+                              <span title={`Accrued: ${validDays} days @ $${price}/night`}>
+                                ${accrued.toFixed(2)}*
+                              </span>
+                            );
+                          })()
+                        ) : (
+                          `$${res.totalAmount}`
+                        )}
+                      </td>
                       <td className="px-6 py-4 text-center">
                         <div className="flex justify-center gap-2">
                           {res.status === 'Confirmed' && (
