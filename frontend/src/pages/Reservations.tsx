@@ -8,7 +8,7 @@ import { generateInvoicePDF, generateReceiptPDF } from '../utils/pdfGenerator';
 import CheckInModal from '../components/CheckInModal';
 
 const Reservations: React.FC = () => {
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const [view, setView] = useState<'list' | 'calendar' | 'rates'>('list');
   const [searchTerm, setSearchTerm] = useState('');
   const [reservations, setReservations] = useState<Reservation[]>([]);
@@ -305,7 +305,10 @@ const Reservations: React.FC = () => {
         // UPDATE Existing
         const response = await fetch(`/api/reservations/${editingReservationId}`, {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session?.access_token}`
+          },
           body: JSON.stringify({
             property_id: user.propertyId,
             guest_id: guest_id,
@@ -326,7 +329,10 @@ const Reservations: React.FC = () => {
         // CREATE New
         const response = await fetch('/api/reservations', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session?.access_token}`
+          },
           body: JSON.stringify({
             property_id: user.propertyId,
             guest_id: guest_id,
@@ -524,7 +530,8 @@ const Reservations: React.FC = () => {
       const response = await fetch(`/api/reservations/${id}`, {
         method: 'PUT',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`
         },
         body: JSON.stringify({
           property_id: user?.propertyId,
@@ -609,7 +616,10 @@ const Reservations: React.FC = () => {
     setLoading(true);
     try {
       const response = await fetch(`/api/reservations/${reservationToDelete}?modified_by=${user?.id}&modifier_name=${user?.email}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${session?.access_token}`
+        }
       });
 
       if (!response.ok) throw new Error('Failed to delete');
