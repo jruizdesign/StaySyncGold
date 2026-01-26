@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Button, Badge, Input, Modal } from '../components/UIComponents';
-import { Plus, Search, MoreVertical, Loader, Edit, Trash2 } from 'lucide-react';
+import { Plus, Search, MoreVertical, Loader, Edit, Trash2, AlertTriangle } from 'lucide-react';
 import { ReservationStatus, Reservation } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -45,6 +45,7 @@ const Reservations: React.FC = () => {
   const [editingReservationId, setEditingReservationId] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isOverride, setIsOverride] = useState(false);
 
   const [reservationToDelete, setReservationToDelete] = useState<string | null>(null);
 
@@ -248,6 +249,27 @@ const Reservations: React.FC = () => {
     if (!isNewGuest && !bookingForm.guestId) {
       alert("Please select a guest");
       return;
+    }
+
+    // 28-Day Limit Validation
+    if (!isIndefinite && bookingForm.checkIn && bookingForm.checkOut) {
+      const start = new Date(bookingForm.checkIn);
+      const end = new Date(bookingForm.checkOut);
+      const diffTime = Math.abs(end.getTime() - start.getTime());
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+      if (diffDays > 28 && !isOverride) {
+        alert("Policy Alert: Maximum stay is 28 days. You must enable the 'Override' option to proceed with this long-term booking.");
+        return;
+      }
+    }
+
+    if (isIndefinite && !isOverride) {
+      // Optional: Warn for indefinite too? Assuming indefinite is always potentially > 28 days.
+      // Let's enforce override for indefinite as well to be safe, or just alerting user.
+      // For now, let's keep it simple: Indefinite usually means long term.
+      const confirmIndefinite = window.confirm("Indefinite stays may exceed the 28-day limit. Proceed?");
+      if (!confirmIndefinite) return;
     }
 
     setLoading(true);
@@ -910,6 +932,32 @@ const Reservations: React.FC = () => {
                     Guest will stay indefinitely. Billing will accrue daily.
                   </div>
                 )}
+
+                {/* 28-Day Override Warning */}
+                {(!isIndefinite && bookingForm.checkIn && bookingForm.checkOut && Math.ceil(Math.abs(new Date(bookingForm.checkOut).getTime() - new Date(bookingForm.checkIn).getTime()) / (1000 * 60 * 60 * 24)) > 28) && (
+                  <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-md">
+                    <div className="flex items-start gap-2">
+                      <div className="text-red-600 font-bold text-xs mt-0.5">⚠️</div>
+                      <div>
+                        <h4 className="text-sm font-bold text-red-800">Extended Stay Warning</h4>
+                        <p className="text-xs text-red-600 mt-1">
+                          This reservation exceeds the 28-day policy limit.
+                          Tenancy rights may be established after 30 days.
+                        </p>
+                        <div className="flex items-center gap-2 mt-2">
+                          <input
+                            type="checkbox"
+                            id="override"
+                            checked={isOverride}
+                            onChange={(e) => setIsOverride(e.target.checked)}
+                            className="rounded border-red-300 text-red-600 focus:ring-red-500"
+                          />
+                          <label htmlFor="override" className="text-xs font-bold text-red-700">Authorize 28+ Day Stay Override</label>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -968,7 +1016,7 @@ const Reservations: React.FC = () => {
 
 
             <div className="flex justify-end gap-2 mt-4">
-              <Button variant="ghost" onClick={() => { setIsBookingModalOpen(false); setEditingReservationId(null); }}>Cancel</Button>
+              <Button variant="ghost" onClick={() => { setIsBookingModalOpen(false); setEditingReservationId(null); setIsOverride(false); }}>Cancel</Button>
               <Button onClick={handleCreateBooking}>{editingReservationId ? 'Update Booking' : 'Confirm Booking'}</Button>
             </div>
           </div>
@@ -1048,7 +1096,23 @@ const Reservations: React.FC = () => {
                   {filteredReservations.map((res) => (
                     <tr key={res.id} className="hover:bg-slate-50 transition-colors">
                       <td className="px-6 py-4">
-                        <div className="font-medium text-slate-900">{res.guestName}</div>
+                        <div className="font-medium text-slate-900 flex items-center gap-2">
+                          {res.guestName}
+                          {(() => {
+                            const start = new Date(res.checkIn);
+                            // If checked in, compare to now. If confirmed, compare to checkout.
+                            // Actually user cares about "max stay is 28 days", so we should check the projected total length for everyone.
+                            const end = new Date(res.checkOut || Date.now());
+                            const duration = Math.ceil(Math.abs(end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+
+                            if (duration > 28) {
+                              return <span title={`Extended Stay: ${duration} days (Limit Exceeded)`}><AlertTriangle className="w-4 h-4 text-red-500" /></span>;
+                            } else if (duration >= 25) {
+                              return <span title={`Approaching Limit: ${duration} days`}><AlertTriangle className="w-4 h-4 text-amber-500" /></span>;
+                            }
+                            return null;
+                          })()}
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className="font-medium text-slate-900">{res.friendlyId || res.id.slice(0, 8).toUpperCase()}</span>

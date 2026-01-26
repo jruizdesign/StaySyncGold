@@ -1,6 +1,6 @@
 import React from 'react';
 import { Card, Badge } from '../components/UIComponents';
-import { CheckCircle, TrendingUp, Users, BedDouble, DollarSign } from 'lucide-react';
+import { CheckCircle, TrendingUp, Users, BedDouble, DollarSign, ShieldCheck } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { LiveActivityFeed } from '../components/LiveActivityFeed';
 import { AIInsightCard } from '../components/AIInsightCard';
@@ -32,6 +32,56 @@ const Dashboard: React.FC = () => {
   // AI Insights State
   const [aiInsights, setAiInsights] = React.useState<any>(null);
   const [loadingInsights, setLoadingInsights] = React.useState(true);
+
+  // Tenancy Alerts State
+  const [tenancyAlerts, setTenancyAlerts] = React.useState<any[]>([]);
+
+  React.useEffect(() => {
+    const fetchTenancyRisks = async () => {
+      if (!user?.propertyId) return;
+
+      if (user.isDemoMode) {
+        // Mock data for demo
+        setTenancyAlerts([
+          { id: 'mock1', guestName: 'Alice Smith', roomNumber: '101', daysStayed: 27, status: 'Warning' }
+        ]);
+        return;
+      }
+
+      const { data } = await supabase
+        .from('reservations')
+        .select(`
+          id, check_in, check_out, status,
+          guests (first_name, last_name),
+          rooms (number)
+        `)
+        .eq('property_id', user.propertyId)
+        .eq('status', 'Checked In');
+
+      if (data) {
+        const warnings = data.map((res: any) => {
+          const checkIn = new Date(res.check_in);
+          const now = new Date();
+          const diffTime = Math.abs(now.getTime() - checkIn.getTime());
+          const daysStayed = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+          if (daysStayed >= 25) {
+            return {
+              id: res.id,
+              guestName: res.guests ? `${res.guests.first_name} ${res.guests.last_name}` : 'Unknown',
+              roomNumber: res.rooms ? res.rooms.number : 'N/A',
+              daysStayed,
+              status: daysStayed >= 28 ? 'Critical' : 'Warning'
+            };
+          }
+          return null;
+        }).filter(Boolean);
+        setTenancyAlerts(warnings);
+      }
+    };
+
+    fetchTenancyRisks();
+  }, [user?.propertyId, user?.isDemoMode]);
 
   React.useEffect(() => {
     const fetchInsights = async () => {
@@ -145,6 +195,37 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="space-y-6">
+
+      {/* Tenancy Risk Alerts */}
+      {tenancyAlerts.length > 0 && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 animate-pulse-slow">
+          <div className="flex items-start gap-4">
+            <div className="p-2 bg-red-100 rounded-full text-red-600">
+              <ShieldCheck className="w-6 h-6" />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-lg font-bold text-red-900">Tenancy Risk Alert</h3>
+              <p className="text-sm text-red-700 mb-3">
+                The following guests are approaching or have exceeded the 28-day stay limit.
+                Immediate action required to prevent tenancy establishment.
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {tenancyAlerts.map((alert: any) => (
+                  <div key={alert.id} className="bg-white p-3 rounded border border-red-100 shadow-sm flex justify-between items-center">
+                    <div>
+                      <p className="font-bold text-slate-800">{alert.guestName} <span className="text-slate-500 font-normal">(Rm {alert.roomNumber})</span></p>
+                      <p className="text-xs text-red-600 font-medium">Day {alert.daysStayed} of Stay</p>
+                    </div>
+                    <Badge color={alert.status === 'Critical' ? 'red' : 'yellow'}>
+                      {alert.status === 'Critical' ? 'LIMIT REACHED' : 'Risk'}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* AI Intel Card */}
       <AIInsightCard
