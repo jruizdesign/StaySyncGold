@@ -371,7 +371,7 @@ const RoomWizard: React.FC = () => {
 
     // Editing state
     const [editingId, setEditingId] = useState<string | null>(null);
-    const [editForm, setEditForm] = useState({ number: '', type: '', price: '' });
+    const [editForm, setEditForm] = useState({ number: '', type: '', price: '', status: '' });
 
     const fetchRooms = async () => {
         if (!user?.propertyId) return;
@@ -420,7 +420,8 @@ const RoomWizard: React.FC = () => {
         setEditForm({
             number: room.number,
             type: room.type,
-            price: room.price_per_night.toString()
+            price: room.price_per_night.toString(),
+            status: room.status
         });
     };
 
@@ -433,7 +434,8 @@ const RoomWizard: React.FC = () => {
                 .update({
                     number: editForm.number,
                     type: editForm.type,
-                    price_per_night: parseFloat(editForm.price)
+                    price_per_night: parseFloat(editForm.price),
+                    status: editForm.status
                 })
                 .eq('id', editingId);
 
