@@ -37,7 +37,10 @@ const DailyOverview: React.FC = () => {
                 }
             });
 
-            if (!res.ok) throw new Error('Failed to fetch daily overview');
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({}));
+                throw new Error(errData.message || `Failed to fetch daily overview (${res.status})`);
+            }
 
             const result = await res.json();
             setData(result);
