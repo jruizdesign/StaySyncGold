@@ -49,12 +49,12 @@ export const MOCK_MAINTENANCE: MaintenanceRequest[] = [
   { id: 'm2', roomId: 'room-10', description: 'Leaky faucet', priority: 'Low', status: 'Open', createdAt: '2024-05-21' },
 ];
 
-export const MOCK_STAFF: Staff[] = [
-  { id: 's1', property_id: 'demo-property', firstname: 'Sarah', last_name: 'Connor', role: 'Manager', status: 'active', pin: '1234', pin_code: '1234' },
-  { id: 's2', property_id: 'demo-property', firstname: 'Kyle', last_name: 'Reese', role: 'Maintenance', status: 'active', pin: '2345', pin_code: '2345' },
-  { id: 's3', property_id: 'demo-property', firstname: 'T', last_name: '800', role: 'Housekeeping', status: 'inactive', pin: '3456', pin_code: '3456' },
-  { id: 's4', property_id: 'demo-property', firstname: 'John', last_name: 'Doe', role: 'Front Desk', status: 'active', pin: '4567', pin_code: '4567' },
-];
+// export const MOCK_STAFF: Staff[] = [
+//   { id: 's1', property_id: 'demo-property', firstname: 'Sarah', last_name: 'Connor', role: 'Manager', status: 'active', pin: '1234', pin_code: '1234' },
+//   { id: 's2', property_id: 'demo-property', firstname: 'Kyle', last_name: 'Reese', role: 'Maintenance', status: 'active', pin: '2345', pin_code: '2345' },
+//   { id: 's3', property_id: 'demo-property', firstname: 'T', last_name: '800', role: 'Housekeeping', status: 'inactive', pin: '3456', pin_code: '3456' },
+//   { id: 's4', property_id: 'demo-property', firstname: 'John', last_name: 'Doe', role: 'Front Desk', status: 'active', pin: '4567', pin_code: '4567' },
+// ];
 
 export const MOCK_TRANSACTIONS: Transaction[] = [
   { id: 't1', date: '2024-05-20', description: 'Room 100 Payment', amount: 1750, type: 'Credit', category: 'Room Revenue' },
