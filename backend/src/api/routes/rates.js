@@ -51,31 +51,33 @@ router.post('/toggle', ensurePropertyId, validateRateAccess, async (req, res) =>
     } catch (e) {
         res.status(500).json({ error: e.message });
     }
-    // POST /apply-rule - Apply derivation rule to rate plan
-    router.post('/apply-rule', ensurePropertyId, validateRateAccess, async (req, res) => {
-        try {
-            const { ratePlanId, rule } = req.body;
-            const result = await rateService.applyDerivationRule(req.user.propertyId, ratePlanId, rule);
-            res.json(result);
-        } catch (e) {
-            res.status(500).json({ error: e.message });
-        }
-    });
+});
 
-    // GET /settings - Get Toggle Status
-    router.get('/settings', ensurePropertyId, async (req, res) => {
-        try {
-            const { data } = await supabase
-                .from('organization_settings')
-                .select('enable_dynamic_pricing')
-                .eq('property_id', req.user.propertyId)
-                .single();
+// POST /apply-rule - Apply derivation rule to rate plan
+router.post('/apply-rule', ensurePropertyId, validateRateAccess, async (req, res) => {
+    try {
+        const { ratePlanId, rule } = req.body;
+        const result = await rateService.applyDerivationRule(req.user.propertyId, ratePlanId, rule);
+        res.json(result);
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
 
-            res.json({ enabled: data?.enable_dynamic_pricing || false });
-        } catch (e) {
-            res.status(500).json({ error: e.message });
-        }
-    });
+// GET /settings - Get Toggle Status
+router.get('/settings', ensurePropertyId, async (req, res) => {
+    try {
+        const { data } = await supabase
+            .from('organization_settings')
+            .select('enable_dynamic_pricing')
+            .eq('property_id', req.user.propertyId)
+            .single();
+
+        res.json({ enabled: data?.enable_dynamic_pricing || false });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
 
 
-    module.exports = router;
+module.exports = router;
