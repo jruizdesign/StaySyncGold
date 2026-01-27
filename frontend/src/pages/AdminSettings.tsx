@@ -2,15 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { API_BASE_URL } from '../config';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { Button, Card, Input, Select, Badge } from '../components/UIComponents';
-import { Database, Users, Building, ShieldCheck, Plus, Layout, Globe, Loader, GitBranch, Trash2, Edit } from 'lucide-react';
+import { Database, Users, Building, ShieldCheck, Plus, Layout, Globe, Loader, GitBranch, Trash2, Edit, Calendar } from 'lucide-react';
 import { Property, ChannelSetting } from '../types';
 import { useAuth } from '../context/AuthContext';
+import { Button, Card, Input, Select, Badge } from '../components/UIComponents';
 import { CommitTracker } from '../components/CommitTracker';
 import { createStaff, updateStaff, deleteStaff } from '../services/staff';
 
 
 // --- Sub-Components ---
+import RateAdjustmentCalendar from '../components/RateAdjustmentCalendar';
+import RatePlanManager from '../components/RatePlanManager';
+import { Switch } from '@headlessui/react';
 
 const DatabaseInspector: React.FC = () => {
     const { user } = useAuth();
@@ -1032,7 +1035,7 @@ const PropertyManagement: React.FC = () => {
 
     const handleSaveProperty = async () => {
         if (!user?.propertyId) return;
-        setLoading(true);
+        setSaving(true);
 
         try {
             const { error } = await supabase
@@ -1529,12 +1532,12 @@ const AdminSettings: React.FC = () => {
     const isManager = !!user?.isManager;
     const isManagement = isManager || isAdmin;
 
-    const [activeTab, setActiveTab] = useState<'database' | 'users' | 'property' | 'rooms' | 'channel' | 'superadmin' | 'updates' | 'features' | 'logs'>('property');
+    const [activeTab, setActiveTab] = useState<'database' | 'users' | 'property' | 'rooms' | 'rates' | 'channel' | 'superadmin' | 'updates' | 'features' | 'logs'>('property');
     const [searchParams] = useSearchParams();
 
     useEffect(() => {
         const tab = searchParams.get('tab');
-        if (tab && ['database', 'users', 'property', 'rooms', 'channel', 'superadmin', 'updates', 'features', 'logs'].includes(tab)) {
+        if (tab && ['database', 'users', 'property', 'rooms', 'rates', 'channel', 'superadmin', 'updates', 'features', 'logs'].includes(tab)) {
             setActiveTab(tab as any);
         }
     }, [searchParams]);
@@ -1576,6 +1579,9 @@ const AdminSettings: React.FC = () => {
                                 <button onClick={() => setActiveTab('rooms')} className={`flex items-center justify-between px-6 py-4 text-left border-l-4 transition-all ${activeTab === 'rooms' ? 'border-gold-500 bg-gold-50 text-gold-900' : 'border-transparent text-slate-600 hover:bg-slate-50'}`}>
                                     <div className="flex items-center gap-3"><Layout className="w-5 h-5" /> <span className="font-medium">Rooms & Units</span></div>
                                 </button>
+                                <button onClick={() => setActiveTab('rates')} className={`flex items-center justify-between px-6 py-4 text-left border-l-4 transition-all ${activeTab === 'rates' ? 'border-gold-500 bg-gold-50 text-gold-900' : 'border-transparent text-slate-600 hover:bg-slate-50'}`}>
+                                    <div className="flex items-center gap-3"><Calendar className="w-5 h-5" /> <span className="font-medium">Rates & Availability</span></div>
+                                </button>
                                 <button onClick={() => setActiveTab('channel')} className={`flex items-center justify-between px-6 py-4 text-left border-l-4 transition-all ${activeTab === 'channel' ? 'border-gold-500 bg-gold-50 text-gold-900' : 'border-transparent text-slate-600 hover:bg-slate-50'}`}>
                                     <div className="flex items-center gap-3"><Globe className="w-5 h-5" /> <span className="font-medium">Channel Manager</span></div>
                                 </button>
@@ -1606,6 +1612,7 @@ const AdminSettings: React.FC = () => {
                     {activeTab === 'property' && <PropertyManagement />}
                     {activeTab === 'users' && <UserManagement />}
                     {activeTab === 'rooms' && <RoomWizard />}
+                    {activeTab === 'rates' && <RatesTab user={user} />}
                     {activeTab === 'channel' && <ChannelManager />}
                     {activeTab === 'superadmin' && isAdmin && <SuperAdminConsole />}
                     {activeTab === 'database' && isAdmin && <DatabaseInspector />}
@@ -1621,7 +1628,107 @@ const AdminSettings: React.FC = () => {
 export default AdminSettings;
 
 
-function setLoading(_arg0: boolean) {
-    throw new Error('Function not implemented.');
-}
+// Extracted Rates Tab Component
+const RatesTab = ({ user }: { user: any }) => {
+    const [dynamicEnabled, setDynamicEnabled] = useState(false);
+    const [loading, setLoading] = useState(true);
 
+    useEffect(() => {
+        if (user?.propertyId) checkDynamicStatus();
+    }, [user?.propertyId]);
+
+    const checkDynamicStatus = async () => {
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/rates/settings?propertyId=${user.propertyId}`, {
+                headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+            });
+            const data = await res.json();
+            setDynamicEnabled(data.enabled);
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const toggleDynamic = async (enabled: boolean) => {
+        setDynamicEnabled(enabled); // Optimistic
+        try {
+            await fetch(`${API_BASE_URL}/api/rates/toggle`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                },
+                body: JSON.stringify({ enabled })
+            });
+        } catch (e) {
+            console.error("Toggle failed", e);
+            setDynamicEnabled(!enabled); // Revert
+        }
+    };
+
+    if (loading) return <div className="p-8 text-center"><Loader className="animate-spin inline-block" /> Loading settings...</div>;
+
+    return (
+        <div className="space-y-6">
+
+            {/* Master Toggle Banner */}
+            <div className={`p-4 rounded-xl border flex justify-between items-center transition-all ${dynamicEnabled ? 'bg-indigo-50 border-indigo-200 shadow-sm' : 'bg-slate-50 border-slate-200'}`}>
+                <div>
+                    <h3 className={`text-lg font-bold ${dynamicEnabled ? 'text-indigo-900' : 'text-slate-500'}`}>
+                        Dynamic Rate Management Module
+                        {!dynamicEnabled && <span className="ml-3 text-xs bg-slate-200 text-slate-600 px-2 py-1 rounded-full">Inactive</span>}
+                        {dynamicEnabled && <span className="ml-3 text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full border border-indigo-200">Active</span>}
+                    </h3>
+                    <p className="text-sm text-slate-600 mt-1 max-w-2xl">
+                        Enable Calendar Spine pricing logic to override base rates daily.
+                        When <b>OFF</b>, the system strictly uses base room prices.
+                        When <b>ON</b>, daily overrides take precedence.
+                    </p>
+                </div>
+                <div className="flex items-center gap-3">
+                    <span className="text-sm font-medium text-slate-500">{dynamicEnabled ? 'On' : 'Off'}</span>
+                    <Switch
+                        checked={dynamicEnabled}
+                        onChange={toggleDynamic}
+                        className={`${dynamicEnabled ? 'bg-indigo-600' : 'bg-slate-300'}
+                          relative inline-flex h-[32px] w-[60px] shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2  focus-visible:ring-white focus-visible:ring-opacity-75`}
+                    >
+                        <span className="sr-only">Use setting</span>
+                        <span
+                            aria-hidden="true"
+                            className={`${dynamicEnabled ? 'translate-x-7' : 'translate-x-0'}
+                            pointer-events-none inline-block h-[28px] w-[28px] transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out`}
+                        />
+                    </Switch>
+                </div>
+            </div>
+
+            {/* Main Content - Locked if Disabled */}
+            <div className={`transition-opacity duration-300 ${dynamicEnabled ? 'opacity-100' : 'opacity-40 pointer-events-none grayscale'}`}>
+                <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
+                    <div className="xl:col-span-1">
+                        <RatePlanManager
+                            propertyId={user?.propertyId || ''}
+                            onPlanChange={() => window.location.reload()}
+                        />
+                    </div>
+                    <div className="xl:col-span-3">
+                        <RateAdjustmentCalendar
+                            propertyId={user?.propertyId || ''}
+                            dynamicEnabled={dynamicEnabled} // Pass prop
+                            userRole={user?.role} // Pass role for RBAC
+                        />
+                    </div>
+                </div>
+            </div>
+
+            {!dynamicEnabled && (
+                <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
+                    {/* Overlay if needed provided by opacity wrapper above */}
+                </div>
+            )}
+        </div>
+    );
+};

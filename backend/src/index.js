@@ -14,6 +14,7 @@ const reportsRouter = require('./api/routes/reports');
 const adminRouter = require('./api/routes/admin');
 const usersRouter = require('./api/routes/users');
 const channexRouter = require('./api/routes/channex');
+const ratesRouter = require('./api/routes/rates'); // Added rates router import
 const aiRouter = require('./api/routes/ai');
 const accountingRouter = require('./api/routes/accounting');
 
