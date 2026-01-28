@@ -47,6 +47,7 @@ export interface Reservation {
   guestName: string; // Denormalized for ease
   roomNumber: string; // Denormalized for ease
   friendlyId?: string; // e.g., BVN-1001
+  totalPaid?: number; // Optional as it might be aggregated on the fly
 }
 
 export interface MaintenanceRequest {

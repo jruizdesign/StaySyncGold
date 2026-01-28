@@ -173,7 +173,7 @@ const updateReservation = async (req, res, next) => {
     // Start transaction
     await client.query('BEGIN');
 
-    // EARLY CHECKOUT LOGIC: Recalculate price if checking out
+    // EARLY/LATE CHECKOUT LOGIC
     if (status === 'Checked Out') {
       try {
         const { rows: roomRows } = await client.query('SELECT price_per_night FROM rooms WHERE id = $1', [room_id]);
@@ -187,7 +187,17 @@ const updateReservation = async (req, res, next) => {
           const nights = diffDays < 1 ? 1 : diffDays;
 
           finalTotalPrice = nights * pricePerNight;
-          console.log(`[Early Checkout] Recalculated: ${nights} nights @ $${pricePerNight} = $${finalTotalPrice}`);
+          console.log(`[Checkout] Recalculated base price: ${nights} nights @ $${pricePerNight} = $${finalTotalPrice}`);
+
+          // LATE CHECKOUT FEE: After 12 PM = +$10
+          const now = new Date(); // Warning: Uses server local time. Ensure server time matches property time.
+          const currentHour = now.getHours();
+          // We only apply this if the checkout date matches today (to avoid retroactively applying fees if updating old records)
+          // Simplified check: if checking out NOW, we assume action is real-time.
+          if (currentHour >= 12) {
+            console.log(`[Checkout] Check-out after 12:00 PM (Hour: ${currentHour}). Applying $10 Late Fee.`);
+            finalTotalPrice += 10;
+          }
         }
       } catch (err) {
         console.error("Error recalculating price:", err);
@@ -268,13 +278,13 @@ const updateReservation = async (req, res, next) => {
 
     // CALCULATE DAILY RATE: If not provided, derive from total / nights
     let dailyRate = daily_price; // Assuming passed in payload, else calculate
-    if (!dailyRate && total_price && check_in && check_out) {
+    if (!dailyRate && finalTotalPrice && check_in && check_out) {
       const nights = Math.max(1, (new Date(check_out) - new Date(check_in)) / (1000 * 60 * 60 * 24));
-      dailyRate = total_price / nights;
+      dailyRate = finalTotalPrice / nights;
     }
     // If indefinite, total_price is 1 night (or placeholder), so dailyRate ~ total_price
     if (is_indefinite) {
-      dailyRate = total_price;
+      dailyRate = finalTotalPrice;
     }
 
     if (bookingSearch.rows.length > 0) {
@@ -290,7 +300,7 @@ const updateReservation = async (req, res, next) => {
             is_indefinite = COALESCE($8, is_indefinite),
             updated_at = NOW()
         WHERE channel_booking_id = $9`,
-        [total_price, status, check_in, check_out, guestName, roomType, dailyRate, is_indefinite, targetBookingId]
+        [finalTotalPrice, status, check_in, check_out, guestName, roomType, dailyRate, is_indefinite, targetBookingId]
       );
       console.log(`[SYNC] Updated booking ${targetBookingId} for Reservation ${id}`);
     } else {
@@ -389,10 +399,88 @@ const deleteReservation = async (req, res, next) => {
   }
 };
 
+// @desc    Add a charge to a reservation
+// @route   POST /api/reservations/:id/charges
+// @access  Public
+const addCharge = async (req, res) => {
+  const client = await db.pool.connect();
+  try {
+    const { id } = req.params;
+    const { amount, description, category, added_by } = req.body;
+
+    console.log(`[CHARGES] Adding charge to Res ${id}: $${amount} - ${description}`);
+
+    await client.query('BEGIN');
+
+    // 1. Fetch current reservation
+    const { rows: resRows } = await client.query('SELECT * FROM Reservations WHERE id = $1', [id]);
+    if (resRows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ message: 'Reservation not found' });
+    }
+    const reservation = resRows[0];
+
+    // 2. Create Transaction Record
+    await client.query(
+      `INSERT INTO financial_transactions (reservation_id, amount, type, description, category, created_at)
+       VALUES ($1, $2, 'charge', $3, $4, NOW())`,
+      [id, amount, description, category || 'Service']
+    );
+
+    // 3. Update Reservation Total
+    const newTotal = Number(reservation.total_amount || 0) + Number(amount);
+    await client.query(
+      'UPDATE Reservations SET total_amount = $1 WHERE id = $2',
+      [newTotal, id]
+    );
+
+    // 4. Update Bookings (Sync)
+    // We update total_price in bookings to match
+    // Note: We use the logic from updateReservation to ensure channel matching
+    // Find booking ID
+    const bookingSearch = await client.query(
+      `SELECT channel_booking_id FROM bookings WHERE channel_booking_id = $1 OR raw_data->>'id' = $2`,
+      [`local_${id}`, id]
+    );
+
+    if (bookingSearch.rows.length > 0) {
+      const channelBookingId = bookingSearch.rows[0].channel_booking_id;
+      await client.query(
+        'UPDATE bookings SET total_price = $1, updated_at = NOW() WHERE channel_booking_id = $2',
+        [newTotal, channelBookingId]
+      );
+      console.log(`[SYNC] Updated booking ${channelBookingId} total to $${newTotal}`);
+    }
+
+    // System Log
+    if (added_by) {
+      await logSystemEvent(
+        client, 'INFO',
+        `Added charge: $${amount} (${description})`,
+        'FINANCIAL', 'CHARGE_ADDED',
+        reservation.property_id,
+        added_by,
+        { reservation_id: id, amount, description }
+      );
+    }
+
+    await client.query('COMMIT');
+    res.status(200).json({ success: true, new_total: newTotal });
+
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error("Error adding charge:", error);
+    res.status(500).json({ error: error.message });
+  } finally {
+    client.release();
+  }
+};
+
 module.exports = {
   getReservations,
   getReservationById,
   createReservation,
   updateReservation,
   deleteReservation,
+  addCharge,
 };

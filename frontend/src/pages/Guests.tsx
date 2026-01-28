@@ -392,7 +392,7 @@ const Guests: React.FC = () => {
                                                 Draft a checkout reminder for tomorrow morning.
                                             </div>
                                             <div className="bg-white p-4 rounded-2xl rounded-tl-none shadow-sm border border-slate-100 max-w-[85%] text-sm border-l-4 border-gold-500 leading-relaxed text-slate-700">
-                                                "Dear {selectedGuest.fullName.split(' ')[0]}, we hope you enjoyed your stay! Just a friendly reminder that checkout is at 11:00 AM tomorrow. Safe travels!"
+                                                "Dear {selectedGuest.fullName.split(' ')[0]}, we hope you enjoyed your stay! Just a friendly reminder that checkout is at 11:00 AM tomorrow. Please note that checkouts after 12:00 PM will incur a $10 late fee. Safe travels!"
                                             </div>
                                         </div>
                                         <div className="flex gap-2">

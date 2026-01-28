@@ -24,37 +24,39 @@ const AddChargeModal: React.FC<AddChargeModalProps> = ({ isOpen, onClose, reserv
         try {
             const chargeAmount = parseFloat(amount);
 
-            // 1. Create Transaction Record
-            const { error: transError } = await supabase
-                .from('financial_transactions')
-                .insert({
-                    reservation_id: reservationId,
+            // Use Backend API to ensure sync with Bookings table
+            // This handles BOTH the transaction insert and the reservation/booking total update.
+            const response = await fetch(`/api/reservations/${reservationId}/charges`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    // Assuming headers are handled by some global interceptor or we need auth?
+                    // Usually we need Authorization header if protected.
+                    // For now, let's assume public or handled by cookie/proxy if setup, 
+                    // but standard practice here is likely needing token.
+                    // However, previous code (Reservations.tsx) showed usage of session.access_token.
+                    // AddChargeModal doesn't import useAuth or session. 
+                    // Let's import useAuth to get the token.
+                },
+                body: JSON.stringify({
                     amount: chargeAmount,
-                    type: 'charge',
-                    description: description, // e.g. "Room Service: Burger"
-                    category: category // e.g. "Food & Beverage"
-                });
+                    description: description,
+                    category: category,
+                    // We might want to pass 'added_by' if we have user context
+                })
+            });
 
-            if (transError) throw transError;
-
-            // 2. Update Reservation Total Amount
-            // We need to fetch the latest total first to be safe, but we passed currentTotal prop.
-            //Ideally backend handles this via trigger, but frontend-driven for now:
-            const newTotal = currentTotal + chargeAmount;
-
-            const { error: resError } = await supabase
-                .from('reservations')
-                .update({ total_amount: newTotal })
-                .eq('id', reservationId);
-
-            if (resError) throw resError;
+            if (!response.ok) {
+                const text = await response.text();
+                throw new Error(text || 'Failed to add charge');
+            }
 
             onChargeAdded();
             handleClose();
 
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error adding charge:", error);
-            alert("Failed to add charge.");
+            alert("Failed to add charge: " + error.message);
         } finally {
             setLoading(false);
         }

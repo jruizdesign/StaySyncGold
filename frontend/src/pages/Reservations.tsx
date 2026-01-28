@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Button, Badge, Input, Modal } from '../components/UIComponents';
-import { Plus, Search, MoreVertical, Loader, Edit, Trash2, AlertTriangle } from 'lucide-react';
+import { Plus, Search, MoreVertical, Loader, Edit, Trash2, AlertTriangle, BadgeDollarSign } from 'lucide-react';
 import { ReservationStatus, Reservation } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { generateInvoicePDF, generateReceiptPDF } from '../utils/pdfGenerator';
 import CheckInModal from '../components/CheckInModal';
+import AddChargeModal from '../components/AddChargeModal';
 
 const Reservations: React.FC = () => {
   const { user, session } = useAuth();
@@ -30,6 +31,10 @@ const Reservations: React.FC = () => {
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [selectedResForPayment, setSelectedResForPayment] = useState<Reservation | null>(null);
   const [paymentForm, setPaymentForm] = useState({ amount: '', method: 'Card', notes: '' });
+
+  // Charge Modal State
+  const [isChargeModalOpen, setIsChargeModalOpen] = useState(false);
+  const [selectedResForCharge, setSelectedResForCharge] = useState<Reservation | null>(null);
 
   const [isIndefinite, setIsIndefinite] = useState(false);
   const [isNewGuest, setIsNewGuest] = useState(false);
@@ -66,11 +71,11 @@ const Reservations: React.FC = () => {
       let query = supabase
         .from('reservations')
         .select(`
-          *,
-          guests(first_name, last_name),
-          rooms(number),
-          financial_transactions(amount)
-        `);
+  *,
+  guests(first_name, last_name),
+  rooms(number),
+  financial_transactions(amount)
+    `);
 
       if (user?.propertyId) {
         query = query.eq('property_id', user.propertyId);
@@ -112,7 +117,7 @@ const Reservations: React.FC = () => {
           status: r.status as ReservationStatus,
           totalAmount: r.total_amount || 0,
           totalPaid: r.financial_transactions ? r.financial_transactions.reduce((sum: number, t: any) => sum + (Number(t.amount) || 0), 0) : 0,
-          guestName: r.guests ? `${r.guests.first_name} ${r.guests.last_name}` : 'Unknown Guest',
+          guestName: r.guests ? `${r.guests.first_name} ${r.guests.last_name} ` : 'Unknown Guest',
           roomNumber: r.rooms ? r.rooms.number : 'N/A'
         }));
         setReservations(mappedReservations);
@@ -305,7 +310,7 @@ const Reservations: React.FC = () => {
         .neq('status', 'Checked Out')
         // Overlap logic: (StartA <= EndB) and (EndA >= StartB)
         // creating_check_in <= existing_check_out AND creating_check_out >= existing_check_in
-        .or(`and(check_in.lte.${effectiveCheckOut},check_out.gte.${bookingForm.checkIn})`)
+        .or(`and(check_in.lte.${effectiveCheckOut}, check_out.gte.${bookingForm.checkIn})`)
         .limit(1);
 
       if (overlapError) throw overlapError;
@@ -329,7 +334,7 @@ const Reservations: React.FC = () => {
             property_id: user.propertyId,
             first_name: newGuestForm.firstName,
             last_name: newGuestForm.lastName,
-            email: newGuestForm.email || `guest_${Date.now()}@placeholder.com`,
+            email: newGuestForm.email || `guest_${Date.now()} @placeholder.com`,
             phone: newGuestForm.phone
           })
           .select()
@@ -343,11 +348,11 @@ const Reservations: React.FC = () => {
       // 2. Create or Update Reservation
       if (editingReservationId) {
         // UPDATE Existing
-        const response = await fetch(`/api/reservations/${editingReservationId}`, {
+        const response = await fetch(`/api/reservations / ${editingReservationId} `, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session?.access_token}`
+            'Authorization': `Bearer ${session?.access_token} `
           },
           body: JSON.stringify({
             property_id: user.propertyId,
@@ -371,7 +376,7 @@ const Reservations: React.FC = () => {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session?.access_token}`
+            'Authorization': `Bearer ${session?.access_token} `
           },
           body: JSON.stringify({
             property_id: user.propertyId,
@@ -388,7 +393,7 @@ const Reservations: React.FC = () => {
 
         if (!response.ok) {
           const text = await response.text();
-          throw new Error(`Failed to create reservation: ${text}`);
+          throw new Error(`Failed to create reservation: ${text} `);
         }
       }
 
@@ -580,7 +585,16 @@ const Reservations: React.FC = () => {
   }, [view, selectedMonth, user?.propertyId]);
 
   const handleUpdateStatus = async (id: string, newStatus: string) => {
-    if (!confirm(`Are you sure you want to mark this reservation as ${newStatus}?`)) return;
+    let confirmMsg = `Are you sure you want to mark this reservation as ${newStatus}?`;
+
+    if (newStatus === 'Checked Out') {
+      const now = new Date();
+      if (now.getHours() >= 12) {
+        confirmMsg = `LATE CHECKOUT WARNING: \nIt is past 12:00 PM.A $10.00 Late Checkout Fee will be automatically applied to this reservation.\n\nProceed with Checkout ? `;
+      }
+    }
+
+    if (!confirm(confirmMsg)) return;
 
     try {
       // We need the full reservation object to update it, as our API (currently) expects a full PUT body usually,
@@ -592,11 +606,11 @@ const Reservations: React.FC = () => {
 
       // We rely on the backend API to handle the update and all related side-effects (Room Status, Financials).
 
-      const response = await fetch(`/api/reservations/${id}`, {
+      const response = await fetch(`/ api / reservations / ${id} `, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token}`
+          'Authorization': `Bearer ${session?.access_token} `
         },
         body: JSON.stringify({
           property_id: user?.propertyId,
@@ -613,8 +627,8 @@ const Reservations: React.FC = () => {
 
       if (!response.ok) {
         const text = await response.text();
-        console.error(`[DEBUG] Update Failed: Status ${response.status} ${response.statusText}. Body:`, text);
-        let errMsg = `Failed to update (${response.status} ${response.statusText})`;
+        console.error(`[DEBUG] Update Failed: Status ${response.status} ${response.statusText}.Body: `, text);
+        let errMsg = `Failed to update(${response.status} ${response.statusText})`;
         try {
           if (text) {
             const err = JSON.parse(text);
@@ -624,7 +638,7 @@ const Reservations: React.FC = () => {
           }
         } catch (e) {
           console.error("Failed to parse error response:", text);
-          errMsg += `: ${text ? text.substring(0, 100) : 'Empty Body'}`;
+          errMsg += `: ${text ? text.substring(0, 100) : 'Empty Body'} `;
         }
         throw new Error(errMsg);
       }
@@ -1124,7 +1138,7 @@ const Reservations: React.FC = () => {
       {
         view === 'list' ? (
           <Card className="overflow-hidden !p-0">
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto pb-40">
               <table className="w-full text-left text-sm">
                 <thead className="bg-slate-50 border-b border-slate-200">
                   <tr>
@@ -1283,6 +1297,16 @@ const Reservations: React.FC = () => {
                                   className="w-full text-left px-4 py-2 text-xs text-red-600 hover:bg-red-50 flex items-center gap-2"
                                 >
                                   <Trash2 className="w-3 h-3" /> Delete
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setSelectedResForCharge(res);
+                                    setIsChargeModalOpen(true);
+                                    setOpenMenuId(null);
+                                  }}
+                                  className="w-full text-left px-4 py-2 text-xs text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                                >
+                                  <BadgeDollarSign className="w-3 h-3" /> Add Charge
                                 </button>
                               </div>
                             )}
@@ -1488,6 +1512,15 @@ const Reservations: React.FC = () => {
           handleUpdateStatus(id, 'Checked In');
           setIsCheckInModalOpen(false);
           setReservationToCheckIn(null);
+        }}
+      />
+      <AddChargeModal
+        isOpen={isChargeModalOpen}
+        onClose={() => setIsChargeModalOpen(false)}
+        reservationId={selectedResForCharge?.id || ''}
+        currentTotal={selectedResForCharge?.totalAmount || 0}
+        onChargeAdded={() => {
+          fetchReservations(); // Refresh list to show updated total/balance
         }}
       />
     </div >
