@@ -65,6 +65,7 @@ app.use('/api/reports', protect, reportsRouter);
 app.use('/api/admin', protect, adminRouter);
 app.use('/api/users', protect, usersRouter);
 app.use('/api/channex', protect, channexRouter);
+app.use('/api/rates', protect, ratesRouter);
 app.use('/api/ai', protect, aiRouter); // Protected to save costs
 app.use('/api/accounting', protect, accountingRouter);
 app.use('/api/overview', protect, require('./api/routes/overview'));

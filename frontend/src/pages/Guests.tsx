@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Button, Card, Input, Badge, Select, Modal } from '../components/UIComponents';
+import { Button, Card, Input, Badge, Modal } from '../components/UIComponents';
 import { Users, MessageSquare, Ban, FileText, Plus, Receipt, Loader, Edit, Send } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -21,7 +21,7 @@ const Guests: React.FC = () => {
     const fetchDocuments = async () => {
         if (!selectedGuest) return;
 
-        const { data, error } = await supabase.storage
+        const { data } = await supabase.storage
             .from('guest_documents')
             .list(selectedGuest.id);
 
@@ -391,7 +391,7 @@ const Guests: React.FC = () => {
                                             <div className="bg-slate-900 text-white p-4 rounded-2xl rounded-tr-none shadow-md max-w-[85%] ml-auto text-sm leading-relaxed">
                                                 Draft a checkout reminder for tomorrow morning.
                                             </div>
-                                            <div className="bg-white p-4 rounded-2xl rounded-tl-none shadow-sm border border-slate-100 max-w-[85%] text-sm border-l-4 border-gold-500 leading-relaxed text-slate-700">
+                                            <div className="bg-white p-4 rounded-2xl rounded-tl-none shadow-sm border max-w-[85%] text-sm border-l-4 border-gold-500 leading-relaxed text-slate-700">
                                                 "Dear {selectedGuest.fullName.split(' ')[0]}, we hope you enjoyed your stay! Just a friendly reminder that checkout is at 11:00 AM tomorrow. Please note that checkouts after 12:00 PM will incur a $10 late fee. Safe travels!"
                                             </div>
                                         </div>
