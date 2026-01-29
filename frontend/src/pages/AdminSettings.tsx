@@ -1612,7 +1612,7 @@ const AdminSettings: React.FC = () => {
                     {activeTab === 'property' && <PropertyManagement />}
                     {activeTab === 'users' && <UserManagement />}
                     {activeTab === 'rooms' && <RoomWizard />}
-                    {activeTab === 'rates' && <RatesTab user={user} />}
+                    {activeTab === 'rates' && <RatesTab />}
                     {activeTab === 'channel' && <ChannelManager />}
                     {activeTab === 'superadmin' && isAdmin && <SuperAdminConsole />}
                     {activeTab === 'database' && isAdmin && <DatabaseInspector />}
@@ -1629,18 +1629,22 @@ export default AdminSettings;
 
 
 // Extracted Rates Tab Component
-const RatesTab = ({ user }: { user: any }) => {
+const RatesTab = () => {
+    const { user, session } = useAuth();
     const [dynamicEnabled, setDynamicEnabled] = useState(false);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        if (user?.propertyId) checkDynamicStatus();
-    }, [user?.propertyId]);
+        if (user?.propertyId && session?.access_token) {
+            checkDynamicStatus();
+        }
+    }, [user?.propertyId, session?.access_token]);
 
     const checkDynamicStatus = async () => {
+        if (!user?.propertyId) return;
         try {
             const res = await fetch(`${API_BASE_URL}/api/rates/settings?propertyId=${user.propertyId}`, {
-                headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+                headers: { 'Authorization': `Bearer ${session?.access_token}` }
             });
             const data = await res.json();
             setDynamicEnabled(data.enabled);
@@ -1658,7 +1662,7 @@ const RatesTab = ({ user }: { user: any }) => {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    'Authorization': `Bearer ${session?.access_token}`
                 },
                 body: JSON.stringify({ enabled })
             });

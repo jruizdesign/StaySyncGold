@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Modal, Button, Input, Select } from './UIComponents';
-import { supabase } from '../lib/supabase';
+import { useAuth } from '../context/AuthContext';
 import { BadgeDollarSign } from 'lucide-react';
 
 interface AddChargeModalProps {
@@ -12,6 +12,7 @@ interface AddChargeModalProps {
 }
 
 const AddChargeModal: React.FC<AddChargeModalProps> = ({ isOpen, onClose, reservationId, currentTotal, onChargeAdded }) => {
+    const { session } = useAuth();
     const [amount, setAmount] = useState('');
     const [description, setDescription] = useState('');
     const [category, setCategory] = useState('Service');
@@ -19,30 +20,25 @@ const AddChargeModal: React.FC<AddChargeModalProps> = ({ isOpen, onClose, reserv
 
     const handleSubmit = async () => {
         if (!amount || !description) return;
+        if (!session) {
+            console.error("No session found");
+            return;
+        }
 
         setLoading(true);
         try {
             const chargeAmount = parseFloat(amount);
 
-            // Use Backend API to ensure sync with Bookings table
-            // This handles BOTH the transaction insert and the reservation/booking total update.
             const response = await fetch(`/api/reservations/${reservationId}/charges`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    // Assuming headers are handled by some global interceptor or we need auth?
-                    // Usually we need Authorization header if protected.
-                    // For now, let's assume public or handled by cookie/proxy if setup, 
-                    // but standard practice here is likely needing token.
-                    // However, previous code (Reservations.tsx) showed usage of session.access_token.
-                    // AddChargeModal doesn't import useAuth or session. 
-                    // Let's import useAuth to get the token.
+                    'Authorization': `Bearer ${session?.access_token}`
                 },
                 body: JSON.stringify({
                     amount: chargeAmount,
                     description: description,
                     category: category,
-                    // We might want to pass 'added_by' if we have user context
                 })
             });
 

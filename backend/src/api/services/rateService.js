@@ -109,6 +109,19 @@ const toggleDynamicPricing = async (propertyId, enabled) => {
     }
 };
 
+const getDynamicPricingSettings = async (propertyId) => {
+    const client = await pool.connect();
+    try {
+        const res = await client.query(
+            'SELECT enable_dynamic_pricing FROM organization_settings WHERE property_id = $1',
+            [propertyId]
+        );
+        return { enabled: res.rows[0]?.enable_dynamic_pricing || false };
+    } finally {
+        client.release();
+    }
+};
+
 // Apply Derivation Rule
 const applyDerivationRule = async (propertyId, ratePlanId, rule) => {
     const client = await pool.connect();
@@ -175,4 +188,4 @@ const applyDerivationRule = async (propertyId, ratePlanId, rule) => {
     }
 };
 
-module.exports = { getRates, updateRate, toggleDynamicPricing, applyDerivationRule };
+module.exports = { getRates, updateRate, toggleDynamicPricing, applyDerivationRule, getDynamicPricingSettings };

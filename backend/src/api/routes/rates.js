@@ -65,16 +65,14 @@ router.post('/apply-rule', ensurePropertyId, validateRateAccess, async (req, res
 });
 
 // GET /settings - Get Toggle Status
+// GET /settings - Get Toggle Status
 router.get('/settings', ensurePropertyId, async (req, res) => {
     try {
-        const { data } = await supabase
-            .from('organization_settings')
-            .select('enable_dynamic_pricing')
-            .eq('property_id', req.user.propertyId)
-            .single();
-
-        res.json({ enabled: data?.enable_dynamic_pricing || false });
+        console.log("GET /settings - PropertyID:", req.user.propertyId);
+        const result = await rateService.getDynamicPricingSettings(req.user.propertyId);
+        res.json(result);
     } catch (e) {
+        console.error("GET /settings Exception:", e);
         res.status(500).json({ error: e.message });
     }
 });
