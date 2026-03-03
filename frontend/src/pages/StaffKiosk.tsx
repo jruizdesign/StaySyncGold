@@ -141,14 +141,12 @@ const StaffKiosk: React.FC = () => {
     if (!selectedStaff || !user?.propertyId) return;
 
     // Verify PIN against DB
-    const { data } = await supabase
-      .from('staff')
-      .select('id')
-      .eq('id', selectedStaff.id)
-      .eq('pin', pin)
-      .single();
+    const { data, error } = await supabase.rpc('verify_staff_pin', {
+      staff_id_param: selectedStaff.id,
+      pin_param: pin
+    });
 
-    if (!data) {
+    if (error || !data) {
       setAuthError('Invalid PIN');
       setPin('');
       return;
