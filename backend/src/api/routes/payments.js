@@ -5,11 +5,13 @@ const {
   getPayments,
   getPaymentById,
   createPaymentIntent,
+  recordManualPayment,
 } = require('../controllers/payments');
 
 // Protect these routes to ensure auth.uid() is available
 router.route('/').get(getPayments);
 router.route('/:id').get(getPaymentById);
 router.post('/create-payment-intent', createPaymentIntent);
+router.post('/manual', recordManualPayment);
 
 module.exports = router;

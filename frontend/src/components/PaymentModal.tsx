@@ -85,6 +85,8 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
     const [clientSecret, setClientSecret] = useState('');
     const [amount, setAmount] = useState(defaultAmount.toString());
     const [step, setStep] = useState<'amount' | 'checkout'>('amount');
+    const [method, setMethod] = useState<'card' | 'cash' | 'check' | 'transfer' | 'other'>('card');
+    const [notes, setNotes] = useState('');
     const [isInitializing, setIsInitializing] = useState(false);
 
     useEffect(() => {
@@ -92,10 +94,12 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
             setStep('amount');
             setClientSecret('');
             setAmount(defaultAmount.toString());
+            setMethod('card');
+            setNotes('');
         }
     }, [isOpen, defaultAmount]);
 
-    const handleProceedToCheckout = async () => {
+    const handleProceed = async () => {
         const numAmount = parseFloat(amount);
         if (isNaN(numAmount) || numAmount <= 0) {
             alert("Please enter a valid amount");
@@ -103,33 +107,65 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
         }
 
         setIsInitializing(true);
-        try {
-            const response = await fetch('/api/payments/create-payment-intent', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${session?.access_token}`
-                },
-                body: JSON.stringify({
-                    property_id: propertyId,
-                    res_id: reservationId,
-                    amount: numAmount,
-                }),
-            });
 
-            if (!response.ok) {
-                const text = await response.text();
-                throw new Error(text || 'Failed to initialize payment');
+        if (method === 'card') {
+            try {
+                const response = await fetch('/api/payments/create-payment-intent', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${session?.access_token}`
+                    },
+                    body: JSON.stringify({
+                        property_id: propertyId,
+                        res_id: reservationId,
+                        amount: numAmount,
+                    }),
+                });
+
+                if (!response.ok) {
+                    const text = await response.text();
+                    throw new Error(text || 'Failed to initialize payment');
+                }
+
+                const data = await response.json();
+                setClientSecret(data.clientSecret);
+                setStep('checkout');
+            } catch (err: any) {
+                console.error('Error fetching client secret:', err);
+                alert("Checkout error: " + err.message);
+            } finally {
+                setIsInitializing(false);
             }
+        } else {
+            try {
+                const response = await fetch('/api/payments/manual', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${session?.access_token}`
+                    },
+                    body: JSON.stringify({
+                        property_id: propertyId,
+                        res_id: reservationId,
+                        amount: numAmount,
+                        method: method,
+                        notes: notes
+                    }),
+                });
 
-            const data = await response.json();
-            setClientSecret(data.clientSecret);
-            setStep('checkout');
-        } catch (err: any) {
-            console.error('Error fetching client secret:', err);
-            alert("Checkout error: " + err.message);
-        } finally {
-            setIsInitializing(false);
+                if (!response.ok) {
+                    const text = await response.text();
+                    throw new Error(text || 'Failed to record manual payment');
+                }
+
+                handleSuccess();
+            } catch (err: any) {
+                console.error('Error recording manual payment:', err);
+                alert("Payment error: " + err.message);
+            } finally {
+                setIsInitializing(false);
+            }
         }
     };
 
@@ -161,10 +197,34 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                                 placeholder="0.00"
                             />
                         </div>
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-1">Payment Method</label>
+                            <select
+                                className="w-full p-2 border rounded"
+                                value={method}
+                                onChange={(e: any) => setMethod(e.target.value)}
+                            >
+                                <option value="card">Credit Card (Stripe)</option>
+                                <option value="cash">Cash</option>
+                                <option value="check">Check</option>
+                                <option value="transfer">Bank Transfer</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        {method !== 'card' && (
+                            <div>
+                                <Input
+                                    label="Notes (Optional)"
+                                    value={notes}
+                                    onChange={(e: any) => setNotes(e.target.value)}
+                                    placeholder="Reference #, etc."
+                                />
+                            </div>
+                        )}
                         <div className="flex justify-end gap-2 pt-4">
                             <Button variant="ghost" onClick={onClose} disabled={isInitializing}>Cancel</Button>
-                            <Button onClick={handleProceedToCheckout} disabled={isInitializing}>
-                                {isInitializing ? 'Connecting to Stripe...' : 'Proceed to Checkout'}
+                            <Button onClick={handleProceed} disabled={isInitializing}>
+                                {isInitializing ? 'Processing...' : (method === 'card' ? 'Proceed to Checkout' : 'Record Payment')}
                             </Button>
                         </div>
                     </div>

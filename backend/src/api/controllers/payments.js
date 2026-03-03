@@ -76,8 +76,34 @@ const createPaymentIntent = async (req, res, next) => {
   }
 };
 
+// @desc    Record a manual payment (Cash, Check, etc.)
+// @route   POST /api/payments/manual
+// @access  Private
+const recordManualPayment = async (req, res, next) => {
+  try {
+    const { property_id, res_id, amount, method, notes, currency = 'usd' } = req.body;
+
+    if (!property_id || !amount || !method) {
+      return res.status(400).json({ message: 'property_id, amount, and method are required' });
+    }
+
+    // Insert payment directly as succeeded
+    const { rows } = await db.query(`
+      INSERT INTO payments (property_id, res_id, amount, currency, status, method, notes) 
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      RETURNING *
+    `, [property_id, res_id || null, amount, currency, 'succeeded', method, notes]);
+
+    res.status(201).json(rows[0]);
+  } catch (error) {
+    console.error('Error recording manual payment:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
 module.exports = {
   getPayments,
   getPaymentById,
   createPaymentIntent,
+  recordManualPayment,
 };

@@ -54,6 +54,7 @@ async function migratePayments() {
                 status TEXT NOT NULL CHECK (status IN ('pending', 'succeeded', 'failed', 'refunded', 'canceled')),
                 stripe_payment_intent_id TEXT UNIQUE,
                 method TEXT DEFAULT 'card' NOT NULL,
+                notes TEXT,
                 receipt_url TEXT,
                 metadata JSONB DEFAULT '{}'::jsonb
             );
