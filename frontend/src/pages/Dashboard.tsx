@@ -1,6 +1,6 @@
 import React from 'react';
 import { Card, Badge } from '../components/UIComponents';
-import { CheckCircle, TrendingUp, Users, BedDouble, DollarSign, ShieldCheck } from 'lucide-react';
+import { CheckCircle, TrendingUp, Users, BedDouble, DollarSign, ShieldCheck, Sparkles, Zap, Smartphone, KeyRound } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { LiveActivityFeed } from '../components/LiveActivityFeed';
 import { AIInsightCard } from '../components/AIInsightCard';
@@ -248,6 +248,48 @@ const Dashboard: React.FC = () => {
         <StatCard title="Occupancy Rate" value={stats.occupancy} sub={stats.occupancySub} icon={TrendingUp} color="bg-blue-500 text-blue-600" />
         <StatCard title="Check-Ins Today" value={stats.checkins} sub={stats.checkinsSub} icon={Users} color="bg-gold-500 text-gold-600" />
         <StatCard title="Rooms Cleaning" value={stats.cleaning} sub={stats.cleaningSub} icon={BedDouble} color="bg-rose-500 text-rose-600" />
+      </div>
+
+      {/* Feature Updates Announcement Banner */}
+      <div className="bg-gradient-to-r from-slate-900 to-slate-800 rounded-2xl p-6 md:p-8 text-white shadow-xl relative overflow-hidden border border-slate-700">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-gold-400 opacity-10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
+        <div className="relative z-10">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="bg-gold-500/20 p-2 rounded-lg text-gold-400">
+              <Sparkles className="w-6 h-6" />
+            </div>
+            <h2 className="text-2xl font-bold tracking-tight">New Features & Updates</h2>
+          </div>
+          <p className="text-slate-300 mb-6 max-w-2xl text-sm leading-relaxed">
+            StaySync Gold is constantly evolving. Here are the latest tools and improvements rolled out to help you manage the property more efficiently.
+          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-slate-800/50 hover:bg-slate-800 border border-slate-700 p-4 rounded-xl transition-colors">
+              <div className="flex items-center gap-3 mb-2">
+                <DollarSign className="w-5 h-5 text-emerald-400" />
+                <h3 className="font-semibold text-slate-100">Integrated Payments</h3>
+              </div>
+              <p className="text-xs text-slate-400">Record secure Stripe card payments or manual cash/check transactions directly from the Reservations list with the new Gold "Payment" button.</p>
+            </div>
+
+            <div className="bg-slate-800/50 hover:bg-slate-800 border border-slate-700 p-4 rounded-xl transition-colors">
+              <div className="flex items-center gap-3 mb-2">
+                <KeyRound className="w-5 h-5 text-blue-400" />
+                <h3 className="font-semibold text-slate-100">Staff Kiosk & PINs</h3>
+              </div>
+              <p className="text-xs text-slate-400">All staff PINs have been reset. You can now securely log into the Kiosk, clock in/out, and change your secure PIN while your shift is active.</p>
+            </div>
+
+            <div className="bg-slate-800/50 hover:bg-slate-800 border border-slate-700 p-4 rounded-xl transition-colors">
+              <div className="flex items-center gap-3 mb-2">
+                <Zap className="w-5 h-5 text-amber-400" />
+                <h3 className="font-semibold text-slate-100">Performance Analytics</h3>
+              </div>
+              <p className="text-xs text-slate-400">Enhanced backend queries and real-time dashboard updates allow for faster loading of the weekly revenue and occupancy trends.</p>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

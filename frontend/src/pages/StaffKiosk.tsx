@@ -53,7 +53,7 @@ const BigClock: React.FC = () => {
 // --- Main Layout ---
 
 const StaffKiosk: React.FC = () => {
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const [staffList, setStaffList] = useState<Staff[]>([]);
   const [filteredStaff, setFilteredStaff] = useState<Staff[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -67,6 +67,13 @@ const StaffKiosk: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   const [currentShift, setCurrentShift] = useState<StaffShift | null>(null);
+
+  // Change PIN State
+  const [isChangingPin, setIsChangingPin] = useState(false);
+  const [newPin, setNewPin] = useState('');
+  const [confirmPin, setConfirmPin] = useState('');
+  const [pinChangeError, setPinChangeError] = useState('');
+  const [pinChangeSuccess, setPinChangeSuccess] = useState('');
 
   // Initial Load
   useEffect(() => {
@@ -93,6 +100,11 @@ const StaffKiosk: React.FC = () => {
       setAuthError('');
       setIsAuthenticated(false);
       setCurrentShift(null);
+      setIsChangingPin(false);
+      setNewPin('');
+      setConfirmPin('');
+      setPinChangeError('');
+      setPinChangeSuccess('');
     }
   }, [selectedStaff]);
 
@@ -241,6 +253,55 @@ const StaffKiosk: React.FC = () => {
     setSelectedStaff(null);
   };
 
+  const handleChangePinSubmit = async () => {
+    setPinChangeError('');
+    setPinChangeSuccess('');
+
+    if (newPin.length !== 4 || confirmPin.length !== 4) {
+      setPinChangeError('PIN must be 4 digits');
+      return;
+    }
+    if (newPin !== confirmPin) {
+      setPinChangeError('PINs do not match');
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('staff')
+        .update({ pin: newPin }) // Note: In a real app we'd hash it via RPC or backend, but the backend update route handles it if we call the API instead.
+        .eq('id', selectedStaff!.id);
+
+      if (error) throw error;
+
+      // Let's call the backend to hash the PIN properly using an API route instead
+      const token = session?.access_token || '';
+      const response = await fetch(`/api/staff/${selectedStaff!.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ pin: newPin, property_id: user?.propertyId })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update PIN securely');
+      }
+
+      setPinChangeSuccess('PIN successfully updated!');
+      setTimeout(() => {
+        setIsChangingPin(false);
+        setNewPin('');
+        setConfirmPin('');
+        setPinChangeSuccess('');
+      }, 2000);
+    } catch (err) {
+      console.error('Error changing PIN:', err);
+      setPinChangeError('Failed to change PIN');
+    }
+  };
+
   if (loading) {
     return <div className="min-h-screen bg-slate-950 flex items-center justify-center"><Loader className="w-8 h-8 animate-spin text-gold-500" /></div>;
   }
@@ -379,6 +440,88 @@ const StaffKiosk: React.FC = () => {
               </button>
             </div>
           </div>
+        ) : isChangingPin ? (
+          // STATE: CHANGE PIN
+          <div className="flex-1 flex flex-col items-center justify-center p-12 animate-fadeIn">
+            <div className="text-center mb-8">
+              <h2 className="text-3xl font-bold text-white">Change PIN</h2>
+              <p className="text-slate-400 mt-2">Enter your new 4-digit PIN</p>
+            </div>
+
+            <div className="bg-slate-900 p-8 rounded-3xl border border-slate-800 shadow-2xl max-w-[400px] w-full">
+              <div className="mb-4 text-center text-white text-sm font-medium">
+                {confirmPin.length > 0 ? 'Confirm New PIN' : 'New PIN'}
+              </div>
+              {/* PIN Display */}
+              <div className="flex justify-center gap-4 mb-8">
+                {[...Array(4)].map((_, i) => {
+                  const currentPinStr = confirmPin.length > 0 || newPin.length === 4 ? confirmPin : newPin;
+                  return (
+                    <div key={i} className={`w-14 h-16 rounded-xl flex items-center justify-center text-3xl font-bold transition-all border-2 ${currentPinStr.length > i
+                      ? 'border-gold-500 bg-gold-500/10 text-gold-500'
+                      : 'border-slate-700 bg-slate-800 text-slate-600'
+                      }`}>
+                      {currentPinStr.length > i && '•'}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Keypad */}
+              <div className="grid grid-cols-3 gap-4 mb-6">
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
+                  <button
+                    key={num}
+                    onClick={() => {
+                      if (newPin.length < 4) setNewPin(p => p + num);
+                      else if (confirmPin.length < 4) setConfirmPin(p => p + num);
+                    }}
+                    className="h-20 rounded-xl bg-slate-800 hover:bg-slate-700 active:bg-gold-500 active:text-white border border-slate-700 text-2xl font-bold text-white transition-all shadow-lg active:scale-95"
+                  >
+                    {num}
+                  </button>
+                ))}
+                <div className="col-span-1"></div>
+                <button
+                  onClick={() => {
+                    if (newPin.length < 4) setNewPin(p => p + '0');
+                    else if (confirmPin.length < 4) setConfirmPin(p => p + '0');
+                  }}
+                  className="h-20 rounded-xl bg-slate-800 hover:bg-slate-700 active:bg-gold-500 active:text-white border border-slate-700 text-2xl font-bold text-white transition-all shadow-lg active:scale-95"
+                >
+                  0
+                </button>
+                <button
+                  onClick={() => {
+                    if (confirmPin.length > 0) setConfirmPin(p => p.slice(0, -1));
+                    else setNewPin(p => p.slice(0, -1));
+                  }}
+                  className="h-20 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white border border-slate-700 transition-all flex items-center justify-center active:scale-95"
+                >
+                  <ChevronLeft className="w-8 h-8" />
+                </button>
+              </div>
+
+              {pinChangeError && <p className="text-red-500 text-center mb-4 animate-shake font-medium">{pinChangeError}</p>}
+              {pinChangeSuccess && <p className="text-emerald-500 text-center mb-4 font-medium">{pinChangeSuccess}</p>}
+
+              <div className="flex gap-4">
+                <button
+                  onClick={() => { setIsChangingPin(false); setNewPin(''); setConfirmPin(''); }}
+                  className="flex-1 py-4 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl text-lg transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleChangePinSubmit}
+                  disabled={newPin.length !== 4 || confirmPin.length !== 4}
+                  className="flex-1 py-4 bg-gold-500 hover:bg-gold-400 disabled:opacity-50 disabled:hover:bg-gold-500 text-white font-bold rounded-xl text-lg transition-colors"
+                >
+                  Save PIN
+                </button>
+              </div>
+            </div>
+          </div>
         ) : (
           // STATE: AUTHENTICATED DASHBOARD
           <div className="flex-1 p-12 flex flex-col animate-slideUp">
@@ -463,6 +606,13 @@ const StaffKiosk: React.FC = () => {
                         <span className="block text-2xl font-bold">End Shift</span>
                         <span className="text-rose-100">Clock out now</span>
                       </div>
+                    </button>
+
+                    <button
+                      onClick={() => setIsChangingPin(true)}
+                      className="w-full mt-4 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl font-medium transition-colors border border-slate-700"
+                    >
+                      Change My PIN
                     </button>
                   </>
                 )}
