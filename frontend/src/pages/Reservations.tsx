@@ -4,9 +4,10 @@ import { Plus, Search, MoreVertical, Loader, Edit, Trash2, AlertTriangle, BadgeD
 import { ReservationStatus, Reservation } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
-import { generateInvoicePDF, generateReceiptPDF } from '../utils/pdfGenerator';
+import { generateInvoicePDF } from '../utils/pdfGenerator';
 import CheckInModal from '../components/CheckInModal';
 import AddChargeModal from '../components/AddChargeModal';
+import PaymentModal from '../components/PaymentModal';
 
 const Reservations: React.FC = () => {
   const { user, session } = useAuth();
@@ -30,7 +31,6 @@ const Reservations: React.FC = () => {
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [selectedResForPayment, setSelectedResForPayment] = useState<Reservation | null>(null);
-  const [paymentForm, setPaymentForm] = useState({ amount: '', method: 'Card', notes: '' });
 
   // Charge Modal State
   const [isChargeModalOpen, setIsChargeModalOpen] = useState(false);
@@ -733,64 +733,6 @@ const Reservations: React.FC = () => {
     setOpenMenuId(null);
   };
 
-  const handleCreatePayment = async () => {
-    if (!selectedResForPayment || !paymentForm.amount) return;
-
-    setLoading(true);
-    try {
-      const { error } = await supabase.from('payments').insert({
-        property_id: user?.propertyId,
-        res_id: selectedResForPayment.id,
-        amount: parseFloat(paymentForm.amount),
-        method: paymentForm.method,
-        status: 'completed',
-        notes: paymentForm.notes
-      });
-
-      if (error) throw error;
-
-      // Generate Receipt PDF
-      try {
-        const guestName = selectedResForPayment.guestName;
-        // Construct payment object for receipt (since we only have form data)
-        const paymentObj = {
-          id: 'REF-' + Date.now().toString().slice(-6), // Temporary ID reference
-          amount: parseFloat(paymentForm.amount),
-          method: paymentForm.method,
-          notes: paymentForm.notes
-        };
-
-        const pdfBlob = generateReceiptPDF(paymentObj, guestName, user?.propertyName);
-        const fileName = `Receipt_${Date.now()}.pdf`;
-        const filePath = `${selectedResForPayment.guestId}/${fileName}`;
-
-        const { error: uploadError } = await supabase.storage
-          .from('guest_documents')
-          .upload(filePath, pdfBlob, {
-            contentType: 'application/pdf',
-            upsert: true
-          });
-
-        if (uploadError) console.error("Receipt upload failed:", uploadError);
-
-      } catch (pdfErr) {
-        console.error("Receipt generation failed:", pdfErr);
-      }
-
-      if (error) throw error;
-
-      alert("Payment recorded successfully!");
-      setIsPaymentModalOpen(false);
-      setPaymentForm({ amount: '', method: 'Card', notes: '' });
-      // Ideally refresh reservations or financial stats
-      fetchReservations(); // Refresh reservations to update totalPaid
-    } catch (e: any) {
-      console.error("Payment Error:", e);
-      alert("Failed to record payment: " + e.message);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const filteredReservations = reservations.filter(r =>
     r.guestName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -1084,56 +1026,21 @@ const Reservations: React.FC = () => {
       )
       }
 
-      {
-        isPaymentModalOpen && selectedResForPayment && ( // Fix: selectedResForPayment is already checked in the condition
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-            <div className="bg-white p-6 rounded-lg w-96 shadow-xl">
-              <h3 className="text-lg font-bold mb-4">Record Payment</h3>
-              <p className="text-sm text-slate-500 mb-4">
-                For {selectedResForPayment.guestName} - Room {selectedResForPayment.roomNumber}
-              </p>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700">Amount</label>
-                  <Input
-                    type="number"
-                    value={paymentForm.amount}
-                    onChange={(e) => setPaymentForm({ ...paymentForm, amount: e.target.value })}
-                    placeholder="0.00"
-                  />
-                  <p className="text-xs text-slate-400 mt-1">Total Due: ${selectedResForPayment.totalAmount}</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700">Method</label>
-                  <select
-                    className="w-full p-2 border rounded"
-                    value={paymentForm.method}
-                    onChange={(e) => setPaymentForm({ ...paymentForm, method: e.target.value })}
-                  >
-                    <option value="Card">Credit Card</option>
-                    <option value="Cash">Cash</option>
-                    <option value="Check">Check</option>
-                    <option value="Transfer">Bank Transfer</option>
-                    <option value="Other">Other</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700">Notes</label>
-                  <Input
-                    value={paymentForm.notes}
-                    onChange={(e) => setPaymentForm({ ...paymentForm, notes: e.target.value })}
-                    placeholder="Reference #, etc."
-                  />
-                </div>
-              </div>
-              <div className="flex justify-end gap-2 mt-6">
-                <Button variant="ghost" onClick={() => setIsPaymentModalOpen(false)}>Cancel</Button>
-                <Button onClick={handleCreatePayment} className="bg-green-600 hover:bg-green-700">Record Payment</Button>
-              </div>
-            </div>
-          </div>
-        )
-      }
+      <PaymentModal
+        isOpen={isPaymentModalOpen}
+        onClose={() => {
+          setIsPaymentModalOpen(false);
+          setSelectedResForPayment(null);
+        }}
+        propertyId={user?.propertyId || ''}
+        reservationId={selectedResForPayment?.id}
+        defaultAmount={selectedResForPayment ? Math.max(0, selectedResForPayment.totalAmount - (selectedResForPayment.totalPaid || 0)) : 0}
+        guestName={selectedResForPayment?.guestName}
+        onPaymentSuccess={() => {
+          alert("Payment recorded successfully via Stripe!");
+          fetchReservations(); // Refresh data
+        }}
+      />
 
       {
         view === 'list' ? (

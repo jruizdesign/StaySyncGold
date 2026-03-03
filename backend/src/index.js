@@ -24,9 +24,13 @@ const accountingRouter = require('./api/routes/accounting');
 const cors = require('cors');
 
 // ... other imports
+const stripeWebhookRouter = require('./api/routes/stripeWebhook');
 
 const app = express();
 const port = process.env.PORT || 5000;
+
+// Stripe Webhook MUST be before express.json()
+app.use('/api/webhook', express.raw({ type: 'application/json' }), stripeWebhookRouter);
 
 app.use(express.json());
 

@@ -4,10 +4,12 @@ const router = express.Router();
 const {
   getPayments,
   getPaymentById,
-  createPayment,
+  createPaymentIntent,
 } = require('../controllers/payments');
 
-router.route('/').get(getPayments).post(createPayment);
+// Protect these routes to ensure auth.uid() is available
+router.route('/').get(getPayments);
 router.route('/:id').get(getPaymentById);
+router.post('/create-payment-intent', createPaymentIntent);
 
 module.exports = router;
