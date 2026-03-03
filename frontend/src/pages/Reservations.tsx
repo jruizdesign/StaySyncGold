@@ -348,7 +348,7 @@ const Reservations: React.FC = () => {
       // 2. Create or Update Reservation
       if (editingReservationId) {
         // UPDATE Existing
-        const response = await fetch(`/api/reservations / ${editingReservationId} `, {
+        const response = await fetch(`/api/reservations/${editingReservationId}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -606,7 +606,7 @@ const Reservations: React.FC = () => {
 
       // We rely on the backend API to handle the update and all related side-effects (Room Status, Financials).
 
-      const response = await fetch(`/ api / reservations / ${id} `, {
+      const response = await fetch(`/api/reservations/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
