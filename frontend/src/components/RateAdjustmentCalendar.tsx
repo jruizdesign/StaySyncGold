@@ -3,6 +3,7 @@ import { RefreshCw, ChevronLeft, ChevronRight, Upload } from 'lucide-react';
 import { Button, Card } from './UIComponents';
 import { supabase } from '../lib/supabase';
 import { API_BASE_URL } from '../config';
+import { useAuth } from '../context/AuthContext';
 
 interface RateAdjustmentCalendarProps {
     propertyId: string;
@@ -17,6 +18,7 @@ const RateAdjustmentCalendar: React.FC<RateAdjustmentCalendarProps> = ({ propert
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
     const [syncing, setSyncing] = useState(false);
+    const { session } = useAuth();
 
     // Rate Plan State
     const [ratePlans, setRatePlans] = useState<any[]>([]);
@@ -81,7 +83,7 @@ const RateAdjustmentCalendar: React.FC<RateAdjustmentCalendarProps> = ({ propert
             });
 
             const res = await fetch(`${API_BASE_URL}/api/rates/dynamic?${params}`, {
-                headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+                headers: { 'Authorization': `Bearer ${session?.access_token}` }
             });
             const data = await res.json();
 
@@ -147,7 +149,7 @@ const RateAdjustmentCalendar: React.FC<RateAdjustmentCalendarProps> = ({ propert
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    'Authorization': `Bearer ${session?.access_token}`
                 },
                 body: JSON.stringify({
                     propertyId, // backend ensures from token, but ok
@@ -246,7 +248,10 @@ const RateAdjustmentCalendar: React.FC<RateAdjustmentCalendarProps> = ({ propert
         try {
             const res = await fetch(`${API_BASE_URL}/api/channex/ari`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session?.access_token}`
+                },
                 body: JSON.stringify({
                     property_id: propertyId,
                     start_date: startOfMonth.toISOString().split('T')[0],

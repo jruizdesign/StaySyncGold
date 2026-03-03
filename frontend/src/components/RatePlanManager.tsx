@@ -3,6 +3,7 @@ import { Card, Button, Input, Modal, Badge } from './UIComponents';
 import { Plus, Trash2, Tag, Copy } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { API_BASE_URL } from '../config';
+import { useAuth } from '../context/AuthContext';
 
 interface RatePlan {
     id: string;
@@ -44,6 +45,7 @@ const RatePlanManager: React.FC<RatePlanManagerProps> = ({ propertyId, onPlanCha
     const [plans, setPlans] = useState<RatePlan[]>([]);
     const [loading, setLoading] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const { session } = useAuth();
 
     // New Plan Form
     const [newPlanName, setNewPlanName] = useState('');
@@ -90,7 +92,7 @@ const RatePlanManager: React.FC<RatePlanManagerProps> = ({ propertyId, onPlanCha
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${localStorage.getItem('token')}`
+                            'Authorization': `Bearer ${session?.access_token}`
                         },
                         body: JSON.stringify({
                             propertyId,
