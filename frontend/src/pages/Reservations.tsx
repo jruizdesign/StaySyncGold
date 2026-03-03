@@ -1176,10 +1176,10 @@ const Reservations: React.FC = () => {
                           )}
                           <button
                             onClick={() => { setSelectedResForPayment(res); setIsPaymentModalOpen(true); }}
-                            className="bg-slate-100 hover:bg-slate-200 text-slate-600 p-1.5 rounded-md"
+                            className="bg-amber-500 hover:bg-amber-600 text-white px-3 py-1 rounded-md text-xs font-bold transition-colors shadow-sm"
                             title="Record Payment"
                           >
-                            <div className="font-bold text-xs px-1">$</div>
+                            Payment
                           </button>
                           <div className="relative">
                             <button
