@@ -28,7 +28,8 @@ const getPropertyInsights = async (req, res) => {
             {
                 global: {
                     headers: {
-                        Authorization: `Bearer ${token}`
+                        Authorization: `Bearer ${token}`,
+                        apikey: process.env.SUPABASE_ANON_KEY
                     }
                 }
             }
