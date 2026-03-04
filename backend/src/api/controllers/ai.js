@@ -43,7 +43,7 @@ async function fetchPropertyData(propertyId) {
     try {
         // Fetch open maintenance tickets
         const { data: maintenanceTickets } = await supabase
-            .from('maintenance_tickets')
+            .from('maintenance')
             .select('*')
             .eq('property_id', propertyId)
             .neq('status', 'Resolved')
