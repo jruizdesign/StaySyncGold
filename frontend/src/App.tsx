@@ -13,6 +13,7 @@ import DailyOverview from './pages/DailyOverview';
 import LandingPage from './pages/LandingPage';
 import Login from './pages/Login';
 import AdminSettings from './pages/AdminSettings';
+import { QuickBooksIntegration } from './pages/QuickBooksIntegration';
 import Accounting from './pages/Accounting';
 import ITSecurity from './pages/ITSecurity';
 import DigitalSolutions from './pages/DigitalSolutions';
@@ -48,6 +49,7 @@ const App: React.FC = () => {
             <Route path="/maintenance" element={<ProtectedRoute><Maintenance /></ProtectedRoute>} />
             <Route path="/staff" element={<ProtectedRoute><Staff /></ProtectedRoute>} />
             <Route path="/financials" element={<ProtectedRoute><Financials /></ProtectedRoute>} />
+            <Route path="/quickbooks" element={<ProtectedRoute><QuickBooksIntegration /></ProtectedRoute>} />
             <Route path="/daily-overview" element={<ProtectedRoute><DailyOverview /></ProtectedRoute>} />
             <Route path="/accounting" element={<ProtectedRoute><Accounting /></ProtectedRoute>} />
             <Route path="/kiosk" element={<ProtectedRoute><StaffKiosk /></ProtectedRoute>} />

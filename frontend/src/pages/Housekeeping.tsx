@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Wand2, BedDouble, AlertCircle, Loader, CheckCircle } from 'lucide-react';
+import { Plus, Wand2, BedDouble, AlertCircle, Loader, CheckCircle, MessageSquare } from 'lucide-react';
 import { RoomStatus, Room } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -8,6 +8,7 @@ import ResolveMaintenanceModal from '../components/ResolveMaintenanceModal';
 import RoomSetupWizard from '../components/RoomSetupWizard';
 import ReportIssueModal from '../components/ReportIssueModal';
 import RoomDetailsModal from '../components/RoomDetailsModal';
+import MessagingModal from '../components/MessagingModal';
 
 const Housekeeping: React.FC = () => {
   const { user } = useAuth();
@@ -20,6 +21,7 @@ const Housekeeping: React.FC = () => {
   const [resolveModalRoomId, setResolveModalRoomId] = useState<string | null>(null);
   const [showRoomDetails, setShowRoomDetails] = useState(false);
   const [roomForDetails, setRoomForDetails] = useState<Room | null>(null);
+  const [isMessagingModalOpen, setIsMessagingModalOpen] = useState(false);
 
   const filters = [
     { label: 'ALL', value: 'ALL' },
@@ -228,6 +230,10 @@ const Housekeeping: React.FC = () => {
           <p className="text-slate-500 mt-1">Manage room status, cleaning, and maintenance.</p>
         </div>
         <div className="flex items-center gap-3">
+          <button onClick={() => setIsMessagingModalOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg font-medium transition-colors shadow-sm">
+            <MessageSquare className="w-4 h-4" />
+            Broadcast Message
+          </button>
           <button onClick={() => setShowWizard(true)} className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors shadow-sm shadow-purple-200">
             <Wand2 className="w-4 h-4" />
             Setup Wizard
@@ -404,6 +410,13 @@ const Housekeeping: React.FC = () => {
           room={roomForDetails}
         />
       )}
+
+      {/* Broadcast Messaging Modal */}
+      <MessagingModal
+        isOpen={isMessagingModalOpen}
+        onClose={() => setIsMessagingModalOpen(false)}
+        presetRecipients={[]} // Empty implies broadcast
+      />
     </div>
   );
 };

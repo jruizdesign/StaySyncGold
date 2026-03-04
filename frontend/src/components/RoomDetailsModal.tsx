@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { X, User, CreditCard, Calendar, Phone, Mail, DollarSign, Clock, BedDouble } from 'lucide-react';
+import { X, User, CreditCard, Calendar, Phone, Mail, DollarSign, Clock, BedDouble, MessageSquare } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { Badge, Button } from './UIComponents';
 import AddChargeModal from './AddChargeModal';
+import MessagingModal from './MessagingModal';
 import { Room } from '../types';
 
 interface RoomDetailsModalProps {
@@ -20,7 +21,8 @@ interface ReservationDetails {
     total_amount: number;
     notes?: string;
     guest?: {
-        full_name: string;
+        first_name: string;
+        last_name: string;
         email: string;
         phone: string;
         vip_status?: boolean;
@@ -40,6 +42,7 @@ const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({ isOpen, onClose, ro
     const [reservation, setReservation] = useState<ReservationDetails | null>(null);
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [isAddChargeModalOpen, setIsAddChargeModalOpen] = useState(false);
+    const [isMessagingOpen, setIsMessagingOpen] = useState(false);
     const [pastReservations, setPastReservations] = useState<ReservationDetails[]>([]);
 
     useEffect(() => {
@@ -59,18 +62,22 @@ const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({ isOpen, onClose, ro
             const { data: reservations, error: resError } = await supabase
                 .from('reservations')
                 .select(`
-                    *,
-                    guest:guests (
-                        full_name,
-                        email,
-                        phone,
-                        vip_status
-                    )
-                `)
+    *,
+    guest: guests(
+        first_name,
+        last_name,
+        email,
+        phone,
+        vip_status
+    )
+        `)
                 .eq('room_id', room.id)
                 .in('status', ['Checked In', 'Confirmed']);
 
-            if (resError) throw resError;
+            if (resError) {
+                console.error("DEBUG: Supabase query error:", resError);
+                throw resError;
+            }
 
             console.log("DEBUG: Raw reservations found:", reservations);
 
@@ -110,13 +117,14 @@ const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({ isOpen, onClose, ro
                 const { data: pastRes, error: pastError } = await supabase
                     .from('reservations')
                     .select(`
-                        id, check_in, check_out, status, total_amount,
-                        guest:guests (
-                            full_name,
-                            email,
-                            phone,
-                            vip_status
-                        )
+id, check_in, check_out, status, total_amount, guest_id,
+    guest: guests(
+        first_name,
+        last_name,
+        email,
+        phone,
+        vip_status
+    )
                     `)
                     .eq('room_id', room.id)
                     .in('status', ['Checked Out', 'Cancelled'])
@@ -182,10 +190,17 @@ const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({ isOpen, onClose, ro
                                 </h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
-                                        <p className="text-xl font-bold text-slate-900">{reservation.guest?.full_name || 'Unknown Guest'}</p>
+                                        <p className="text-xl font-bold text-slate-900">{reservation.guest?.first_name} {reservation.guest?.last_name}</p>
                                         {reservation.guest?.vip_status && (
                                             <span className="inline-block px-2 py-0.5 bg-gold-100 text-gold-700 text-xs font-bold rounded mt-1">VIP MEMBER</span>
                                         )}
+                                        <button
+                                            onClick={() => setIsMessagingOpen(true)}
+                                            className="mt-3 flex items-center gap-2 px-3 py-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-lg text-sm font-medium transition-colors border border-blue-200"
+                                        >
+                                            <MessageSquare className="w-4 h-4" />
+                                            Message Guest
+                                        </button>
                                     </div>
                                     <div className="space-y-2 text-sm text-slate-600">
                                         <div className="flex items-center gap-2">
@@ -241,9 +256,9 @@ const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({ isOpen, onClose, ro
                                             ${transactions.filter(t => t.type === 'payment').reduce((sum, t) => sum + Number(t.amount), 0)}
                                         </p>
                                     </div>
-                                    <div className={`p-3 rounded-lg ${calculateBalance() > 0 ? 'bg-amber-50' : 'bg-slate-50'}`}>
-                                        <p className={`text-xs ${calculateBalance() > 0 ? 'text-amber-600' : 'text-slate-500'}`}>Balance Due</p>
-                                        <p className={`text-lg font-bold ${calculateBalance() > 0 ? 'text-amber-700' : 'text-slate-900'}`}>
+                                    <div className={`p - 3 rounded - lg ${calculateBalance() > 0 ? 'bg-amber-50' : 'bg-slate-50'} `}>
+                                        <p className={`text - xs ${calculateBalance() > 0 ? 'text-amber-600' : 'text-slate-500'} `}>Balance Due</p>
+                                        <p className={`text - lg font - bold ${calculateBalance() > 0 ? 'text-amber-700' : 'text-slate-900'} `}>
                                             ${calculateBalance().toFixed(2)}
                                         </p>
                                     </div>
@@ -265,8 +280,8 @@ const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({ isOpen, onClose, ro
                                                         {new Date(t.created_at).toLocaleDateString()}
                                                     </td>
                                                     <td className="px-4 py-2 text-slate-900">{t.description}</td>
-                                                    <td className={`px-4 py-2 font-medium text-right ${t.type === 'payment' ? 'text-emerald-600' : 'text-slate-900'
-                                                        }`}>
+                                                    <td className={`px - 4 py - 2 font - medium text - right ${t.type === 'payment' ? 'text-emerald-600' : 'text-slate-900'
+                                                        } `}>
                                                         {t.type === 'payment' ? '-' : ''}${t.amount}
                                                     </td>
                                                 </tr>
@@ -307,7 +322,7 @@ const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({ isOpen, onClose, ro
                                         {pastReservations.map(pr => (
                                             <div key={pr.id} className="flex justify-between items-center p-4 border border-slate-200 rounded-xl hover:shadow-sm transition-shadow">
                                                 <div>
-                                                    <p className="font-bold text-slate-900">{pr.guest?.full_name || 'Unknown Guest'}</p>
+                                                    <p className="font-bold text-slate-900">{pr.guest?.first_name} {pr.guest?.last_name}</p>
                                                     <div className="flex items-center gap-2 mt-1 text-xs text-slate-500">
                                                         <Calendar className="w-3.5 h-3.5" />
                                                         <span>{pr.check_in} to {pr.check_out}</span>
@@ -335,13 +350,24 @@ const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({ isOpen, onClose, ro
                     {reservation && <Button>View Full Reservation</Button>}
                 </div>
             </div>
+            {/* Modals */}
+            <AddChargeModal
+                isOpen={isAddChargeModalOpen}
+                onClose={() => setIsAddChargeModalOpen(false)}
+                reservationId={reservation?.id}
+                onChargeAdded={fetchRoomDetails}
+            />
+
             {reservation && (
-                <AddChargeModal
-                    isOpen={isAddChargeModalOpen}
-                    onClose={() => setIsAddChargeModalOpen(false)}
-                    reservationId={reservation.id}
-                    currentTotal={reservation.total_amount}
-                    onChargeAdded={fetchRoomDetails}
+                <MessagingModal
+                    isOpen={isMessagingOpen}
+                    onClose={() => setIsMessagingOpen(false)}
+                    presetRecipients={[{
+                        reservation_id: reservation.id,
+                        guest_id: reservation.guest_id,
+                        name: `${reservation.guest?.first_name} ${reservation.guest?.last_name} `,
+                        room_number: room?.number
+                    }]}
                 />
             )}
         </div>

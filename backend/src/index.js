@@ -17,6 +17,8 @@ const channexRouter = require('./api/routes/channex');
 const ratesRouter = require('./api/routes/rates'); // Added rates router import
 const aiRouter = require('./api/routes/ai');
 const accountingRouter = require('./api/routes/accounting');
+const quickbooksRouter = require('./api/routes/quickbooks');
+const messagesRouter = require('./api/routes/messages');
 
 // ...
 
@@ -72,6 +74,8 @@ app.use('/api/channex', protect, channexRouter);
 app.use('/api/rates', protect, ratesRouter);
 app.use('/api/ai', protect, aiRouter); // Protected to save costs
 app.use('/api/accounting', protect, accountingRouter);
+app.use('/api/quickbooks', protect, quickbooksRouter);
+app.use('/api/messages', protect, messagesRouter);
 app.use('/api/overview', protect, require('./api/routes/overview'));
 
 app.get('/', (req, res) => {

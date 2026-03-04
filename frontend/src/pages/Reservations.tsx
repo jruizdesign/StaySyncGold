@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Button, Badge, Input, Modal } from '../components/UIComponents';
 import { Plus, Search, MoreVertical, Loader, Edit, Trash2, AlertTriangle, BadgeDollarSign } from 'lucide-react';
-import { ReservationStatus, Reservation } from '../types';
+import { ReservationStatus, Reservation, Room } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { generateInvoicePDF } from '../utils/pdfGenerator';
 import CheckInModal from '../components/CheckInModal';
 import AddChargeModal from '../components/AddChargeModal';
 import PaymentModal from '../components/PaymentModal';
+import RoomDetailsModal from '../components/RoomDetailsModal';
 
 const Reservations: React.FC = () => {
   const { user, session } = useAuth();
@@ -23,7 +24,7 @@ const Reservations: React.FC = () => {
   const [selectedMonth, setSelectedMonth] = useState(new Date());
 
   // Timeline State
-  const [rooms, setRooms] = useState<any[]>([]);
+  const [rooms, setRooms] = useState<Room[]>([]);
   const [guests, setGuests] = useState<any[]>([]);
 
 
@@ -57,6 +58,10 @@ const Reservations: React.FC = () => {
   // Check In Modal State
   const [isCheckInModalOpen, setIsCheckInModalOpen] = useState(false);
   const [reservationToCheckIn, setReservationToCheckIn] = useState<Reservation | null>(null);
+
+  // Room Details Modal State
+  const [isRoomDetailsModalOpen, setIsRoomDetailsModalOpen] = useState(false);
+  const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
 
 
   useEffect(() => {
@@ -733,6 +738,11 @@ const Reservations: React.FC = () => {
     setOpenMenuId(null);
   };
 
+  const handleRoomClick = (room: Room) => {
+    setSelectedRoom(room);
+    setIsRoomDetailsModalOpen(true);
+  };
+
 
   const filteredReservations = reservations.filter(r =>
     r.guestName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -1261,7 +1271,7 @@ const Reservations: React.FC = () => {
             */}
               <div className="divide-y relative">
                 {rooms.map(room => (
-                  <div key={room.id} className="grid grid-cols-[100px_1fr] hover:bg-slate-50 relative group">
+                  <div key={room.id} className="grid grid-cols-[100px_1fr] hover:bg-slate-50 relative group" onClick={() => handleRoomClick(room)}>
                     <div className="p-3 font-medium bg-white border-r text-sm truncate sticky left-0 z-10 flex flex-col justify-center">
                       <span>Room {room.number}</span>
                       <span className="text-xs text-slate-400">{room.type}</span>
@@ -1393,6 +1403,13 @@ const Reservations: React.FC = () => {
             )}
           </>
         )}
+      {selectedRoom && (
+        <RoomDetailsModal
+          isOpen={isRoomDetailsModalOpen}
+          onClose={() => setIsRoomDetailsModalOpen(false)}
+          room={selectedRoom}
+        />
+      )}
       <Modal
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}

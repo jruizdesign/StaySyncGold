@@ -12,6 +12,7 @@ import {
   Wrench,
   UserCog,
   CreditCard,
+  FileText,
   MonitorPlay,
   Settings,
   LogOut,
@@ -99,6 +100,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           <SidebarLink to="/maintenance" icon={Wrench} label="Maintenance" />
           <SidebarLink to="/staff" icon={UserCog} label="Staff & Schedule" />
           <SidebarLink to="/financials" icon={CreditCard} label="Financials" />
+          <SidebarLink to="/quickbooks" icon={FileText} label="QuickBooks Integration" />
 
           <SidebarLink to="/kiosk" icon={MonitorPlay} label="Staff Kiosk Mode" />
           <div className="pt-4 mt-4 border-t border-slate-800">
