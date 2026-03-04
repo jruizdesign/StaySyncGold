@@ -1,6 +1,6 @@
 import React from 'react';
 import { Card, Badge } from '../components/UIComponents';
-import { CheckCircle, TrendingUp, Users, BedDouble, DollarSign, ShieldCheck, Sparkles, Zap, Smartphone, KeyRound } from 'lucide-react';
+import { CheckCircle, TrendingUp, Users, BedDouble, DollarSign, ShieldCheck, Sparkles, Zap, Smartphone, KeyRound, History } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { LiveActivityFeed } from '../components/LiveActivityFeed';
 import { AIInsightCard } from '../components/AIInsightCard';
@@ -264,13 +264,21 @@ const Dashboard: React.FC = () => {
             StaySync Gold is constantly evolving. Here are the latest tools and improvements rolled out to help you manage the property more efficiently.
           </p>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="bg-slate-800/50 hover:bg-slate-800 border border-slate-700 p-4 rounded-xl transition-colors">
               <div className="flex items-center gap-3 mb-2">
                 <DollarSign className="w-5 h-5 text-emerald-400" />
                 <h3 className="font-semibold text-slate-100">Integrated Payments</h3>
               </div>
               <p className="text-xs text-slate-400">Record secure Stripe card payments or manual cash/check transactions directly from the Reservations list with the new Gold "Payment" button.</p>
+            </div>
+
+            <div className="bg-slate-800/50 hover:bg-slate-800 border border-slate-700 p-4 rounded-xl transition-colors">
+              <div className="flex items-center gap-3 mb-2">
+                <History className="w-5 h-5 text-purple-400" />
+                <h3 className="font-semibold text-slate-100">Room Guest History</h3>
+              </div>
+              <p className="text-xs text-slate-400">Check past guests instantly! Clicking any vacant room in Housekeeping now shows a history of the last 5 guests who stayed there.</p>
             </div>
 
             <div className="bg-slate-800/50 hover:bg-slate-800 border border-slate-700 p-4 rounded-xl transition-colors">
