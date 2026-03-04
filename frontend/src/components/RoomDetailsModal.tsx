@@ -40,6 +40,7 @@ const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({ isOpen, onClose, ro
     const [reservation, setReservation] = useState<ReservationDetails | null>(null);
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [isAddChargeModalOpen, setIsAddChargeModalOpen] = useState(false);
+    const [pastReservations, setPastReservations] = useState<ReservationDetails[]>([]);
 
     useEffect(() => {
         if (isOpen && room) {
@@ -90,6 +91,7 @@ const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({ isOpen, onClose, ro
 
             if (resData) {
                 setReservation(resData);
+                setPastReservations([]);
 
                 // 2. Fetch Transactions for this reservation
                 const { data: transData, error: transError } = await supabase
@@ -103,6 +105,27 @@ const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({ isOpen, onClose, ro
             } else {
                 setReservation(null);
                 setTransactions([]);
+
+                // 3. Fetch Past Reservations for vacant room history
+                const { data: pastRes, error: pastError } = await supabase
+                    .from('reservations')
+                    .select(`
+                        id, check_in, check_out, status, total_amount,
+                        guest:guests (
+                            full_name,
+                            email,
+                            phone,
+                            vip_status
+                        )
+                    `)
+                    .eq('room_id', room.id)
+                    .in('status', ['Checked Out', 'Cancelled'])
+                    .order('check_out', { ascending: false })
+                    .limit(5);
+
+                if (!pastError && pastRes) {
+                    setPastReservations(pastRes as any);
+                }
             }
 
         } catch (error) {
@@ -261,14 +284,47 @@ const RoomDetailsModal: React.FC<RoomDetailsModalProps> = ({ isOpen, onClose, ro
 
                         </div>
                     ) : (
-                        <div className="py-12 flex flex-col items-center justify-center text-center">
-                            <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
-                                <BedDouble className="w-8 h-8 text-slate-400" />
+                        <div className="space-y-6">
+                            <div className="py-8 flex flex-col items-center justify-center text-center bg-slate-50 rounded-2xl border border-slate-100 mb-6">
+                                <div className="w-16 h-16 bg-white shadow-sm border border-slate-200 rounded-full flex items-center justify-center mb-4">
+                                    <BedDouble className="w-8 h-8 text-slate-400" />
+                                </div>
+                                <h3 className="text-xl font-bold text-slate-800">Room is Vacant</h3>
+                                <p className="text-slate-500 mt-2 max-w-sm text-sm">
+                                    There are no active reservations associated with this room for today.
+                                </p>
                             </div>
-                            <h3 className="text-xl font-bold text-slate-800">Room is Vacant</h3>
-                            <p className="text-slate-500 mt-2 max-w-sm">
-                                There are no active reservations associated with this room for today.
-                            </p>
+
+                            {/* Past History */}
+                            <div>
+                                <h3 className="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
+                                    <Clock className="w-5 h-5 text-slate-400" />
+                                    Past Stay History
+                                </h3>
+
+                                {pastReservations.length > 0 ? (
+                                    <div className="space-y-3">
+                                        {pastReservations.map(pr => (
+                                            <div key={pr.id} className="flex justify-between items-center p-4 border border-slate-200 rounded-xl hover:shadow-sm transition-shadow">
+                                                <div>
+                                                    <p className="font-bold text-slate-900">{pr.guest?.full_name || 'Unknown Guest'}</p>
+                                                    <div className="flex items-center gap-2 mt-1 text-xs text-slate-500">
+                                                        <Calendar className="w-3.5 h-3.5" />
+                                                        <span>{pr.check_in} to {pr.check_out}</span>
+                                                    </div>
+                                                </div>
+                                                <Badge color={pr.status === 'Checked Out' ? 'green' : 'gray'}>
+                                                    {pr.status}
+                                                </Badge>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="p-6 text-center text-slate-500 border border-slate-200 border-dashed rounded-xl">
+                                        No history found for this room.
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     )}
                 </div>
