@@ -1,7 +1,7 @@
 const { createClient } = require('@supabase/supabase-js');
 const aiService = require('../../services/aiService');
 
-// Initialize Supabase client
+// Initialize base Supabase client
 const supabase = createClient(
     process.env.SUPABASE_URL,
     process.env.SUPABASE_ANON_KEY
@@ -20,8 +20,22 @@ const getPropertyInsights = async (req, res) => {
             return res.status(400).json({ error: 'Property ID is required' });
         }
 
+        // Forward user JWT to Supabase client to bypass RLS
+        const token = req.headers.authorization?.split(' ')[1];
+        const scopedSupabase = createClient(
+            process.env.SUPABASE_URL,
+            process.env.SUPABASE_ANON_KEY,
+            {
+                global: {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                }
+            }
+        );
+
         // Fetch property data from Supabase
-        const propertyData = await fetchPropertyData(propertyId);
+        const propertyData = await fetchPropertyData(propertyId, scopedSupabase);
 
         // Generate AI insights
         const insights = await aiService.generatePropertyInsights(propertyData);
@@ -37,12 +51,12 @@ const getPropertyInsights = async (req, res) => {
 };
 
 /**
- * Fetch aggregated property data from Supabase
+ * Fetch aggregated property data from Supabase using user's scoped client
  */
-async function fetchPropertyData(propertyId) {
+async function fetchPropertyData(propertyId, client) {
     try {
         // Fetch open maintenance tickets
-        const { data: maintenanceTickets } = await supabase
+        const { data: maintenanceTickets } = await client
             .from('maintenance')
             .select('*')
             .eq('property_id', propertyId)
@@ -51,13 +65,13 @@ async function fetchPropertyData(propertyId) {
 
         // Fetch today's reservations (check-ins and check-outs)
         const today = new Date().toISOString().split('T')[0];
-        const { data: checkIns } = await supabase
+        const { data: checkIns } = await client
             .from('reservations')
             .select('*')
             .eq('property_id', propertyId)
             .eq('check_in', today);
 
-        const { data: checkOuts } = await supabase
+        const { data: checkOuts } = await client
             .from('reservations')
             .select('*')
             .eq('property_id', propertyId)
@@ -69,7 +83,7 @@ async function fetchPropertyData(propertyId) {
         ];
 
         // Fetch room occupancy
-        const { data: rooms } = await supabase
+        const { data: rooms } = await client
             .from('rooms')
             .select('status')
             .eq('property_id', propertyId);
@@ -83,7 +97,7 @@ async function fetchPropertyData(propertyId) {
         };
 
         // Fetch active staff shifts
-        const { data: staffShifts } = await supabase
+        const { data: staffShifts } = await client
             .from('staff_shifts')
             .select('*')
             .eq('property_id', propertyId)
