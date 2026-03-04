@@ -5,8 +5,8 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { LiveActivityFeed } from '../components/LiveActivityFeed';
 import { AIInsightCard } from '../components/AIInsightCard';
 import { supabase } from '../lib/supabase';
-
 import { useAuth } from '../context/AuthContext';
+import { API_BASE_URL } from '../config';
 
 const StatCard: React.FC<{ title: string, value: string, sub: string, icon: any, color: string }> = ({ title, value, sub, icon: Icon, color }) => (
   <Card className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
@@ -113,9 +113,13 @@ const Dashboard: React.FC = () => {
 
   React.useEffect(() => {
     const fetchStats = async () => {
-      if (!user?.propertyId) return;
+      if (!user?.propertyId || !session?.access_token) return;
       try {
-        const res = await fetch(`/api/reports/dashboard-stats?property_id=${user.propertyId}`);
+        const res = await fetch(`${API_BASE_URL}/api/reports/dashboard-stats?property_id=${user.propertyId}`, {
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`
+          }
+        });
         const data = await res.json();
         if (data.success) {
           setStatsData(data);
@@ -131,7 +135,7 @@ const Dashboard: React.FC = () => {
     // Refresh every minute
     const interval = setInterval(fetchStats, 60000);
     return () => clearInterval(interval);
-  }, [user?.propertyId]);
+  }, [user?.propertyId, session?.access_token]);
 
   // Determine Display Data
   // If demo mode, use Hardcoded Mock. If Real, use API data.

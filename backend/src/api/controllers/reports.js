@@ -102,7 +102,7 @@ const getDashboardStats = async (req, res, next) => {
     // 1. STATS CARDS
     // Check-ins Today
     const checkinsRes = await db.query(
-      "SELECT COUNT(*) FROM bookings WHERE property_id = $1 AND arrival_date = $2 AND status != 'cancelled'",
+      "SELECT COUNT(*) FROM reservations WHERE property_id = $1 AND check_in = $2 AND status != 'Cancelled'",
       [property_id, today]
     );
     const checkins = parseInt(checkinsRes.rows[0].count);
@@ -128,7 +128,7 @@ const getDashboardStats = async (req, res, next) => {
     const totalRooms = parseInt(totalRoomsRes.rows[0].count) || 1;
 
     const activeBookingsRes = await db.query(
-      "SELECT COUNT(*) FROM bookings WHERE property_id = $1 AND arrival_date <= $2 AND departure_date > $2 AND status != 'cancelled'",
+      "SELECT COUNT(*) FROM reservations WHERE property_id = $1 AND check_in <= $2 AND check_out > $2 AND status != 'Cancelled'",
       [property_id, today]
     );
     const occupiedRooms = parseInt(activeBookingsRes.rows[0].count);
@@ -136,7 +136,7 @@ const getDashboardStats = async (req, res, next) => {
 
     // Total Revenue (All Time) -> NOW FETCHING FROM PAYMENTS
     const revenueRes = await db.query(
-      "SELECT SUM(amount) FROM payments WHERE property_id = $1",
+      "SELECT SUM(amount) FROM payments WHERE property_id = $1 AND status = 'succeeded'",
       [property_id]
     );
     const totalRevenue = parseFloat(revenueRes.rows[0].sum) || 0;
@@ -153,14 +153,14 @@ const getDashboardStats = async (req, res, next) => {
       // Daily Revenue -> FROM PAYMENTS (created_at matches dateStr)
       // Note: created_at is timestamptz, so we cast to date
       const dayRevRes = await db.query(
-        "SELECT SUM(amount) FROM payments WHERE property_id = $1 AND DATE(created_at) = $2",
+        "SELECT SUM(amount) FROM payments WHERE property_id = $1 AND DATE(created_at) = $2 AND status = 'succeeded'",
         [property_id, dateStr]
       );
       const dayRevenue = parseFloat(dayRevRes.rows[0].sum) || 0;
 
       // Daily Occupancy (Remains Booking driven)
       const dayOccRes = await db.query(
-        "SELECT COUNT(*) FROM bookings WHERE property_id = $1 AND arrival_date <= $2 AND departure_date > $2 AND status != 'cancelled'",
+        "SELECT COUNT(*) FROM reservations WHERE property_id = $1 AND check_in <= $2 AND check_out > $2 AND status != 'Cancelled'",
         [property_id, dateStr]
       );
       const dayOccupied = parseInt(dayOccRes.rows[0].count);
