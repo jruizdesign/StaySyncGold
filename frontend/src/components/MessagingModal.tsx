@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Send, Users, AlertCircle, Loader, MessageSquare } from 'lucide-react';
-import { Modal, Button } from './UIComponents';
+import { Send, Users, Loader, MessageSquare } from 'lucide-react';
+import { Modal } from './UIComponents';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 
@@ -171,7 +171,6 @@ const MessagingModal: React.FC<MessagingModalProps> = ({ isOpen, onClose, preset
             isOpen={isOpen}
             onClose={onClose}
             title={isBroadcast ? "Broadcast Message" : isSingle ? `Message ${recipients[0].name}` : `Message ${recipients.length} Guests`}
-            maxWidth={isSingle ? "max-w-md" : "max-w-lg"}
         >
             <div className="flex flex-col h-[60vh] max-h-[600px]">
 

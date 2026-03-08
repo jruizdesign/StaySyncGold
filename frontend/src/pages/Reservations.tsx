@@ -1442,7 +1442,6 @@ const Reservations: React.FC = () => {
         isOpen={isChargeModalOpen}
         onClose={() => setIsChargeModalOpen(false)}
         reservationId={selectedResForCharge?.id || ''}
-        currentTotal={selectedResForCharge?.totalAmount || 0}
         onChargeAdded={() => {
           fetchReservations(); // Refresh list to show updated total/balance
         }}

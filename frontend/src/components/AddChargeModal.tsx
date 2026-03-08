@@ -11,7 +11,7 @@ interface AddChargeModalProps {
     onChargeAdded: () => void;
 }
 
-const AddChargeModal: React.FC<AddChargeModalProps> = ({ isOpen, onClose, reservationId, currentTotal, onChargeAdded }) => {
+const AddChargeModal: React.FC<Omit<AddChargeModalProps, 'currentTotal'>> = ({ isOpen, onClose, reservationId, onChargeAdded }) => {
     const { session } = useAuth();
     const [amount, setAmount] = useState('');
     const [description, setDescription] = useState('');

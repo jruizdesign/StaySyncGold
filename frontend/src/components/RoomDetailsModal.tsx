@@ -354,7 +354,7 @@ id, check_in, check_out, status, total_amount, guest_id,
             <AddChargeModal
                 isOpen={isAddChargeModalOpen}
                 onClose={() => setIsAddChargeModalOpen(false)}
-                reservationId={reservation?.id}
+                reservationId={reservation?.id || ''}
                 onChargeAdded={fetchRoomDetails}
             />
 

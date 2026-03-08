@@ -73,11 +73,23 @@ const getAccountingOverview = async (req, res) => {
             aiBriefing = "Unable to generate AI briefing at this time.";
         }
 
+        // 4. Calculate Occupancy Efficiency
+        const todayStr = today.toISOString().split('T')[0];
+        const occupancyQuery = `
+            SELECT 
+                (SELECT COUNT(*) FROM rooms WHERE property_id = $1) as total_rooms,
+                (SELECT COUNT(*) FROM reservations WHERE property_id = $1 AND status IN ('Confirmed', 'Checked In') AND check_in <= $2 AND (check_out > $2 OR is_indefinite = true)) as occupied_rooms
+        `;
+        const occupancyRes = await db.query(occupancyQuery, [property_id, todayStr]);
+        const totalRooms = parseInt(occupancyRes.rows[0]?.total_rooms) || 0;
+        const occupiedRooms = parseInt(occupancyRes.rows[0]?.occupied_rooms) || 0;
+        const occupancyEfficiency = totalRooms > 0 ? Math.round((occupiedRooms / totalRooms) * 100) : 0;
+
         res.json({
             receivables: totalReceivables,
             revenueYTD: totalRevenueYTD,
             projectedInput: projectedRevenue,
-            occupancyEfficiency: 85, // Todo: calc efficiency
+            occupancyEfficiency,
             aiBriefing
         });
 

@@ -128,9 +128,12 @@ export const QuickBooksIntegration: React.FC = () => {
             <div className="flex justify-between items-center">
                 <h1 className="text-2xl font-bold text-slate-900">QuickBooks Integration</h1>
                 {settings?.is_connected ? (
-                    <Badge color="green" icon={<CheckCircle2 className="w-4 h-4" />}>Connected to QuickBooks</Badge>
+                    <div className="flex items-center gap-2">
+                        <CheckCircle2 className="w-4 h-4 text-green-500" />
+                        <Badge color="green">Connected to QuickBooks</Badge>
+                    </div>
                 ) : (
-                    <Badge color="slate">Not Connected</Badge>
+                    <Badge color="gray">Not Connected</Badge>
                 )}
             </div>
 
