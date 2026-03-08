@@ -187,7 +187,6 @@ const RateAdjustmentCalendar: React.FC<RateAdjustmentCalendarProps> = ({ propert
             for (let d = 1; d <= daysInMonth; d++) {
                 const date = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth(), d);
                 const dayOfWeek = date.getDay(); // 0 = Sun, 6 = Sat
-                const isWeekend = dayOfWeek === 0 || dayOfWeek === 5 || dayOfWeek === 6; // Fri, Sat, Sun included as weekend usually? Or just Fri/Sat? logic: usually Fri/Sat for hotels. Let's do Fri/Sat (5,6).
                 // Common Hotel Logic: Fri & Sat check-ins are weekend. 
                 // Let's stick to Fri/Sat as weekend for now.
 

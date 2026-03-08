@@ -74,12 +74,14 @@ export const QuickBooksIntegration: React.FC = () => {
     const handleConnect = async () => {
         try {
             setLoading(true);
-            const res = await fetch(`${API_BASE_URL}/api/quickbooks/connect`, {
-                method: 'POST',
+            const res = await fetch(`${API_BASE_URL}/api/quickbooks/authUri`, {
                 headers: getHeaders(),
-                body: JSON.stringify({ property_id: user?.propertyId })
             });
-            if (res.ok) await fetchData();
+            const data = await res.json();
+            if (data.authUri) {
+                // Redirect user to Intuit OAuth login page
+                window.location.href = data.authUri;
+            }
         } catch (error) {
             console.error('Connect error:', error);
             setLoading(false);
@@ -126,7 +128,7 @@ export const QuickBooksIntegration: React.FC = () => {
             <div className="flex justify-between items-center">
                 <h1 className="text-2xl font-bold text-slate-900">QuickBooks Integration</h1>
                 {settings?.is_connected ? (
-                    <Badge color="green" icon={<CheckCircle2 className="w-4 h-4" />}>Connected (Mock)</Badge>
+                    <Badge color="green" icon={<CheckCircle2 className="w-4 h-4" />}>Connected to QuickBooks</Badge>
                 ) : (
                     <Badge color="slate">Not Connected</Badge>
                 )}
@@ -143,7 +145,7 @@ export const QuickBooksIntegration: React.FC = () => {
                     {!settings?.is_connected ? (
                         <div className="py-8 text-center space-y-4">
                             <p className="text-slate-600">Connect to QuickBooks Online to sync your daily financial transactions directly to your accounting software.</p>
-                            <Button onClick={handleConnect}>Connect to QuickBooks (Mock)</Button>
+                            <Button onClick={handleConnect}>Connect to QuickBooks</Button>
                         </div>
                     ) : (
                         <div className="space-y-4">

@@ -1,5 +1,5 @@
 const db = require('../../config/database');
-const qbMockService = require('../../services/quickbooksMockService');
+const qboService = require('../../services/quickbooksService');
 
 // @desc    Get QuickBooks Connection Status & Settings
 // @route   GET /api/quickbooks/status
@@ -14,33 +14,68 @@ const getStatus = async (req, res) => {
             return res.json({ is_connected: false });
         }
 
-        res.json(rows[0]);
+        const settings = rows[0];
+        // Check if token is valid (this is a simple implementation, ideally we'd try to refresh an expired token)
+        const isConnected = !!settings.access_token && !!settings.realm_id;
+
+        res.json({
+            ...settings,
+            is_connected: isConnected
+        });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 };
 
-// @desc    Simulate Connecting to QuickBooks
-// @route   POST /api/quickbooks/connect
-const connect = async (req, res) => {
+// @desc    Get OAuth URL to start connection
+// @route   GET /api/quickbooks/authUri
+const getAuthUri = async (req, res) => {
     try {
-        const { property_id } = req.body;
-        if (!property_id) return res.status(400).json({ error: 'property_id required' });
-
-        // Simulate OAuth
-        const tokens = await qbMockService.connect();
-
-        // Upsert settings
-        const { rows } = await db.query(`
-      INSERT INTO quickbooks_settings (property_id, is_connected)
-      VALUES ($1, true)
-      ON CONFLICT (property_id) DO UPDATE SET is_connected = true, updated_at = NOW()
-      RETURNING *
-    `, [property_id]);
-
-        res.json({ success: true, settings: rows[0], mock_tokens: tokens });
+        const authUri = qboService.getAuthUri();
+        res.json({ authUri });
     } catch (error) {
         res.status(500).json({ error: error.message });
+    }
+};
+
+// @desc    Handle OAuth callback
+// @route   GET /api/quickbooks/callback
+const callback = async (req, res) => {
+    try {
+        // Intuit sends code, state, and realmId in the query params
+        const url = req.protocol + '://' + req.get('host') + req.originalUrl;
+
+        // Use a default property ID for now (in a real app, you'd pass this in `state` or read from session)
+        // Here we just grab the first property for simplicity, or expect it in state
+        const propertyRes = await db.query('SELECT id FROM properties LIMIT 1');
+        const property_id = propertyRes.rows[0].id;
+
+        const tokenData = await qboService.createToken(url);
+
+        const accessToken = tokenData.token.access_token;
+        const refreshToken = tokenData.token.refresh_token;
+        const realmId = tokenData.realmId;
+        // Simple expiration logic
+        const expiresAt = new Date(Date.now() + (tokenData.token.expires_in * 1000));
+
+        await db.query(`
+            INSERT INTO quickbooks_settings (property_id, is_connected, access_token, refresh_token, realm_id, token_expires_at)
+            VALUES ($1, true, $2, $3, $4, $5)
+            ON CONFLICT (property_id) 
+            DO UPDATE SET 
+                is_connected = true, 
+                access_token = $2, 
+                refresh_token = $3, 
+                realm_id = $4, 
+                token_expires_at = $5,
+                updated_at = NOW()
+        `, [property_id, accessToken, refreshToken, realmId, expiresAt]);
+
+        // Redirect back to frontend
+        res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/quickbooks-integration`);
+    } catch (error) {
+        console.error("QBO Callback Error:", error);
+        res.status(500).send("Error connecting to QuickBooks. Please try again.");
     }
 };
 
@@ -48,7 +83,20 @@ const connect = async (req, res) => {
 // @route   GET /api/quickbooks/accounts
 const getAccounts = async (req, res) => {
     try {
-        const accounts = await qbMockService.getChartOfAccounts();
+        const { property_id } = req.query;
+        if (!property_id) return res.status(400).json({ error: 'property_id required' });
+
+        const { rows } = await db.query('SELECT * FROM quickbooks_settings WHERE property_id = $1', [property_id]);
+        if (rows.length === 0 || !rows[0].access_token) {
+            return res.status(400).json({ error: 'Not connected to QuickBooks' });
+        }
+
+        const tokenData = {
+            access_token: rows[0].access_token,
+            refresh_token: rows[0].refresh_token
+        };
+
+        const accounts = await qboService.getAccounts(tokenData, rows[0].realm_id);
         res.json(accounts);
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -84,10 +132,19 @@ const sync = async (req, res) => {
 
         // Get settings
         const settingsRes = await db.query('SELECT * FROM quickbooks_settings WHERE property_id = $1', [property_id]);
-        if (settingsRes.rows.length === 0 || !settingsRes.rows[0].is_connected) {
+        if (settingsRes.rows.length === 0 || !settingsRes.rows[0].access_token) {
             return res.status(400).json({ error: 'QuickBooks is not connected.' });
         }
         const settings = settingsRes.rows[0];
+
+        if (!settings.room_revenue_account_id || !settings.bank_account_id) {
+            return res.status(400).json({ error: 'QuickBooks accounts must be mapped before syncing.' });
+        }
+
+        const tokenData = {
+            access_token: settings.access_token,
+            refresh_token: settings.refresh_token
+        };
 
         // Get unsynced payments
         const paymentsRes = await db.query(`
@@ -101,13 +158,17 @@ const sync = async (req, res) => {
         // Process each payment
         for (const payment of payments) {
             try {
-                const syncResult = await qbMockService.syncPayment(payment, settings);
+                // Pass mapping configuration to the sync function
+                const qbTransactionId = await qboService.syncPayment(tokenData, settings.realm_id, payment, {
+                    income_account_id: settings.room_revenue_account_id,
+                    deposit_account_id: settings.bank_account_id
+                });
 
                 // Log success
                 await db.query(`
           INSERT INTO quickbooks_sync_logs (property_id, payment_id, qb_transaction_id, status)
           VALUES ($1, $2, $3, 'success')
-        `, [property_id, payment.id, syncResult.qb_transaction_id]);
+        `, [property_id, payment.id, qbTransactionId]);
 
                 // Mark as synced
                 await db.query(`
@@ -156,7 +217,8 @@ const getLogs = async (req, res) => {
 
 module.exports = {
     getStatus,
-    connect,
+    getAuthUri,
+    callback,
     getAccounts,
     saveMapping,
     sync,

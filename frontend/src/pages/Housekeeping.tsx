@@ -49,8 +49,8 @@ const Housekeeping: React.FC = () => {
           filter: `property_id=eq.${user.propertyId}`,
         },
         (payload) => {
-          setRooms((currentRooms) =>
-            currentRooms.map((r) => (r.id === payload.new.id ? { ...r, ...payload.new } : r))
+          setRooms((currentRooms: Room[]) =>
+            currentRooms.map((r: Room) => (r.id === payload.new.id ? { ...r, ...payload.new } : r))
           );
         }
       )
@@ -93,7 +93,7 @@ const Housekeeping: React.FC = () => {
       if (error) throw error;
 
       // Optimistic update
-      setRooms(prev => prev.map(r => r.id === roomId ? { ...r, status: newStatus } : r));
+      setRooms((prev: Room[]) => prev.map((r: Room) => r.id === roomId ? { ...r, status: newStatus } : r));
     } catch (err) {
       console.error('Error updating status:', err);
       alert('Failed to update room status');
@@ -132,18 +132,18 @@ const Housekeeping: React.FC = () => {
   };
 
   const getActiveTicketForRoom = (roomId: string) => {
-    return activeTickets.find(t => t.room_id === roomId);
+    return activeTickets.find((t: any) => t.room_id === roomId);
   };
 
   const addIssue = (roomId: string, issue: any) => {
-    setActiveTickets(prev => [...prev, {
+    setActiveTickets((prev: any[]) => [...prev, {
       ...issue,
       room_id: roomId,
       status: 'Open',
       created_at: new Date().toISOString()
     }]);
 
-    setRooms(prev => prev.map(r => {
+    setRooms((prev: Room[]) => prev.map((r: Room) => {
       if (r.id === roomId) {
         return { ...r, status: RoomStatus.OOO };
       }
@@ -208,7 +208,7 @@ const Housekeeping: React.FC = () => {
   // Correctly filter based on RoomStatus enum values
   const filteredRooms = filter === 'ALL'
     ? rooms
-    : rooms.filter(r => {
+    : rooms.filter((r: Room) => {
       if (filter === 'Maintenance') return r.status === RoomStatus.OOO;
       return r.status === filter;
     });
@@ -263,7 +263,7 @@ const Housekeeping: React.FC = () => {
 
       {/* Room Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {filteredRooms.map(room => {
+        {filteredRooms.map((room: Room) => {
           const activeTicket = getActiveTicketForRoom(room.id);
           return (
             <div
@@ -305,7 +305,7 @@ const Housekeeping: React.FC = () => {
               <div className="p-5 mt-auto space-y-3">
                 {room.status === RoomStatus.DIRTY ? (
                   <button
-                    onClick={(e) => { e.stopPropagation(); handleUpdateStatus(room.id, RoomStatus.CLEAN); }}
+                    onClick={(e: React.MouseEvent) => { e.stopPropagation(); handleUpdateStatus(room.id, RoomStatus.CLEAN); }}
                     className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-lg transition-colors shadow-sm text-sm"
                   >
                     Mark Ready
@@ -313,13 +313,13 @@ const Housekeeping: React.FC = () => {
                 ) : room.status === RoomStatus.CLEAN ? (
                   <div className="grid grid-cols-2 gap-3">
                     <button
-                      onClick={(e) => { e.stopPropagation(); handleUpdateStatus(room.id, RoomStatus.DIRTY); }}
+                      onClick={(e: React.MouseEvent) => { e.stopPropagation(); handleUpdateStatus(room.id, RoomStatus.DIRTY); }}
                       className="py-2.5 bg-rose-50 border border-rose-200 hover:bg-rose-100 text-rose-700 font-medium rounded-lg transition-colors text-sm"
                     >
                       Mark Dirty
                     </button>
                     <button
-                      onClick={(e) => { e.stopPropagation(); handleUpdateStatus(room.id, RoomStatus.OOO); }}
+                      onClick={(e: React.MouseEvent) => { e.stopPropagation(); handleUpdateStatus(room.id, RoomStatus.OOO); }}
                       className="py-2.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-medium rounded-lg transition-colors text-sm"
                     >
                       Maintain
@@ -327,7 +327,7 @@ const Housekeeping: React.FC = () => {
                   </div>
                 ) : room.status === RoomStatus.OOO ? (
                   <button
-                    onClick={(e) => { e.stopPropagation(); setResolveModalRoomId(room.id); }}
+                    onClick={(e: React.MouseEvent) => { e.stopPropagation(); setResolveModalRoomId(room.id); }}
                     className="w-full py-2.5 bg-slate-800 hover:bg-slate-900 text-white font-medium rounded-lg transition-colors shadow-sm text-sm"
                   >
                     Mark Fixed (Ready)
@@ -339,7 +339,7 @@ const Housekeeping: React.FC = () => {
                 )}
 
                 <button
-                  onClick={(e) => { e.stopPropagation(); setSelectedRoom(room); }}
+                  onClick={(e: React.MouseEvent) => { e.stopPropagation(); setSelectedRoom(room); }}
                   className={`w-full py-2 text-xs font-medium border rounded-lg transition-all ${room.status === RoomStatus.OOO && activeTicket
                     ? 'bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100'
                     : 'bg-transparent text-slate-500 hover:text-slate-700 border-transparent hover:border-slate-200'

@@ -1,14 +1,17 @@
 const express = require('express');
 const router = express.Router();
 const qbController = require('../controllers/quickbooks');
+const { protect } = require('../../middleware/auth');
 
-// All routes are protected by auth middleware in index.js
+// Public routes for OAuth flow
+router.get('/authUri', qbController.getAuthUri);
+router.get('/callback', qbController.callback);
 
-router.get('/status', qbController.getStatus);
-router.post('/connect', qbController.connect);
-router.get('/accounts', qbController.getAccounts);
-router.post('/mapping', qbController.saveMapping);
-router.post('/sync', qbController.sync);
-router.get('/logs', qbController.getLogs);
+// Protected routes for UI interaction
+router.get('/status', protect, qbController.getStatus);
+router.get('/accounts', protect, qbController.getAccounts);
+router.post('/mapping', protect, qbController.saveMapping);
+router.post('/sync', protect, qbController.sync);
+router.get('/logs', protect, qbController.getLogs);
 
 module.exports = router;

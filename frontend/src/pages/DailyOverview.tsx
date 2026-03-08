@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { API_BASE_URL } from '../config';
-import { Card, Button, Badge } from '../components/UIComponents';
-import { User, DollarSign, Calendar, Clock, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Card, Button } from '../components/UIComponents';
+import { User, AlertTriangle, CheckCircle } from 'lucide-react';
 
 interface OverviewItem {
     reservation_id: string;
