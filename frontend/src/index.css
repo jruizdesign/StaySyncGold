@@ -10,7 +10,8 @@
 
     body {
         font-family: var(--font-sans);
-        @apply bg-slate-50 text-slate-900 antialiased;
+        @apply bg-slate-50 text-slate-900 antialiased selection:bg-gold-500/30 selection:text-gold-900;
+        scroll-behavior: smooth;
     }
 
     h1,
@@ -26,10 +27,10 @@
 
 @layer utilities {
     .glass {
-        @apply bg-white/70 backdrop-blur-lg border border-white/20 shadow-lg;
+        @apply bg-white/60 backdrop-blur-xl border border-white/40 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-all duration-300;
     }
 
     .glass-dark {
-        @apply bg-slate-900/80 backdrop-blur-lg border border-white/10 shadow-xl;
+        @apply bg-slate-900/70 backdrop-blur-xl border border-white/10 shadow-[0_8px_30px_rgb(0,0,0,0.12)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.2)] transition-all duration-300;
     }
 }

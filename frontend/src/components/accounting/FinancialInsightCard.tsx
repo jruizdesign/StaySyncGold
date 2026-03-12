@@ -1,7 +1,5 @@
 import React from 'react';
 import { Sparkles, TrendingUp, AlertTriangle } from 'lucide-react';
-import ReactMarkdown from 'react-markdown'; // Assuming installed, or parse manually if strict
-
 interface FinancialInsightCardProps {
     briefing: string;
     isLoading: boolean;

@@ -26,11 +26,11 @@ export const Button: React.FC<ButtonProps> = ({ children, variant = 'primary', s
   };
 
   const variants = {
-    primary: "bg-gradient-to-r from-gold-500 to-gold-600 text-white shadow-lg shadow-gold-500/30 border border-transparent",
-    secondary: "bg-slate-800 text-white shadow-lg shadow-slate-800/20 hover:bg-slate-900 border border-transparent",
-    danger: "bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg shadow-red-500/30 border border-transparent",
-    outline: "bg-white border-2 border-slate-200 text-slate-700 hover:border-gold-500 hover:text-gold-600 shadow-sm hover:shadow-md",
-    ghost: "bg-transparent hover:bg-slate-100 text-slate-600 hover:text-slate-900"
+    primary: "bg-gradient-to-r from-gold-500 to-gold-600 hover:from-gold-400 hover:to-gold-500 text-white shadow-lg shadow-gold-500/40 border border-transparent transition-all hover:shadow-xl hover:-translate-y-0.5",
+    secondary: "bg-gradient-to-r from-slate-700 to-slate-800 hover:from-slate-600 hover:to-slate-700 text-white shadow-lg shadow-slate-800/20 border border-transparent transition-all hover:shadow-xl hover:-translate-y-0.5",
+    danger: "bg-gradient-to-r from-red-500 to-red-600 hover:from-red-400 hover:to-red-500 text-white shadow-lg shadow-red-500/30 border border-transparent transition-all hover:shadow-xl hover:-translate-y-0.5",
+    outline: "bg-white border-2 border-slate-200 text-slate-700 hover:border-gold-500 hover:text-gold-600 shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5",
+    ghost: "bg-transparent hover:bg-slate-100 text-slate-600 hover:text-slate-900 transition-colors"
   };
 
   // Convert to motion component if it's a standard button
@@ -62,9 +62,9 @@ export const Card: React.FC<CardProps> = ({ children, className = '', title, act
   <motion.div
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
-    transition={{ duration: 0.4, delay: delay, ease: "easeOut" }}
+    transition={{ duration: 0.5, delay: delay, ease: [0.16, 1, 0.3, 1] }}
     whileHover={{ y: -4, transition: { duration: 0.2 } }}
-    className={cn("bg-white rounded-2xl shadow-sm border border-slate-100/60 p-6 hover:shadow-md hover:border-slate-200/60", className)}
+    className={cn("glass rounded-3xl p-6", className)}
   >
     {(title || action) && (
       <div className="flex justify-between items-center mb-6">
@@ -146,7 +146,7 @@ export const Modal: React.FC<{ isOpen: boolean; onClose: () => void; title: stri
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm"
+            className="fixed inset-0 bg-slate-900/40 backdrop-blur-md"
             onClick={onClose}
           />
           <motion.div
@@ -154,7 +154,7 @@ export const Modal: React.FC<{ isOpen: boolean; onClose: () => void; title: stri
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden z-10 relative"
+            className="glass rounded-3xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden z-10 relative"
           >
             <div className="flex justify-between items-center p-4 border-b border-slate-100">
               <h3 className="font-bold text-lg text-slate-800">{title}</h3>

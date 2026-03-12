@@ -1,4 +1,4 @@
-import { Guest, MaintenanceRequest, Reservation, ReservationStatus, Room, RoomStatus, Staff, Transaction } from './types';
+import { Guest, MaintenanceRequest, Reservation, ReservationStatus, Room, RoomStatus, Transaction } from './types';
 
 export const MOCK_ROOMS: Room[] = Array.from({ length: 20 }, (_, i) => ({
   id: `room-${i + 1}`,

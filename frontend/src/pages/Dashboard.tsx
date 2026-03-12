@@ -1,6 +1,6 @@
 import React from 'react';
 import { Card, Badge } from '../components/UIComponents';
-import { CheckCircle, TrendingUp, Users, BedDouble, DollarSign, ShieldCheck, Sparkles, Zap, Smartphone, KeyRound, History } from 'lucide-react';
+import { CheckCircle, TrendingUp, Users, BedDouble, DollarSign, ShieldCheck, Sparkles, Zap, KeyRound, History } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { LiveActivityFeed } from '../components/LiveActivityFeed';
 import { AIInsightCard } from '../components/AIInsightCard';
@@ -8,9 +8,12 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { API_BASE_URL } from '../config';
 
-const StatCard: React.FC<{ title: string, value: string, sub: string, icon: any, color: string }> = ({ title, value, sub, icon: Icon, color }) => (
-  <Card className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
-    <div className="flex items-start justify-between">
+const StatCard: React.FC<{ title: string, value: string, sub: string, icon: any, color: string, delay?: number }> = ({ title, value, sub, icon: Icon, color, delay = 0 }) => (
+  <Card delay={delay} className="hover:-translate-y-1 transition-transform duration-300 group relative overflow-hidden border-0 bg-white/60">
+    <div className="absolute -right-6 -top-6 opacity-5 group-hover:opacity-10 group-hover:scale-110 transition-all duration-500">
+      <Icon className="w-32 h-32 text-slate-900" />
+    </div>
+    <div className="flex items-start justify-between relative z-10">
       <div>
         <p className="text-sm font-medium text-slate-600 tracking-wide uppercase">{title}</p>
         <h3 className="text-3xl font-bold text-slate-900 mt-2 tracking-tight">{value}</h3>
@@ -19,7 +22,7 @@ const StatCard: React.FC<{ title: string, value: string, sub: string, icon: any,
           {sub}
         </p>
       </div>
-      <div className={`p-3.5 rounded-xl ${color} bg-opacity-10 backdrop-blur-sm`}>
+      <div className={`p-3.5 rounded-2xl ${color} bg-opacity-10 backdrop-blur-md border border-white/20 shadow-sm`}>
         <Icon className={`w-6 h-6 ${color.replace('bg-', 'text-')}`} />
       </div>
     </div>
@@ -198,7 +201,11 @@ const Dashboard: React.FC = () => {
   }, [user?.propertyId]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 relative min-h-screen pb-12">
+      {/* Background Orbs & Gradients */}
+      <div className="fixed inset-0 bg-gradient-to-br from-slate-50 via-slate-50 to-slate-100 z-[-1] pointer-events-none" />
+      <div className="fixed top-[-10%] right-[-5%] w-[800px] h-[800px] bg-gold-400 opacity-[0.15] rounded-full blur-[120px] pointer-events-none animate-pulse-subtle" />
+      <div className="fixed bottom-[-10%] left-[-5%] w-[600px] h-[600px] bg-blue-400 opacity-10 rounded-full blur-[100px] pointer-events-none animate-pulse-subtle" style={{ animationDelay: '1.5s' }} />
 
       {/* Tenancy Risk Alerts */}
       {tenancyAlerts.length > 0 && (
@@ -248,10 +255,10 @@ const Dashboard: React.FC = () => {
       />
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard title="Total Revenue" value={stats.revenue} sub={stats.revenueSub} icon={DollarSign} color="bg-emerald-500 text-emerald-600" />
-        <StatCard title="Occupancy Rate" value={stats.occupancy} sub={stats.occupancySub} icon={TrendingUp} color="bg-blue-500 text-blue-600" />
-        <StatCard title="Check-Ins Today" value={stats.checkins} sub={stats.checkinsSub} icon={Users} color="bg-gold-500 text-gold-600" />
-        <StatCard title="Rooms Cleaning" value={stats.cleaning} sub={stats.cleaningSub} icon={BedDouble} color="bg-rose-500 text-rose-600" />
+        <StatCard delay={0.1} title="Total Revenue" value={stats.revenue} sub={stats.revenueSub} icon={DollarSign} color="bg-emerald-500 text-emerald-600" />
+        <StatCard delay={0.2} title="Occupancy Rate" value={stats.occupancy} sub={stats.occupancySub} icon={TrendingUp} color="bg-blue-500 text-blue-600" />
+        <StatCard delay={0.3} title="Check-Ins Today" value={stats.checkins} sub={stats.checkinsSub} icon={Users} color="bg-gold-500 text-gold-600" />
+        <StatCard delay={0.4} title="Rooms Cleaning" value={stats.cleaning} sub={stats.cleaningSub} icon={BedDouble} color="bg-rose-500 text-rose-600" />
       </div>
 
       {/* Feature Updates Announcement Banner */}

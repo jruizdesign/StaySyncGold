@@ -379,7 +379,7 @@ const RoomWizard: React.FC = () => {
     const fetchRooms = async () => {
         if (!user?.propertyId) return;
         setLoading(true);
-        const { data, error } = await supabase
+        const { data } = await supabase
             .from('rooms')
             .select('*')
             .eq('property_id', user.propertyId)

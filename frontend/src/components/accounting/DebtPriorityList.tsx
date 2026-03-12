@@ -1,6 +1,6 @@
 import React from 'react';
 import { DebtItem } from '../../types/accounting';
-import { AlertCircle, Clock, CheckCircle } from 'lucide-react';
+import { AlertCircle, Clock } from 'lucide-react';
 
 interface DebtPriorityListProps {
     items: DebtItem[];
@@ -29,7 +29,7 @@ export const DebtPriorityList: React.FC<DebtPriorityListProps> = ({ items, isLoa
                     <div key={item.id} className="p-4 hover:bg-slate-50 transition-colors flex items-center justify-between group">
                         <div className="flex items-start gap-3">
                             <div className={`mt-1 w-2 h-2 rounded-full ${item.score >= 500 ? 'bg-rose-500 animate-pulse' :
-                                    item.score >= 100 ? 'bg-orange-500' : 'bg-yellow-500'
+                                item.score >= 100 ? 'bg-orange-500' : 'bg-yellow-500'
                                 }`} />
 
                             <div>
