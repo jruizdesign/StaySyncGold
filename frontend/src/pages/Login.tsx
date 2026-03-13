@@ -142,13 +142,13 @@ const Login: React.FC = () => {
                     </form>
                 </div>
 
-                <p className="text-center text-sm text-slate-300">
-                    Need an account? <a href="#" className="font-semibold text-white hover:text-gold-400 underline decoration-gold-400/50 hover:decoration-gold-400 transition-all">Contact Sales</a>
+                <p className="text-center text-base text-slate-300">
+                    Need an account? <a href="https://www.linkedin.com/in/jason-ruiz-it" target="_blank" rel="noopener noreferrer" className="text-lg font-bold text-white hover:text-gold-400 underline decoration-gold-400/50 hover:decoration-gold-400 transition-all">Contact Sales</a>
                 </p>
 
                 <div className="pt-8 text-center">
-                    <p className="text-xs text-slate-400 font-medium tracking-wide">
-                        Architected by <a href="https://twitter.com/jruizdesign" target="_blank" rel="noopener noreferrer" className="text-slate-300 hover:text-gold-400 transition-colors">Jason Ruiz @jruizdesign</a>
+                    <p className="text-sm text-slate-400 font-medium tracking-wide">
+                        Architected by <a href="https://www.linkedin.com/in/jason-ruiz-it" target="_blank" rel="noopener noreferrer" className="text-base font-bold text-slate-300 hover:text-gold-400 transition-colors">Jason Ruiz @jruizdesign</a>
                     </p>
                 </div>
             </div>

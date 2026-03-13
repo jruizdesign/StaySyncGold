@@ -18,6 +18,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        if (typeof window !== 'undefined' && localStorage.getItem('LIVE_TRIAL') === 'true') {
+            const mockUser: AppUser = {
+                id: 'mock-admin-1',
+                email: 'demo@cardea.app',
+                role: 'admin',
+                propertyId: 'mock-property-1',
+                propertyName: 'Cardea Grand Hotel',
+                isAdmin: true,
+                isManager: true,
+                isDemoMode: true
+            };
+            setUser(mockUser);
+            setSession({ user: { id: mockUser.id, email: mockUser.email } } as any);
+            setLoading(false);
+            return;
+        }
+
         // 1. Check active session - REMOVED (Redundant with onAuthStateChange)
         // supabase.auth.getSession().then(({ data: { session } }) => {
         //     setSession(session);
@@ -116,6 +133,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     const signOut = async () => {
+        if (typeof window !== 'undefined' && localStorage.getItem('LIVE_TRIAL') === 'true') {
+            localStorage.removeItem('LIVE_TRIAL');
+            setUser(null);
+            setSession(null);
+            window.location.href = '/';
+            return;
+        }
         await supabase.auth.signOut();
         setUser(null);
         setSession(null);

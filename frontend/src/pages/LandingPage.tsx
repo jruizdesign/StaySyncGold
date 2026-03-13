@@ -30,7 +30,14 @@ const LandingPage: React.FC = () => {
                             Login to Property
                         </button>
                         <button
-                            onClick={() => navigate('/dashboard')}
+                            onClick={() => {
+                                localStorage.setItem('LIVE_TRIAL', 'true');
+                                localStorage.removeItem('MOCK_DB_INITIALIZED');
+                                import('../lib/mockDb').then(({ initMockDb }) => {
+                                    initMockDb();
+                                    window.location.href = '/dashboard';
+                                });
+                            }}
                             className="bg-white text-slate-900 px-5 py-2.5 rounded-full font-semibold text-sm hover:bg-slate-100 transition-colors"
                         >
                             Launch Demo
@@ -61,7 +68,14 @@ const LandingPage: React.FC = () => {
                 {/* CTA Buttons */}
                 <div className="flex flex-col sm:flex-row gap-4 mb-20">
                     <button
-                        onClick={() => navigate('/dashboard')}
+                        onClick={() => {
+                            localStorage.setItem('LIVE_TRIAL', 'true');
+                            localStorage.removeItem('MOCK_DB_INITIALIZED');
+                            import('../lib/mockDb').then(({ initMockDb }) => {
+                                initMockDb();
+                                window.location.href = '/dashboard';
+                            });
+                        }}
                         className="group flex items-center justify-center gap-2 bg-gold-600 hover:bg-gold-500 text-white px-8 py-3.5 rounded-lg font-semibold text-lg transition-all hover:shadow-[0_0_20px_rgba(234,179,8,0.3)]"
                     >
                         Start Live Trial
