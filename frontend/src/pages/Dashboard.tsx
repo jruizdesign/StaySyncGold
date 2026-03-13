@@ -272,7 +272,7 @@ const Dashboard: React.FC = () => {
             <h2 className="text-2xl font-bold tracking-tight">New Features & Updates</h2>
           </div>
           <p className="text-slate-300 mb-6 max-w-2xl text-sm leading-relaxed">
-            StaySync Gold is constantly evolving. Here are the latest tools and improvements rolled out to help you manage the property more efficiently.
+            Cardea is constantly evolving. Here are the latest tools and improvements rolled out to help you manage the property more efficiently.
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

@@ -10,7 +10,7 @@ export const SmartAssistant: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [messages, setMessages] = useState<{ role: 'user' | 'system', text: string }[]>([
-    { role: 'system', text: 'Hi! I am the StaySync AI. Ask me about occupancy, guest details, or draft an email.' }
+    { role: 'system', text: 'Hi! I am the Cardea AI. Ask me about occupancy, guest details, or draft an email.' }
   ]);
   const [loading, setLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -68,7 +68,7 @@ export const SmartAssistant: React.FC = () => {
           <div className="bg-slate-900 p-4 flex justify-between items-center">
             <div className="flex items-center gap-2 text-gold-400">
               <Sparkles className="w-5 h-5" />
-              <h3 className="font-bold text-white">StaySync AI</h3>
+              <h3 className="font-bold text-white">Cardea AI</h3>
             </div>
             <button onClick={() => setIsOpen(false)} className="text-slate-400 hover:text-white">
               <X className="w-5 h-5" />

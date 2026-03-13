@@ -17,7 +17,7 @@ async function generatePropertyInsights(propertyData) {
         // Build context from property data for the main prompt
         const context = buildPropertyContext(propertyData);
 
-        const prompt = `You are an AI assistant for a hotel property management system called StaySync. 
+        const prompt = `You are an AI assistant for a hotel property management system called Cardea. 
 Analyze the following operational data and provide a brief, actionable insight for the property manager.
 
 ${context}
@@ -37,7 +37,7 @@ Keep it professional, concise, and actionable. Focus on the most important opera
             model: 'gemini-3-flash-preview',
             contents: prompt,
             config: {
-                systemInstruction: 'You are an AI assistant for a hotel property management system called StaySync. Analyze the following operational data and provide a brief, actionable insight for the property manager.'
+                systemInstruction: 'You are an AI assistant for a hotel property management system called Cardea. Analyze the following operational data and provide a brief, actionable insight for the property manager.'
             }
         });
 
@@ -185,7 +185,7 @@ Return a JSON object with the following structure:
 
 async function generateChatResponse(userPrompt, context) {
     try {
-        const systemPrompt = `System: You are an AI assistant for a hotel PMS called StaySyncGold. 
+        const systemPrompt = `System: You are an AI assistant for a hotel PMS called Cardea. 
       Use the following context to answer the user's question concisely.
       
       Context: ${context}

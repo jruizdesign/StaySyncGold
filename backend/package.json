@@ -1,7 +1,7 @@
 {
-  "name": "staysyncgold-backend",
+  "name": "cardea-backend",
   "version": "1.0.0",
-  "description": "Backend for StaySyncGold Hotel Management System",
+  "description": "Backend for Cardea Hotel Management System",
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",

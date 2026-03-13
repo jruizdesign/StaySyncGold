@@ -41,7 +41,7 @@ const DigitalSolutions: React.FC = () => {
                 <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
                     <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/')}>
                         <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-bold">S</div>
-                        <span className="text-xl font-bold tracking-tight">StaySync<span className="text-indigo-500">Digital</span></span>
+                        <span className="text-xl font-bold tracking-tight">Cardea<span className="text-indigo-500">Digital</span></span>
                     </div>
 
                     <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-300">

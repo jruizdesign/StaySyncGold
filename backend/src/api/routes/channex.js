@@ -379,7 +379,7 @@ router.post('/iframe-link', async (req, res) => {
             return res.status(400).json({ error: 'Channex Property ID not found. Please sync property first.' });
         }
 
-        const tokenRes = await channexService.generateOneTimeToken(api_key, channex_property_id, 'StaySync User');
+        const tokenRes = await channexService.generateOneTimeToken(api_key, channex_property_id, 'Cardea User');
 
         if (!tokenRes.success) {
             return res.status(502).json({ error: 'Failed to generate Channex token', details: tokenRes.error });

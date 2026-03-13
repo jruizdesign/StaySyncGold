@@ -20,7 +20,7 @@ const getAuthUri = () => {
     const client = getClient();
     const authUri = client.authorizeUri({
         scope: [OAuthClient.scopes.Accounting],
-        state: 'staysync-oauth',
+        state: 'cardea-oauth',
     });
     return authUri;
 };
@@ -97,7 +97,7 @@ const syncPayment = async (tokenData, realmId, paymentDetails, mappings) => {
             JournalEntryLineDetail: [
                 {
                     Id: "0",
-                    Description: `StaySync Payment - Res ${paymentDetails.reservation_id}`,
+                    Description: `Cardea Payment - Res ${paymentDetails.reservation_id}`,
                     Amount: paymentDetails.amount,
                     DetailType: "JournalEntryLineDetail",
                     JournalEntryLineDetail: {
@@ -109,7 +109,7 @@ const syncPayment = async (tokenData, realmId, paymentDetails, mappings) => {
                 },
                 {
                     Id: "1",
-                    Description: `StaySync Revenue - Res ${paymentDetails.reservation_id}`,
+                    Description: `Cardea Revenue - Res ${paymentDetails.reservation_id}`,
                     Amount: paymentDetails.amount,
                     DetailType: "JournalEntryLineDetail",
                     JournalEntryLineDetail: {

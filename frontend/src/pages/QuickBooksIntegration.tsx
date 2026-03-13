@@ -152,7 +152,7 @@ export const QuickBooksIntegration: React.FC = () => {
                         </div>
                     ) : (
                         <div className="space-y-4">
-                            <p className="text-sm text-slate-500">Map your StaySync payment types to your QuickBooks Chart of Accounts.</p>
+                            <p className="text-sm text-slate-500">Map your Cardea payment types to your QuickBooks Chart of Accounts.</p>
 
                             <div className="space-y-3">
                                 <label className="block text-sm font-medium text-slate-700">Room Revenue Account</label>

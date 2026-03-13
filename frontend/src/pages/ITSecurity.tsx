@@ -23,7 +23,7 @@ const ITSecurity: React.FC = () => {
                 <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
                     <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/')}>
                         <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold">S</div>
-                        <span className="text-xl font-bold tracking-tight">StaySync<span className="text-blue-500">IT</span></span>
+                        <span className="text-xl font-bold tracking-tight">Cardea<span className="text-blue-500">IT</span></span>
                     </div>
 
                     <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-300">
@@ -114,7 +114,7 @@ const ITSecurity: React.FC = () => {
 
                 {/* Why Choose Us Section */}
                 <div className="w-full max-w-6xl mt-32 mb-16">
-                    <h2 className="text-3xl md:text-4xl font-bold mb-12">Why choose StaySync Security?</h2>
+                    <h2 className="text-3xl md:text-4xl font-bold mb-12">Why choose Cardea Security?</h2>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div className="bg-[#0f172a]/50 p-8 rounded-2xl border border-slate-800 hover:bg-[#1e293b]/50 transition-colors">

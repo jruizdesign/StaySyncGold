@@ -7,7 +7,7 @@ const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
 };
 
-export const generateInvoicePDF = (reservation: Reservation, guest: Guest, propertyName: string = 'StaySync Hotel', userEmail: string): Blob => {
+export const generateInvoicePDF = (reservation: Reservation, guest: Guest, propertyName: string = 'Cardea Hotel', userEmail: string): Blob => {
     const doc = new jsPDF();
     const primaryColor = '#1e293b'; // Slate 800
 
@@ -70,7 +70,7 @@ export const generateInvoicePDF = (reservation: Reservation, guest: Guest, prope
     return doc.output('blob');
 };
 
-export const generateReceiptPDF = (payment: any, guestName: string, propertyName: string = 'StaySync Hotel'): Blob => {
+export const generateReceiptPDF = (payment: any, guestName: string, propertyName: string = 'Cardea Hotel'): Blob => {
     const doc = new jsPDF();
     const primaryColor = '#1e293b';
 

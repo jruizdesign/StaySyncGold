@@ -92,7 +92,7 @@ const ReportIssueModal: React.FC<ReportIssueModalProps> = ({ roomNumber, existin
 
                             <div className="bg-blue-50 p-4 rounded-xl flex gap-3 text-blue-700 text-sm border border-blue-100/50 items-start">
                                 <Info className="w-5 h-5 shrink-0 mt-0.5" />
-                                <p className="leading-snug">StaySync AI will analyze your report to instantly determine severity, categorize the problem, and suggest immediate actions for the maintenance team.</p>
+                                <p className="leading-snug">Cardea AI will analyze your report to instantly determine severity, categorize the problem, and suggest immediate actions for the maintenance team.</p>
                             </div>
                         </>
                     ) : (

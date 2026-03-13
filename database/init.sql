@@ -1,4 +1,4 @@
--- Database initialization script for StaySyncGold
+-- Database initialization script for Cardea
 
 -- Properties Table: Stores information about each hotel property
 CREATE TABLE Properties (

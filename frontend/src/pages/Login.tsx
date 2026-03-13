@@ -65,7 +65,7 @@ const Login: React.FC = () => {
                         <Hotel className="w-10 h-10 text-gold-400 drop-shadow-lg" />
                     </div>
                     <h2 className="text-4xl font-bold text-white tracking-tight drop-shadow-md">
-                        StaySync<span className="text-gold-400">Gold</span>
+                        Cardea
                     </h2>
                     <p className="mt-3 text-slate-200 text-lg font-light">
                         Premium Hotel Management

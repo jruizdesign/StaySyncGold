@@ -86,7 +86,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         <div className="h-16 flex items-center px-6 border-b border-slate-800">
           <Hotel className="w-8 h-8 text-gold-500 mr-3" />
           <span className="text-xl font-bold tracking-tight text-white truncate">
-            {user?.propertyName || <span>StaySync<span className="text-gold-500">Gold</span></span>}
+            {user?.propertyName || <span>Cardea</span>}
           </span>
         </div>
 
@@ -160,7 +160,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
             <footer className="pt-10 pb-6 text-center">
               <p className="text-sm text-slate-400">
-                &copy; {new Date().getFullYear()} StaySync Gold. All rights reserved.
+                &copy; {new Date().getFullYear()} Cardea. All rights reserved.
               </p>
             </footer>
           </div>

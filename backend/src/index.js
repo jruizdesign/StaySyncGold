@@ -79,7 +79,7 @@ app.use('/api/messages', protect, messagesRouter);
 app.use('/api/overview', protect, require('./api/routes/overview'));
 
 app.get('/', (req, res) => {
-  res.send('Welcome to the StaySyncGold API!');
+  res.send('Welcome to the Cardea API!');
 });
 
 // Test DB connection

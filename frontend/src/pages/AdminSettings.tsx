@@ -1466,7 +1466,7 @@ const FeatureRequests: React.FC = () => {
                 <div className="lg:col-span-1 space-y-6">
                     <div>
                         <h3 className="font-semibold text-slate-800 mb-2">Submit a Request</h3>
-                        <p className="text-sm text-slate-500 mb-4">Help us improve StaySync by suggesting new features or reporting issues.</p>
+                        <p className="text-sm text-slate-500 mb-4">Help us improve Cardea by suggesting new features or reporting issues.</p>
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <Input label="Title" value={title} onChange={e => setTitle(e.target.value)} placeholder="e.g. Dark Mode" required />
                             <div>

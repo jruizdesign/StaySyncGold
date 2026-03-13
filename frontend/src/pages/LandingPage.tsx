@@ -13,7 +13,7 @@ const LandingPage: React.FC = () => {
                 <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
                     <div className="flex items-center gap-2">
                         <div className="w-8 h-8 bg-gold-600 rounded-lg flex items-center justify-center text-white font-bold">S</div>
-                        <span className="text-xl font-bold tracking-tight">STAYSYNC<span className="text-slate-400 font-light">OS</span></span>
+                        <span className="text-xl font-bold tracking-tight">CARDEA</span>
                     </div>
 
                     <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-300">
@@ -170,7 +170,7 @@ const LandingPage: React.FC = () => {
 
             {/* Footer */}
             <footer className="py-8 border-t border-slate-800 text-center text-slate-500 text-sm">
-                <p>&copy; {new Date().getFullYear()} StaySync Gold. All rights reserved.</p>
+                <p>&copy; {new Date().getFullYear()} Cardea. All rights reserved.</p>
                 <p className="mt-2 text-xs">Architected by <a href="https://twitter.com/jruizdesign" target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-gold-400 transition-colors">Jason Ruiz @jruizdesign</a></p>
             </footer>
         </div>
