@@ -24,7 +24,11 @@ const LandingPage: React.FC = () => {
 
                     <div className="flex items-center gap-4">
                         <button
-                            onClick={() => navigate('/login')}
+                            onClick={() => {
+                                localStorage.removeItem('LIVE_TRIAL');
+                                window.location.href = '/#/login';
+                                window.location.reload();
+                            }}
                             className="text-slate-300 hover:text-white font-medium text-sm transition-colors"
                         >
                             Login to Property
@@ -35,7 +39,8 @@ const LandingPage: React.FC = () => {
                                 localStorage.removeItem('MOCK_DB_INITIALIZED');
                                 import('../lib/mockDb').then(({ initMockDb }) => {
                                     initMockDb();
-                                    window.location.href = '/dashboard';
+                                    window.location.href = '/#/dashboard';
+                                    window.location.reload();
                                 });
                             }}
                             className="bg-white text-slate-900 px-5 py-2.5 rounded-full font-semibold text-sm hover:bg-slate-100 transition-colors"
@@ -73,7 +78,8 @@ const LandingPage: React.FC = () => {
                             localStorage.removeItem('MOCK_DB_INITIALIZED');
                             import('../lib/mockDb').then(({ initMockDb }) => {
                                 initMockDb();
-                                window.location.href = '/dashboard';
+                                window.location.href = '/#/dashboard';
+                                window.location.reload();
                             });
                         }}
                         className="group flex items-center justify-center gap-2 bg-gold-600 hover:bg-gold-500 text-white px-8 py-3.5 rounded-lg font-semibold text-lg transition-all hover:shadow-[0_0_20px_rgba(234,179,8,0.3)]"
@@ -83,7 +89,11 @@ const LandingPage: React.FC = () => {
                     </button>
 
                     <button
-                        onClick={() => navigate('/login')}
+                        onClick={() => {
+                            localStorage.removeItem('LIVE_TRIAL');
+                            window.location.href = '/#/login';
+                            window.location.reload();
+                        }}
                         className="flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 px-8 py-3.5 rounded-lg font-semibold text-lg transition-all"
                     >
                         <ArrowRight className="w-4 h-4" />
