@@ -43,13 +43,7 @@ const Dashboard: React.FC = () => {
     const fetchTenancyRisks = async () => {
       if (!user?.propertyId) return;
 
-      if (user.isDemoMode) {
-        // Mock data for demo
-        setTenancyAlerts([
-          { id: 'mock1', guestName: 'Alice Smith', roomNumber: '101', daysStayed: 27, status: 'Warning' }
-        ]);
-        return;
-      }
+      if (!user?.propertyId) return;
 
       const { data } = await supabase
         .from('reservations')
@@ -84,7 +78,7 @@ const Dashboard: React.FC = () => {
     };
 
     fetchTenancyRisks();
-  }, [user?.propertyId, user?.isDemoMode]);
+  }, [user?.propertyId]);
 
   React.useEffect(() => {
     const fetchInsights = async () => {
@@ -141,29 +135,11 @@ const Dashboard: React.FC = () => {
   }, [user?.propertyId, session?.access_token]);
 
   // Determine Display Data
-  // If demo mode, use Hardcoded Mock. If Real, use API data.
-  const chartData = user?.isDemoMode ? [
-    { name: 'Mon', revenue: 4000, occupancy: 65 },
-    { name: 'Tue', revenue: 3000, occupancy: 55 },
-    { name: 'Wed', revenue: 2000, occupancy: 45 },
-    { name: 'Thu', revenue: 2780, occupancy: 50 },
-    { name: 'Fri', revenue: 5890, occupancy: 85 },
-    { name: 'Sat', revenue: 6390, occupancy: 95 },
-    { name: 'Sun', revenue: 5490, occupancy: 80 },
-  ] : (statsData?.chartData || []);
+  const chartData = statsData?.chartData || [];
 
-  const stats = user?.isDemoMode ? {
-    revenue: "$24,592",
-    revenueSub: "+12% from last week",
-    occupancy: "78%",
-    occupancySub: "+4% from last week",
-    checkins: "14",
-    checkinsSub: "2 remaining",
-    cleaning: "8",
-    cleaningSub: "3 pending inspection"
-  } : {
+  const stats = {
     revenue: `$${statsData?.stats?.revenue?.toLocaleString() || '0'}`,
-    revenueSub: "Total Revenue", // API doesn't return sub-text yet
+    revenueSub: "Total Revenue",
     occupancy: `${statsData?.stats?.occupancy || 0}%`,
     occupancySub: "Current Occupancy",
     checkins: `${statsData?.stats?.checkins || 0}`,

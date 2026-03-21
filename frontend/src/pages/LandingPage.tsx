@@ -34,18 +34,10 @@ const LandingPage: React.FC = () => {
                             Login to Property
                         </button>
                         <button
-                            onClick={() => {
-                                localStorage.setItem('LIVE_TRIAL', 'true');
-                                localStorage.removeItem('MOCK_DB_INITIALIZED');
-                                import('../lib/mockDb').then(({ initMockDb }) => {
-                                    initMockDb();
-                                    window.location.href = '/#/dashboard';
-                                    window.location.reload();
-                                });
-                            }}
+                            onClick={() => navigate('/signup')}
                             className="bg-white text-slate-900 px-5 py-2.5 rounded-full font-semibold text-sm hover:bg-slate-100 transition-colors"
                         >
-                            Launch Demo
+                            Sign Up
                         </button>
                     </div>
                 </div>
@@ -73,18 +65,10 @@ const LandingPage: React.FC = () => {
                 {/* CTA Buttons */}
                 <div className="flex flex-col sm:flex-row gap-4 mb-20">
                     <button
-                        onClick={() => {
-                            localStorage.setItem('LIVE_TRIAL', 'true');
-                            localStorage.removeItem('MOCK_DB_INITIALIZED');
-                            import('../lib/mockDb').then(({ initMockDb }) => {
-                                initMockDb();
-                                window.location.href = '/#/dashboard';
-                                window.location.reload();
-                            });
-                        }}
+                        onClick={() => navigate('/signup')}
                         className="group flex items-center justify-center gap-2 bg-gold-600 hover:bg-gold-500 text-white px-8 py-3.5 rounded-lg font-semibold text-lg transition-all hover:shadow-[0_0_20px_rgba(234,179,8,0.3)]"
                     >
-                        Start Live Trial
+                        Sign Up for Cardea
                         <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                     </button>
 
@@ -192,8 +176,11 @@ const LandingPage: React.FC = () => {
                 </div>
             </main>
 
-            {/* Footer */}
             <footer className="py-8 border-t border-slate-800 text-center text-slate-500 text-sm">
+                <div className="flex items-center justify-center gap-6 mb-4 font-medium">
+                    <button onClick={() => navigate('/terms')} className="hover:text-slate-300 transition-colors">Terms of Service</button>
+                    <button onClick={() => navigate('/eula')} className="hover:text-slate-300 transition-colors">EULA</button>
+                </div>
                 <p>&copy; {new Date().getFullYear()} Cardea. All rights reserved.</p>
                 <p className="mt-2 text-xs">Architected by <a href="https://twitter.com/jruizdesign" target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-gold-400 transition-colors">Jason Ruiz @jruizdesign</a></p>
             </footer>

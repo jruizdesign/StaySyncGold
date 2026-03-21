@@ -55,8 +55,8 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Hide standard layout for Kiosk, Login, and Landing modes including new Digital Services pages
-  const publicPaths = ['/kiosk', '/login', '/', '/landing', '/it-security', '/digital-solutions'];
+  // Hide standard layout for Kiosk, Login, Signup, and Landing modes including new Digital Services and Legal pages
+  const publicPaths = ['/kiosk', '/login', '/signup', '/', '/landing', '/it-security', '/digital-solutions', '/eula', '/terms'];
   const isPublicPath = publicPaths.includes(location.pathname) || publicPaths.some(path => path !== '/' && location.pathname.startsWith(path + '/'));
 
   if (isPublicPath) {

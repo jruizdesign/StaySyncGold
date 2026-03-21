@@ -146,7 +146,11 @@ const Login: React.FC = () => {
                     Need an account? <a href="https://www.linkedin.com/in/jason-ruiz-it" target="_blank" rel="noopener noreferrer" className="text-lg font-bold text-white hover:text-gold-400 underline decoration-gold-400/50 hover:decoration-gold-400 transition-all">Contact Sales</a>
                 </p>
 
-                <div className="pt-8 text-center">
+                <div className="pt-8 text-center pb-8">
+                    <div className="flex items-center justify-center gap-6 mb-4 text-xs font-semibold text-slate-400">
+                        <button type="button" onClick={() => navigate('/terms')} className="hover:text-white transition-colors">Terms of Service</button>
+                        <button type="button" onClick={() => navigate('/eula')} className="hover:text-white transition-colors">EULA</button>
+                    </div>
                     <p className="text-sm text-slate-400 font-medium tracking-wide">
                         Architected by <a href="https://www.linkedin.com/in/jason-ruiz-it" target="_blank" rel="noopener noreferrer" className="text-base font-bold text-slate-300 hover:text-gold-400 transition-colors">Jason Ruiz @jruizdesign</a>
                     </p>
