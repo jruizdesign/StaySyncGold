@@ -86,6 +86,7 @@ export interface Transaction {
 export interface Property {
   id: string;
   name: string;
+  organization_name?: string;
   address?: string;
   createdAt: string;
   demo_mode?: boolean;

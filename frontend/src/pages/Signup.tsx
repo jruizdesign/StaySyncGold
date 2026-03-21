@@ -11,6 +11,7 @@ const Signup: React.FC = () => {
     const [lastName, setLastName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [organizationName, setOrganizationName] = useState('');
     const [propertyName, setPropertyName] = useState('');
     const [phone, setPhone] = useState('');
     const [location, setLocation] = useState('');
@@ -61,6 +62,7 @@ const Signup: React.FC = () => {
                 .from('properties')
                 .insert({
                     name: propertyName,
+                    organization_name: organizationName,
                     phone: phone,
                     location: location,
                     email: email, // Contact email for property
@@ -196,18 +198,31 @@ const Signup: React.FC = () => {
                             />
 
                             <div className="md:col-span-2 mt-4">
-                                <h3 className="text-lg font-semibold text-slate-800 border-b pb-2 mb-2">Property Details</h3>
+                                <h3 className="text-lg font-semibold text-slate-800 border-b pb-2 mb-2">Organization & Property Details</h3>
+                            </div>
+
+                            <div className="md:col-span-2">
+                                <Input
+                                    label="Organization / Company Name"
+                                    type="text"
+                                    placeholder="Cardea Holdings LLC"
+                                    required
+                                    value={organizationName}
+                                    onChange={(e) => setOrganizationName(e.target.value)}
+                                    className="bg-white"
+                                    icon={Building2}
+                                />
                             </div>
 
                             <Input
-                                label="Property / Organization Name"
+                                label="Primary Property Name"
                                 type="text"
                                 placeholder="Grand Plaza Hotel"
                                 required
                                 value={propertyName}
                                 onChange={(e) => setPropertyName(e.target.value)}
                                 className="bg-white"
-                                icon={Building2}
+                                icon={Hotel}
                             />
 
                             <Input
