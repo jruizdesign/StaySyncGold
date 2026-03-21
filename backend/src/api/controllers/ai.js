@@ -56,63 +56,91 @@ const getPropertyInsights = async (req, res) => {
  */
 async function fetchPropertyData(propertyId, client) {
     try {
-        // Fetch open maintenance tickets
-        const { data: maintenanceTickets } = await client
+        const maintenancePromise = client
             .from('maintenance')
             .select('*')
             .eq('property_id', propertyId)
             .neq('status', 'Resolved')
-            .order('created_at', { ascending: false });
+            .order('created_at', { ascending: false })
+            .then(res => res.data || [])
+            .catch(() => []);
 
-        // Fetch today's reservations (check-ins and check-outs)
         const today = new Date().toISOString().split('T')[0];
-        const { data: checkIns } = await client
+        
+        const checkInsPromise = client
             .from('reservations')
             .select('*')
             .eq('property_id', propertyId)
-            .eq('check_in', today);
+            .eq('check_in', today)
+            .then(res => (res.data || []).map(r => ({ ...r, type: 'check_in' })))
+            .catch(() => []);
 
-        const { data: checkOuts } = await client
+        const checkOutsPromise = client
             .from('reservations')
             .select('*')
             .eq('property_id', propertyId)
-            .eq('check_out', today);
+            .eq('check_out', today)
+            .then(res => (res.data || []).map(r => ({ ...r, type: 'check_out' })))
+            .catch(() => []);
 
-        const reservations = [
-            ...(checkIns || []).map(r => ({ ...r, type: 'check_in' })),
-            ...(checkOuts || []).map(r => ({ ...r, type: 'check_out' }))
-        ];
+        const inHousePromise = client
+            .from('reservations')
+            .select('*')
+            .eq('property_id', propertyId)
+            .eq('status', 'Checked In')
+            .then(res => (res.data || []).map(r => ({ ...r, type: 'in_house' })))
+            .catch(() => []);
 
-        // Fetch room occupancy
-        const { data: rooms } = await client
+        const roomsPromise = client
             .from('rooms')
             .select('status')
-            .eq('property_id', propertyId);
+            .eq('property_id', propertyId)
+            .then(res => {
+                const rooms = res.data || [];
+                return {
+                    total: rooms.length,
+                    occupied: rooms.filter(r => r.status === 'Occupied').length,
+                    percentage: rooms.length > 0
+                        ? Math.round((rooms.filter(r => r.status === 'Occupied').length / rooms.length) * 100)
+                        : 0
+                };
+            })
+            .catch(() => ({ total: 0, occupied: 0, percentage: 0 }));
 
-        const occupancy = {
-            total: rooms?.length || 0,
-            occupied: rooms?.filter(r => r.status === 'Occupied').length || 0,
-            percentage: rooms?.length > 0
-                ? Math.round((rooms.filter(r => r.status === 'Occupied').length / rooms.length) * 100)
-                : 0
-        };
-
-        // Fetch active staff shifts
-        const { data: staffShifts } = await client
+        const staffShiftsPromise = client
             .from('staff_shifts')
             .select('*')
             .eq('property_id', propertyId)
-            .is('clock_out', null);
+            .is('clock_out', null)
+            .then(res => res.data || [])
+            .catch(() => []);
+
+        const [
+            maintenanceTickets,
+            checkIns,
+            checkOuts,
+            inHouse,
+            occupancy,
+            staffShifts
+        ] = await Promise.all([
+            maintenancePromise,
+            checkInsPromise,
+            checkOutsPromise,
+            inHousePromise,
+            roomsPromise,
+            staffShiftsPromise
+        ]);
+
+        const reservations = [...checkIns, ...checkOuts, ...inHouse];
 
         return {
-            maintenanceTickets: maintenanceTickets || [],
-            reservations: reservations || [],
+            maintenanceTickets,
+            reservations,
             occupancy,
-            staffShifts: staffShifts || []
+            staffShifts
         };
     } catch (error) {
         console.error('Error fetching property data:', error);
-        // Return empty data structure on error
         return {
             maintenanceTickets: [],
             reservations: [],

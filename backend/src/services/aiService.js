@@ -90,7 +90,10 @@ function buildPropertyContext(data) {
     if (data.reservations) {
         const checkIns = data.reservations.filter(r => r.type === 'check_in').length;
         const checkOuts = data.reservations.filter(r => r.type === 'check_out').length;
-        parts.push(`Today: ${checkIns} check-ins, ${checkOuts} check-outs`);
+        const inHouse = data.reservations.filter(r => r.type === 'in_house').length;
+        
+        parts.push(`Today's Activity: ${checkIns} check-ins, ${checkOuts} check-outs`);
+        parts.push(`Guests In-House: ${inHouse} current active reservations`);
     }
 
     // Occupancy
@@ -99,7 +102,7 @@ function buildPropertyContext(data) {
     }
 
     // Staff
-    if (data.staffShifts) {
+    if (data.staffShifts && data.staffShifts.length > 0) {
         const activeStaff = data.staffShifts.filter(s => s.status === 'active').length;
         const onBreak = data.staffShifts.filter(s => s.status === 'on_break').length;
         parts.push(`Staff: ${activeStaff} active${onBreak > 0 ? `, ${onBreak} on break` : ''}`);
