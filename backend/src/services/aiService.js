@@ -1,7 +1,8 @@
 const { GoogleGenAI } = require('@google/genai');
 
-// Initialize Gemini GoogleGenAI
-const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+// Initialize Gemini GoogleGenAI (Safeguard against missing API key during boot)
+const apiKey = process.env.GEMINI_API_KEY || 'MISSING_API_KEY';
+const genAI = new GoogleGenAI({ apiKey });
 
 /**
  * Generate AI insights for a property based on operational data
