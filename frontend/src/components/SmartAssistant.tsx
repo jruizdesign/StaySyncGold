@@ -2,11 +2,10 @@ import React, { useState, useRef, useEffect } from 'react';
 import { X, Send, Sparkles, Loader2 } from 'lucide-react';
 import { Button } from './UIComponents';
 import { useAuth } from '../context/AuthContext';
-
-import { MOCK_GUESTS, MOCK_RESERVATIONS, MOCK_ROOMS } from '../constants';
+import { supabase } from '../lib/supabase';
 
 export const SmartAssistant: React.FC = () => {
-  const { session } = useAuth();
+  const { session, user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [messages, setMessages] = useState<{ role: 'user' | 'system', text: string }[]>([
@@ -28,16 +27,41 @@ export const SmartAssistant: React.FC = () => {
     setQuery('');
     setLoading(true);
 
-    // Prepare context
-    const context = `
-      Current Date: ${new Date().toLocaleDateString()}
-      Total Rooms: ${MOCK_ROOMS.length}
-      Active Reservations: ${MOCK_RESERVATIONS.length}
-      Guests: ${MOCK_GUESTS.map(g => g.fullName).join(', ')}
-      Recent Guests VIP status: ${MOCK_GUESTS.filter(g => g.vipStatus).map(g => g.fullName).join(', ')}
-    `;
-
     try {
+      let context = '';
+      const propertyId = user?.propertyId;
+      
+      if (propertyId) {
+          const [
+              { data: roomsData },
+              { data: reservationsData },
+              { data: guestsData }
+          ] = await Promise.all([
+              supabase.from('rooms').select('number, type, status').eq('property_id', propertyId),
+              supabase.from('reservations').select('*, rooms(number), guests(first_name, last_name)').eq('property_id', propertyId).in('status', ['Confirmed', 'Checked In']),
+              supabase.from('guests').select('first_name, last_name, vip_status').eq('property_id', propertyId).order('created_at', { ascending: false }).limit(20)
+          ]);
+
+          const roomsCount = roomsData?.length || 0;
+          const activeResCount = reservationsData?.length || 0;
+          const guestNames = guestsData?.map(g => `${g.first_name} ${g.last_name}`).join(', ') || 'None';
+          const vipGuests = guestsData?.filter(g => g.vip_status).map(g => `${g.first_name} ${g.last_name}`).join(', ') || 'None';
+          
+          // @ts-ignore Since guests and rooms relations return objects/arrays based on cardinality
+          const checkedInInfo = reservationsData?.filter(r => r.status === 'Checked In').map(r => `${r.guests?.first_name} ${r.guests?.last_name} (Room ${r.rooms?.number})`).join(', ') || 'None';
+
+          context = `
+            Current Date: ${new Date().toLocaleDateString()}
+            Total Rooms: ${roomsCount}
+            Active Reservations: ${activeResCount}
+            Recent/Expected Guests: ${guestNames}
+            Recent VIPs: ${vipGuests}
+            Currently Checked In Guests & Rooms: ${checkedInInfo}
+          `;
+      } else {
+         context = `Current Date: ${new Date().toLocaleDateString()}\nNo property data available.`;
+      }
+
       const { generateSmartResponse } = await import('../services/aiService');
       const token = session?.access_token || '';
       const response = await generateSmartResponse(userMsg, context, token);
