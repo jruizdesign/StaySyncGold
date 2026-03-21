@@ -3,6 +3,7 @@ import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { Modal, Button, Input } from './UIComponents';
 import { useAuth } from '../context/AuthContext';
+import { supabase } from '../lib/supabase';
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || 'pk_test_sample');
 
@@ -139,24 +140,18 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
             }
         } else {
             try {
-                const response = await fetch('/api/payments/manual', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${session?.access_token}`
-                    },
-                    body: JSON.stringify({
-                        property_id: propertyId,
-                        res_id: reservationId,
-                        amount: numAmount,
-                        method: method,
-                        notes: notes
-                    }),
-                });
+                const { error } = await supabase.from('payments').insert([{
+                    property_id: propertyId,
+                    res_id: reservationId || null,
+                    amount: numAmount,
+                    method: method,
+                    status: 'succeeded',
+                    currency: 'usd',
+                    notes: notes
+                }]);
 
-                if (!response.ok) {
-                    const text = await response.text();
-                    throw new Error(text || 'Failed to record manual payment');
+                if (error) {
+                    throw error;
                 }
 
                 handleSuccess();
