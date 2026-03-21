@@ -20,12 +20,12 @@ const Signup: React.FC = () => {
     const navigate = useNavigate();
     const { user, loading: authLoading } = useAuth();
 
-    // Redirect if already logged in
+    // Redirect if already logged in (but not while we are actively signing up)
     React.useEffect(() => {
-        if (!authLoading && user) {
+        if (!authLoading && user && !loading) {
             navigate('/dashboard', { replace: true });
         }
-    }, [user, authLoading, navigate]);
+    }, [user, authLoading, navigate, loading]);
 
     const handleSignup = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -106,8 +106,9 @@ const Signup: React.FC = () => {
             logger.info(`New property signed up: ${propertyName}`, { type: 'AUTH', event: 'SIGNUP_SUCCESS', details: { email, propertyId } });
 
             // Automatically navigate to dashboard upon successful creation
-            // Assuming Supabase signs the user in automatically after signUp (if confirm not required)
-            navigate('/dashboard');
+            // Use window.location to force a full reload so AuthContext refetches the updated user record
+            // with the newly attached property_id.
+            window.location.href = '/dashboard';
 
         } catch (err: any) {
             logger.warn(`Signup failed for ${email}`, { type: 'AUTH', event: 'SIGNUP_FAILED', details: { email, error: err.message } });
