@@ -59,7 +59,11 @@ export const generateInvoicePDF = (reservation: Reservation, guest: Guest, prope
     const finalY = (doc as any).lastAutoTable.finalY + 10;
     doc.setFontSize(12);
     doc.setTextColor(primaryColor);
-    doc.text(`Total Amount: ${formatCurrency(reservation.totalAmount)}`, 130, finalY);
+    doc.text(`Total Stay Amount: ${formatCurrency(reservation.totalAmount)}`, 110, finalY);
+    
+    if (reservation.accruedAmount !== undefined) {
+        doc.text(`Accrued To Date: ${formatCurrency(reservation.accruedAmount)}`, 110, finalY + 8);
+    }
 
     // Footer
     doc.setFontSize(8);

@@ -44,6 +44,7 @@ export interface Reservation {
   checkOut: string; // ISO Date
   status: ReservationStatus;
   totalAmount: number;
+  accruedAmount?: number; // Calculated dynamic charge up to current date
   guestName: string; // Denormalized for ease
   roomNumber: string; // Denormalized for ease
   friendlyId?: string; // e.g., BVN-1001

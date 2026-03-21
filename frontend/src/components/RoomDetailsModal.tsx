@@ -145,13 +145,39 @@ id, check_in, check_out, status, total_amount, guest_id,
 
     if (!isOpen) return null;
 
-    const calculateBalance = () => {
+    const getAccruedAmount = () => {
         if (!reservation) return 0;
-        const totalCharges = reservation.total_amount || 0;
-        const totalPaid = transactions
+        
+        const manualCharges = transactions
+            .filter(t => t.type === 'charge')
+            .reduce((sum, t) => sum + Number(t.amount), 0);
+            
+        const totalAmount = reservation.total_amount || 0;
+        const roomTotal = Math.max(0, totalAmount - manualCharges);
+        
+        const checkIn = new Date(reservation.check_in);
+        const checkOut = new Date(reservation.check_out);
+        const today = new Date();
+        
+        const isIndefinite = checkOut.getFullYear() > 2050 || (reservation as any).is_indefinite;
+        
+        let totalNights = Math.max(1, Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 3600 * 24)));
+        if (isIndefinite) totalNights = 1;
+        
+        const nightsStayed = Math.max(0, Math.ceil((Math.min(today.getTime(), checkOut.getTime()) - checkIn.getTime()) / (1000 * 3600 * 24)));
+        
+        const accruedRoomCharge = (roomTotal / totalNights) * (isIndefinite ? nightsStayed : Math.min(nightsStayed, totalNights));
+        return accruedRoomCharge + manualCharges;
+    };
+
+    const getPaidAmount = () => {
+        return transactions
             .filter(t => t.type === 'payment')
             .reduce((sum, t) => sum + Number(t.amount), 0);
-        return totalCharges - totalPaid;
+    };
+
+    const calculateAccruedBalance = () => {
+        return getAccruedAmount() - getPaidAmount();
     };
 
     return (
@@ -245,21 +271,25 @@ id, check_in, check_out, status, total_amount, guest_id,
                                     </Button>
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                                     <div className="bg-slate-50 p-3 rounded-lg">
-                                        <p className="text-xs text-slate-500">Total Charges</p>
-                                        <p className="text-lg font-bold text-slate-900">${reservation.total_amount}</p>
+                                        <p className="text-xs text-slate-500" title="Charges accrued up to today based on nights stayed + manual charges">Accrued Charges</p>
+                                        <p className="text-lg font-bold text-slate-900">${getAccruedAmount().toFixed(2)}</p>
+                                    </div>
+                                    <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 border-dashed">
+                                        <p className="text-xs text-slate-400" title="Total Scheduled Stay">Total Stay Est.</p>
+                                        <p className="text-lg font-bold text-slate-600">${reservation.total_amount}</p>
                                     </div>
                                     <div className="bg-emerald-50 p-3 rounded-lg">
-                                        <p className="text-xs text-emerald-600">Paid</p>
+                                        <p className="text-xs text-emerald-600">Total Paid</p>
                                         <p className="text-lg font-bold text-emerald-700">
-                                            ${transactions.filter(t => t.type === 'payment').reduce((sum, t) => sum + Number(t.amount), 0)}
+                                            ${getPaidAmount().toFixed(2)}
                                         </p>
                                     </div>
-                                    <div className={`p - 3 rounded - lg ${calculateBalance() > 0 ? 'bg-amber-50' : 'bg-slate-50'} `}>
-                                        <p className={`text - xs ${calculateBalance() > 0 ? 'text-amber-600' : 'text-slate-500'} `}>Balance Due</p>
-                                        <p className={`text - lg font - bold ${calculateBalance() > 0 ? 'text-amber-700' : 'text-slate-900'} `}>
-                                            ${calculateBalance().toFixed(2)}
+                                    <div className={`p-3 rounded-lg ${calculateAccruedBalance() > 0 ? 'bg-amber-50' : 'bg-slate-50'}`}>
+                                        <p className={`text-xs ${calculateAccruedBalance() > 0 ? 'text-amber-600' : 'text-slate-500'}`}>Current Balance</p>
+                                        <p className={`text-lg font-bold ${calculateAccruedBalance() > 0 ? 'text-amber-700' : 'text-slate-900'}`}>
+                                            ${calculateAccruedBalance().toFixed(2)}
                                         </p>
                                     </div>
                                 </div>

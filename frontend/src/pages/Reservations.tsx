@@ -79,7 +79,7 @@ const Reservations: React.FC = () => {
   *,
   guests(first_name, last_name),
   rooms(number),
-  financial_transactions(amount)
+  financial_transactions(amount, type)
     `);
 
       if (user?.propertyId) {
@@ -112,19 +112,45 @@ const Reservations: React.FC = () => {
 
       if (data) {
         // Map Supabase result to Reservation interface
-        const mappedReservations: Reservation[] = data.map((r: any) => ({
-          id: r.id,
-          friendlyId: r.friendly_id,
-          guestId: r.guest_id || '',
-          roomId: r.room_id || '',
-          checkIn: r.check_in,
-          checkOut: r.check_out,
-          status: r.status as ReservationStatus,
-          totalAmount: r.total_amount || 0,
-          totalPaid: r.financial_transactions ? r.financial_transactions.reduce((sum: number, t: any) => sum + (Number(t.amount) || 0), 0) : 0,
-          guestName: r.guests ? `${r.guests.first_name} ${r.guests.last_name} ` : 'Unknown Guest',
-          roomNumber: r.rooms ? r.rooms.number : 'N/A'
-        }));
+        const mappedReservations: Reservation[] = data.map((r: any) => {
+          const totalPaid = r.financial_transactions 
+            ? r.financial_transactions.filter((t: any) => t.type === 'payment').reduce((sum: number, t: any) => sum + (Number(t.amount) || 0), 0) 
+            : 0;
+          const manualCharges = r.financial_transactions
+            ? r.financial_transactions.filter((t: any) => t.type === 'charge').reduce((sum: number, t: any) => sum + (Number(t.amount) || 0), 0)
+            : 0;
+            
+          const totalAmount = r.total_amount || 0;
+          const roomTotal = Math.max(0, totalAmount - manualCharges);
+          
+          const checkIn = new Date(r.check_in);
+          const checkOut = new Date(r.check_out);
+          const today = new Date();
+          
+          let totalNights = Math.max(1, Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 3600 * 24)));
+          // If indefinite, treat as 1 night for base division so we just use the daily rate as if it's per night
+          if (r.is_indefinite) totalNights = 1;
+          
+          const nightsStayed = Math.max(0, Math.ceil((Math.min(today.getTime(), checkOut.getTime()) - checkIn.getTime()) / (1000 * 3600 * 24)));
+          
+          const accruedRoomCharge = (roomTotal / totalNights) * (r.is_indefinite ? nightsStayed : Math.min(nightsStayed, totalNights));
+          const accruedAmount = accruedRoomCharge + manualCharges;
+
+          return {
+            id: r.id,
+            friendlyId: r.friendly_id,
+            guestId: r.guest_id || '',
+            roomId: r.room_id || '',
+            checkIn: r.check_in,
+            checkOut: r.check_out,
+            status: r.status as ReservationStatus,
+            totalAmount: totalAmount,
+            accruedAmount: accruedAmount, 
+            totalPaid: totalPaid,
+            guestName: r.guests ? `${r.guests.first_name} ${r.guests.last_name}` : 'Unknown Guest',
+            roomNumber: r.rooms ? r.rooms.number : 'N/A'
+          };
+        });
         setReservations(mappedReservations);
       }
     } catch (error) {
@@ -1129,37 +1155,22 @@ const Reservations: React.FC = () => {
                         <Badge color={getStatusColor(res.status)}>{res.status}</Badge>
                       </td>
                       <td className="px-6 py-4 text-right font-medium text-slate-900">
-                        {new Date(res.checkOut).getFullYear() > 2050 ? (
-                          // Indefinite: Calc Accrued
-                          (() => {
-                            const start = new Date(res.checkIn);
-                            const now = new Date();
-                            // Accrued days: (Now - Start). If start > now, 0.
-                            const ms = now.getTime() - start.getTime();
-                            const days = Math.ceil(ms / (1000 * 3600 * 24));
-                            const validDays = Math.max(1, days); // Show at least 1 day charge? Or 0 if future? User said "accrued ... started before today".
-
-                            // We need room price. filteredReservations doesn't have it joined, but we have `rooms` state.
-                            // res.roomId matches rooms.id
-                            const room = rooms.find(r => r.id === res.roomId);
-                            const price = room ? (Number(room.price_per_night) || 100) : 100;
-                            const accrued = validDays * price;
-                            const balance = accrued - (res.totalPaid || 0);
-
-                            if (ms < 0) return `$${res.totalAmount}`; // Future indefinite
-
+                        <div className="flex flex-col items-end">
+                          <span className="text-xs text-slate-500 mb-1" title="Charges accrued up to today based on nights stayed + all manual charges">
+                            Accrued: ${(res.accruedAmount || 0).toFixed(2)}
+                          </span>
+                          <span className="font-bold text-slate-900" title="Total charges for the entire scheduled stay">
+                            Total: ${(res.totalAmount || 0).toFixed(2)}
+                          </span>
+                          {(() => {
+                            const balance = (res.accruedAmount || 0) - (res.totalPaid || 0);
                             return (
-                              <div className="flex flex-col items-end">
-                                <span className="text-xs text-slate-500">Accrued: ${accrued.toFixed(2)}</span>
-                                <span className={`font-bold ${balance > 0 ? 'text-red-600' : 'text-green-600'}`} title="Balance Due (Accrued - Paid)">
-                                  {balance > 0 ? `Due: $${balance.toFixed(2)}` : 'Paid'}
-                                </span>
-                              </div>
+                               <span className={`text-[10px] font-bold mt-1 ${balance > 0 ? 'text-amber-600' : 'text-emerald-600'}`} title="Balance Due (Accrued - Paid)">
+                                  {balance > 0 ? `Due: $${balance.toFixed(2)}` : 'Paid In Full'}
+                               </span>
                             );
-                          })()
-                        ) : (
-                          `$${res.totalAmount}`
-                        )}
+                          })()}
+                        </div>
                       </td>
                       <td className="px-6 py-4 text-center">
                         <div className="flex justify-center gap-2">
