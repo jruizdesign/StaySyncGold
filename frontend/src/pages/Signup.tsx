@@ -75,8 +75,9 @@ const Signup: React.FC = () => {
 
             // Automatically navigate to dashboard upon successful creation
             // Use window.location to force a full reload so AuthContext refetches the updated user record
-            // with the newly attached property_id.
-            window.location.href = '/dashboard';
+            // with the newly attached property_id. We must include the hash for HashRouter.
+            window.location.replace('/#/dashboard');
+            window.location.reload();
 
         } catch (err: any) {
             logger.warn(`Signup failed for ${email}`, { type: 'AUTH', event: 'SIGNUP_FAILED', details: { email, error: err.message } });
