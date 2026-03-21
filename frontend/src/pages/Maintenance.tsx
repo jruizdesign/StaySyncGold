@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
-import { Card, Button, Input, Badge } from '../components/UIComponents';
+import { Button, Badge } from '../components/UIComponents';
 import { Plus, Wrench, CheckCircle, Clock, Sparkles } from 'lucide-react';
 import ResolveMaintenanceModal from '../components/ResolveMaintenanceModal';
+import ReportIssueModal from '../components/ReportIssueModal';
 
 interface MaintenanceTicket {
     id: string;
@@ -26,12 +27,6 @@ const Maintenance: React.FC = () => {
     const [rooms, setRooms] = useState<{ id: string; number: string }[]>([]);
     const [loading, setLoading] = useState(true);
     const [showCreateForm, setShowCreateForm] = useState(false);
-
-    // Form State
-    const [selectedRoomId, setSelectedRoomId] = useState('');
-    const [priority, setPriority] = useState<string>('Medium');
-    const [description, setDescription] = useState('');
-    const [creating, setCreating] = useState(false);
     const [resolveModalTicketId, setResolveModalTicketId] = useState<string | null>(null);
 
     useEffect(() => {
@@ -69,16 +64,17 @@ const Maintenance: React.FC = () => {
         }
     };
 
-    const handleCreateTicket = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setCreating(true);
+    const handleSubmitIssue = async (issueData: any) => {
         try {
             const { error } = await supabase.from('maintenance').insert([
                 {
                     property_id: user?.propertyId,
-                    room_id: selectedRoomId,
-                    description,
-                    priority,
+                    room_id: issueData.room_id,
+                    description: issueData.description,
+                    priority: issueData.severity,
+                    category: issueData.category,
+                    ai_summary: issueData.ai_summary,
+                    suggested_action: issueData.suggested_action,
                     status: 'Open'
                 }
             ]);
@@ -87,15 +83,10 @@ const Maintenance: React.FC = () => {
 
             // Reset and Refresh
             setShowCreateForm(false);
-            setDescription('');
-            setSelectedRoomId('');
-            setPriority('Medium');
             fetchData();
         } catch (error) {
             console.error('Error creating ticket:', error);
             alert('Failed to create ticket');
-        } finally {
-            setCreating(false);
         }
     };
 
@@ -151,50 +142,11 @@ const Maintenance: React.FC = () => {
             </div>
 
             {showCreateForm && (
-                <Card title="Log New Issue">
-                    <form onSubmit={handleCreateTicket} className="space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="space-y-1">
-                                <label className="block text-sm font-medium text-slate-700">Room</label>
-                                <select
-                                    className="w-full p-2 border border-slate-300 rounded-lg"
-                                    value={selectedRoomId}
-                                    onChange={e => setSelectedRoomId(e.target.value)}
-                                    required
-                                >
-                                    <option value="">-- Select Room --</option>
-                                    {rooms.map(r => (
-                                        <option key={r.id} value={r.id}>Room {r.number}</option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div className="space-y-1">
-                                <label className="block text-sm font-medium text-slate-700">Priority</label>
-                                <select
-                                    className="w-full p-2 border border-slate-300 rounded-lg"
-                                    value={priority}
-                                    onChange={e => setPriority(e.target.value)}
-                                >
-                                    <option value="Low">Low</option>
-                                    <option value="Medium">Medium</option>
-                                    <option value="High">High</option>
-                                </select>
-                            </div>
-                        </div>
-                        <Input
-                            label="Description"
-                            placeholder="Describe the issue..."
-                            value={description}
-                            onChange={e => setDescription(e.target.value)}
-                            required
-                        />
-                        <div className="flex justify-end">
-                            <Button type="submit" disabled={creating}>
-                                {creating ? 'Logging...' : 'Log Issue'}
-                            </Button>
-                        </div>
-                    </form>
-                </Card>
+                <ReportIssueModal 
+                    rooms={rooms}
+                    onClose={() => setShowCreateForm(false)}
+                    onSubmit={handleSubmitIssue}
+                />
             )}
 
             <div className="grid grid-cols-1 gap-4">

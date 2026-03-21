@@ -4,16 +4,18 @@ import React, { useState } from 'react';
 import { X, Sparkles, CheckCircle, Info } from 'lucide-react';
 
 interface ReportIssueModalProps {
-    roomNumber: string;
+    roomNumber?: string;
+    rooms?: { id: string; number: string }[];
     existingIssue?: any;
     onClose: () => void;
     onSubmit: (issue: any) => void;
 }
 
-const ReportIssueModal: React.FC<ReportIssueModalProps> = ({ roomNumber, existingIssue, onClose, onSubmit }) => {
+const ReportIssueModal: React.FC<ReportIssueModalProps> = ({ roomNumber, rooms, existingIssue, onClose, onSubmit }) => {
     const { session } = useAuth();
     const [step, setStep] = useState(existingIssue ? 2 : 1);
     const [description, setDescription] = useState('');
+    const [selectedRoomId, setSelectedRoomId] = useState('');
     const [analyzing, setAnalyzing] = useState(false);
     const [analysis, setAnalysis] = useState<any>(existingIssue ? {
         severity: existingIssue.priority || existingIssue.severity,
@@ -56,13 +58,20 @@ const ReportIssueModal: React.FC<ReportIssueModalProps> = ({ roomNumber, existin
             onClose();
             return;
         }
-        onSubmit({
+        
+        const submissionPayload: any = {
             description, // Keep original user description
             ai_summary: analysis.summary,
             severity: analysis.severity,
             category: analysis.category,
             suggested_action: analysis.suggested_action
-        });
+        };
+        
+        if (!roomNumber && selectedRoomId) {
+            submissionPayload.room_id = selectedRoomId;
+        }
+        
+        onSubmit(submissionPayload);
     };
 
     return (
@@ -70,7 +79,8 @@ const ReportIssueModal: React.FC<ReportIssueModalProps> = ({ roomNumber, existin
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col transform transition-all scale-100">
                 <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-white">
                     <h3 className="text-xl font-bold text-slate-800">
-                        {existingIssue ? 'Issue Details' : 'Report Issue'} <span className="text-slate-400 font-medium ml-1">- Room {roomNumber}</span>
+                        {existingIssue ? 'Issue Details' : 'Report Issue'} 
+                        {roomNumber && <span className="text-slate-400 font-medium ml-1">- Room {roomNumber}</span>}
                     </h3>
                     <button onClick={onClose} className="p-2 bg-slate-50 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-600 transition-colors">
                         <X className="w-5 h-5" />
@@ -80,6 +90,23 @@ const ReportIssueModal: React.FC<ReportIssueModalProps> = ({ roomNumber, existin
                 <div className="p-6 space-y-6 bg-slate-50/30">
                     {step === 1 ? (
                         <>
+                            {!roomNumber && rooms && (
+                                <div>
+                                    <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wide">Select Room</label>
+                                    <select
+                                        className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none text-slate-700 font-medium bg-white"
+                                        value={selectedRoomId}
+                                        onChange={(e) => setSelectedRoomId(e.target.value)}
+                                        required
+                                    >
+                                        <option value="" disabled>-- Select a Room --</option>
+                                        {rooms.map(r => (
+                                            <option key={r.id} value={r.id}>Room {r.number}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            )}
+
                             <div>
                                 <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wide">Describe the issue</label>
                                 <textarea
@@ -142,7 +169,7 @@ const ReportIssueModal: React.FC<ReportIssueModalProps> = ({ roomNumber, existin
                     {step === 1 ? (
                         <button
                             onClick={handleAnalyze}
-                            disabled={!description.trim() || analyzing}
+                            disabled={(!roomNumber && !selectedRoomId) || !description.trim() || analyzing}
                             className="flex items-center gap-2 px-8 py-2.5 bg-slate-900 hover:bg-black text-white rounded-xl font-bold shadow-lg shadow-slate-200 hover:shadow-xl transition-all disabled:opacity-50 disabled:shadow-none transform hover:-translate-y-0.5"
                         >
                             {analyzing ? <span className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" /> : <Sparkles className="w-4 h-4 text-purple-300" />}
