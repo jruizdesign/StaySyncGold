@@ -21,12 +21,12 @@ const Signup: React.FC = () => {
     const navigate = useNavigate();
     const { user, loading: authLoading } = useAuth();
 
-    // Redirect if already logged in (but not while we are actively signing up)
+    // Redirect if already logged in (but not while we are actively signing up or if there's an error)
     React.useEffect(() => {
-        if (!authLoading && user && !loading) {
+        if (!authLoading && user && !loading && !error) {
             navigate('/dashboard', { replace: true });
         }
-    }, [user, authLoading, navigate, loading]);
+    }, [user, authLoading, navigate, loading, error]);
 
     const handleSignup = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -57,53 +57,19 @@ const Signup: React.FC = () => {
                 return;
             }
 
-            // 2. Create Property Record
-            const { data: propertyData, error: propertyError } = await supabase
-                .from('properties')
-                .insert({
-                    name: propertyName,
-                    organization_name: organizationName,
-                    phone: phone,
-                    location: location,
-                    email: email, // Contact email for property
-                    demo_mode: false,
-                    ownerName: `${firstName} ${lastName}`
-                })
-                .select()
-                .single();
+            // 2. Call secure backend function to orchestrate Property & User linkage
+            const { data: propertyId, error: rpcError } = await supabase.rpc('signup_new_organization', {
+                p_user_id: userId,
+                p_email: email,
+                p_first_name: firstName,
+                p_last_name: lastName,
+                p_org_name: organizationName,
+                p_prop_name: propertyName,
+                p_phone: phone,
+                p_location: location
+            });
 
-            if (propertyError) throw propertyError;
-
-            const propertyId = propertyData.id;
-
-            // 3. Ensure User Record Exists & Update with Role/Property
-            // Note: If a trigger creates the user, we should update it.
-            // If no trigger exists, we upsert.
-            const { error: userError } = await supabase
-                .from('users')
-                .upsert({
-                    id: userId,
-                    email: email,
-                    first_name: firstName,
-                    last_name: lastName,
-                    property_id: propertyId,
-                    role: 'admin',
-                    isAdmin: true,
-                    isOwner: true,
-                    isManager: true
-                }, { onConflict: 'id' });
-
-            if (userError) throw userError;
-
-            // 4. Create Organization Settings
-            const { error: orgSettingsError } = await supabase
-                .from('organization_settings')
-                .insert({
-                    property_id: propertyId,
-                    enable_dynamic_pricing: false
-                });
-
-            if (orgSettingsError) throw orgSettingsError;
+            if (rpcError) throw rpcError;
 
             logger.info(`New property signed up: ${propertyName}`, { type: 'AUTH', event: 'SIGNUP_SUCCESS', details: { email, propertyId } });
 
