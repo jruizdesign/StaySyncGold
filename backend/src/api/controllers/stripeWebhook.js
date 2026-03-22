@@ -1,4 +1,5 @@
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+const stripeSecretKey = process.env.STRIPE_SECRET_KEY || 'sk_test_fallback';
+const stripe = require('stripe')(stripeSecretKey);
 const db = require('../../config/database');
 
 const handleStripeWebhook = async (req, res) => {
