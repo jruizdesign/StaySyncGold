@@ -36,7 +36,10 @@ app.use('/api/webhook', express.raw({ type: 'application/json' }), stripeWebhook
 
 app.use(express.json());
 
-app.use(cors());
+// Restrict CORS origins to prevent permissive access
+app.use(cors({
+  origin: ['https://www.staysync.space', 'http://localhost:5173']
+}));
 
 // Security Headers
 app.use(helmet({
@@ -93,12 +96,7 @@ app.get('/test-db', async (req, res) => {
   } catch (err) {
     console.error('Database connection failed:', err); // Error log kept
     res.status(500).json({
-      message: 'Database connection failed!',
-      // Hide stack trace in production
-      // TEMPORARY: Show full error for debugging
-      error: err.message,
-      code: err.code,
-      detail: err.detail
+      message: 'Database connection failed!'
     });
   }
 });

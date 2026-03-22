@@ -37,6 +37,12 @@ const assignUserRole = async (req, res, next) => {
     const { id } = req.params;
     const { role, property_id } = req.body; // role can be 'isStaff', 'isManager', 'isOwner', 'isAdmin'
 
+    // Validate role input to prevent SQL Injection
+    const validRoles = ['isStaff', 'isManager', 'isOwner', 'isAdmin'];
+    if (!validRoles.includes(role)) {
+      return res.status(400).json({ message: 'Invalid role provided' });
+    }
+
     // First, clear existing roles for the user on this property (or all properties if property_id is null)
     let updateQuery = 'UPDATE Users SET isStaff = FALSE, isManager = FALSE, isOwner = FALSE, isAdmin = FALSE';
     let queryParams = [];
