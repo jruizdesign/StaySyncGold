@@ -18,6 +18,7 @@ import TermsOfService from './pages/TermsOfService';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import LegalAgreement from './pages/LegalAgreement';
 import AdminSettings from './pages/AdminSettings';
+import Pricing from './pages/Pricing';
 import { QuickBooksIntegration } from './pages/QuickBooksIntegration';
 import Accounting from './pages/Accounting';
 import ITSecurity from './pages/ITSecurity';
@@ -48,6 +49,7 @@ const App: React.FC = () => {
             <Route path="/digital-solutions" element={<DigitalSolutions />} />
             <Route path="/eula" element={<EULA />} />
             <Route path="/terms" element={<TermsOfService />} />
+            <Route path="/pricing" element={<Pricing />} />
 
             {/* Protected Routes */}
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
