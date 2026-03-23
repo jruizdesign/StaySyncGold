@@ -102,6 +102,7 @@ export interface AppUser {
   isAdmin?: boolean;
   isManager?: boolean;
   isDemoMode?: boolean;
+  agreedToLegal?: boolean;
 }
 
 export interface Invoice {

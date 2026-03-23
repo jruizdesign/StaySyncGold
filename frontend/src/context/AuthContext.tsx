@@ -27,7 +27,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 propertyName: 'Cardea Grand Hotel',
                 isAdmin: true,
                 isManager: true,
-                isDemoMode: true
+                isDemoMode: true,
+                agreedToLegal: true
             };
             setUser(mockUser);
             setSession({ user: { id: mockUser.id, email: mockUser.email } } as any);
@@ -113,7 +114,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     propertyName: propertyName,
                     isAdmin: data.isAdmin, // Using the column from DB
                     isManager: data.isManager || data.role === 'manager', // specific boolean or role-based fallback
-                    isDemoMode: isDemoMode
+                    isDemoMode: isDemoMode,
+                    agreedToLegal: data.agreed_to_legal
                 };
                 setUser(appUser);
             } else {

@@ -24,6 +24,10 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
         return <Navigate to="/login" state={{ from: location }} replace />;
     }
 
+    if (user && !user.agreedToLegal && location.pathname !== '/legal-agreement') {
+        return <Navigate to="/legal-agreement" replace />;
+    }
+
     return <>{children}</>;
 };
 
