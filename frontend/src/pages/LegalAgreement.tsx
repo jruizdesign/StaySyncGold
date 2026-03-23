@@ -20,12 +20,16 @@ const LegalAgreement: React.FC = () => {
         setLoading(true);
         setError(null);
         try {
-            const { error: dbError } = await supabase
+            const { data, error: dbError } = await supabase
                 .from('users')
                 .update({ agreed_to_legal: true })
-                .eq('id', user.id);
+                .eq('id', user.id)
+                .select();
 
             if (dbError) throw dbError;
+            if (!data || data.length === 0) {
+                throw new Error("Could not save your signature. Please contact support.");
+            }
 
             // Use a short delay to ensure DB propagation and avoid HashRouter racing conditions
             setTimeout(() => {
