@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { API_BASE_URL } from '../config';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { Database, Users, Building, ShieldCheck, Plus, Layout, Globe, Loader, GitBranch, Trash2, Edit, Calendar } from 'lucide-react';
+import { Database, Users, Building, ShieldCheck, Plus, Layout, Globe, Loader, GitBranch, Trash2, Edit, Calendar, DollarSign } from 'lucide-react';
 import { Property, ChannelSetting } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { Button, Card, Input, Select, Badge } from '../components/UIComponents';
 import { CommitTracker } from '../components/CommitTracker';
 import { createStaff, updateStaff, deleteStaff } from '../services/staff';
+import { TaxesManager } from '../components/TaxesManager';
 
 
 // --- Sub-Components ---
@@ -1532,12 +1533,12 @@ const AdminSettings: React.FC = () => {
     const isManager = !!user?.isManager;
     const isManagement = isManager || isAdmin;
 
-    const [activeTab, setActiveTab] = useState<'database' | 'users' | 'property' | 'rooms' | 'rates' | 'channel' | 'superadmin' | 'updates' | 'features' | 'logs'>('property');
+    const [activeTab, setActiveTab] = useState<'database' | 'users' | 'property' | 'rooms' | 'rates' | 'taxes' | 'channel' | 'superadmin' | 'updates' | 'features' | 'logs'>('property');
     const [searchParams] = useSearchParams();
 
     useEffect(() => {
         const tab = searchParams.get('tab');
-        if (tab && ['database', 'users', 'property', 'rooms', 'rates', 'channel', 'superadmin', 'updates', 'features', 'logs'].includes(tab)) {
+        if (tab && ['database', 'users', 'property', 'rooms', 'rates', 'taxes', 'channel', 'superadmin', 'updates', 'features', 'logs'].includes(tab)) {
             setActiveTab(tab as any);
         }
     }, [searchParams]);
@@ -1582,6 +1583,9 @@ const AdminSettings: React.FC = () => {
                                 <button onClick={() => setActiveTab('rates')} className={`flex items-center justify-between px-6 py-4 text-left border-l-4 transition-all ${activeTab === 'rates' ? 'border-gold-500 bg-gold-50 text-gold-900' : 'border-transparent text-slate-600 hover:bg-slate-50'}`}>
                                     <div className="flex items-center gap-3"><Calendar className="w-5 h-5" /> <span className="font-medium">Rates & Availability</span></div>
                                 </button>
+                                <button onClick={() => setActiveTab('taxes')} className={`flex items-center justify-between px-6 py-4 text-left border-l-4 transition-all ${activeTab === 'taxes' ? 'border-gold-500 bg-gold-50 text-gold-900' : 'border-transparent text-slate-600 hover:bg-slate-50'}`}>
+                                    <div className="flex items-center gap-3"><DollarSign className="w-5 h-5" /> <span className="font-medium">Taxes & Fees</span></div>
+                                </button>
                                 <button onClick={() => setActiveTab('channel')} className={`flex items-center justify-between px-6 py-4 text-left border-l-4 transition-all ${activeTab === 'channel' ? 'border-gold-500 bg-gold-50 text-gold-900' : 'border-transparent text-slate-600 hover:bg-slate-50'}`}>
                                     <div className="flex items-center gap-3"><Globe className="w-5 h-5" /> <span className="font-medium">Channel Manager</span></div>
                                 </button>
@@ -1613,6 +1617,7 @@ const AdminSettings: React.FC = () => {
                     {activeTab === 'users' && <UserManagement />}
                     {activeTab === 'rooms' && <RoomWizard />}
                     {activeTab === 'rates' && <RatesTab />}
+                    {activeTab === 'taxes' && <TaxesManager />}
                     {activeTab === 'channel' && <ChannelManager />}
                     {activeTab === 'superadmin' && isAdmin && <SuperAdminConsole />}
                     {activeTab === 'database' && isAdmin && <DatabaseInspector />}

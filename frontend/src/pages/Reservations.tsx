@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Button, Badge, Input, Modal } from '../components/UIComponents';
 import { Plus, Search, MoreVertical, Loader, Edit, Trash2, AlertTriangle, BadgeDollarSign } from 'lucide-react';
-import { ReservationStatus, Reservation, Room } from '../types';
+import { ReservationStatus, Reservation, Room, PropertyTax } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { generateInvoicePDF } from '../utils/pdfGenerator';
@@ -26,6 +26,8 @@ const Reservations: React.FC = () => {
   // Timeline State
   const [rooms, setRooms] = useState<Room[]>([]);
   const [guests, setGuests] = useState<any[]>([]);
+  const [taxes, setTaxes] = useState<PropertyTax[]>([]);
+  const [taxEngineEnabled, setTaxEngineEnabled] = useState(false);
 
 
   // Booking Modal State
@@ -190,10 +192,25 @@ const Reservations: React.FC = () => {
     }
   };
 
+  const fetchPropertySettings = async () => {
+    if (!user?.propertyId) return;
+    try {
+        const { data } = await supabase.from('properties').select('enable_tax_engine').eq('id', user.propertyId).single();
+        if (data?.enable_tax_engine) {
+            setTaxEngineEnabled(true);
+            const { data: taxData } = await supabase.from('property_taxes').select('*').eq('property_id', user.propertyId).eq('is_active', true);
+            if (taxData) setTaxes(taxData as PropertyTax[]);
+        }
+    } catch (e) {
+        console.error("Error fetching tax settings", e);
+    }
+  };
+
   useEffect(() => {
     if (user) {
       fetchRooms();
       fetchGuests();
+      fetchPropertySettings();
     }
   }, [user]);
 
@@ -260,19 +277,32 @@ const Reservations: React.FC = () => {
           .lt('date', checkOut);
 
         // 3. detailed breakdown
-        let total = 0;
+        let baseTotal = 0;
         const breakdown = [];
         let nights = 0;
 
         for (let d = new Date(start); d < end; d.setDate(d.getDate() + 1)) {
           const dateStr = d.toISOString().split('T')[0];
           const rateObj = ratesData?.find(r => r.date === dateStr);
-          const price = rateObj ? Number(rateObj.price) : (Number(room.price_per_night) || 100); // Fallback to room default or 100
+          const price = rateObj ? Number(rateObj.price) : (Number(room.price_per_night) || 100);
 
           breakdown.push({ date: dateStr, price });
-          total += price;
+          baseTotal += price;
           nights++;
         }
+
+        let taxTotal = 0;
+        if (taxEngineEnabled && taxes.length > 0) {
+            taxes.forEach(tax => {
+                const amt = Number(tax.amount);
+                if (tax.type === 'PERCENTAGE') taxTotal += (baseTotal * (amt / 100));
+                else if (tax.type === 'FLAT_PER_NIGHT') taxTotal += (amt * nights);
+                else if (tax.type === 'FLAT_PER_STAY') taxTotal += amt;
+                else if (tax.type === 'PER_GUEST_PER_NIGHT') taxTotal += (amt * nights);
+            });
+        }
+        
+        const total = baseTotal + taxTotal;
 
         setQuote({ total, nights, breakdown });
 
@@ -476,7 +506,8 @@ const Reservations: React.FC = () => {
       .lt('date', checkOut); // Check-out day is not charged
 
     // 3. Calculate Daily Sum
-    let total = 0;
+    let baseTotal = 0;
+    let nights = 0;
     const start = new Date(checkIn);
     let end = new Date(checkOut);
 
@@ -484,19 +515,31 @@ const Reservations: React.FC = () => {
     if (end.getFullYear() > 2050) {
       const now = new Date();
       if (start < now) {
-        end = now; // Accrued
+        end = now; 
       } else {
-        end = new Date(start.getTime() + 86400000); // 1 Night Estimate for future booking
+        end = new Date(start.getTime() + 86400000); 
       }
     }
 
     for (let d = new Date(start); d < end; d.setDate(d.getDate() + 1)) {
       const dateStr = d.toISOString().split('T')[0];
       const rate = ratesData?.find(r => r.date === dateStr);
-      // Fallback to base rate (assuming 100 if unknown for now, ideally room.price)
-      total += rate ? Number(rate.price) : (Number(room.price_per_night) || 100);
+      baseTotal += rate ? Number(rate.price) : (Number(room.price_per_night) || 100);
+      nights++;
     }
-    return total;
+
+    let taxTotal = 0;
+    if (taxEngineEnabled && taxes.length > 0) {
+        taxes.forEach(tax => {
+            const amt = Number(tax.amount);
+            if (tax.type === 'PERCENTAGE') taxTotal += (baseTotal * (amt / 100));
+            else if (tax.type === 'FLAT_PER_NIGHT') taxTotal += (amt * nights);
+            else if (tax.type === 'FLAT_PER_STAY') taxTotal += amt;
+            else if (tax.type === 'PER_GUEST_PER_NIGHT') taxTotal += (amt * nights);
+        });
+    }
+
+    return baseTotal + taxTotal;
   };
 
   const calculateRevenueStats = () => {

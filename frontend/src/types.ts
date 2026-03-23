@@ -91,6 +91,7 @@ export interface Property {
   address?: string;
   createdAt: string;
   demo_mode?: boolean;
+  enable_tax_engine?: boolean;
 }
 
 export interface AppUser {
@@ -151,4 +152,14 @@ export interface ChannelMapping {
   channel_setting_id: string;
   local_room_type?: string;
   channel_room_id?: string;
+}
+
+export interface PropertyTax {
+  id: string;
+  property_id: string;
+  name: string;
+  amount: number;
+  type: 'PERCENTAGE' | 'FLAT_PER_NIGHT' | 'FLAT_PER_STAY' | 'PER_GUEST_PER_NIGHT';
+  is_active: boolean;
+  created_at: string;
 }
