@@ -1,11 +1,31 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Sparkles, TrendingUp, AlertTriangle } from 'lucide-react';
+import { SaaSMiniLock } from '../SaaSMiniLock';
+import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../context/AuthContext';
+
 interface FinancialInsightCardProps {
     briefing: string;
     isLoading: boolean;
 }
 
 export const FinancialInsightCard: React.FC<FinancialInsightCardProps> = ({ briefing, isLoading }) => {
+    const { user } = useAuth();
+    const [aiEnabled, setAiEnabled] = useState<boolean | null>(null);
+
+    useEffect(() => {
+        const checkFeat = async () => {
+            if (user?.propertyId) {
+                const { data } = await supabase.from('properties').select('enable_ai').eq('id', user.propertyId).single();
+                setAiEnabled(!!data?.enable_ai);
+            }
+        };
+        checkFeat();
+    }, [user?.propertyId]);
+
+    if (aiEnabled === false) {
+        return <SaaSMiniLock featureName="Financial AI Briefing" />;
+    }
     return (
         <div className="bg-gradient-to-br from-indigo-900 to-slate-900 rounded-xl p-6 text-white shadow-lg relative overflow-hidden">
             {/* Background Pattern */}

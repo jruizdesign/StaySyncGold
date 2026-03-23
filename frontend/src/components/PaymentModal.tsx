@@ -89,6 +89,17 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
     const [method, setMethod] = useState<'card' | 'cash' | 'check' | 'transfer' | 'other'>('card');
     const [notes, setNotes] = useState('');
     const [isInitializing, setIsInitializing] = useState(false);
+    const [paymentsEnabled, setPaymentsEnabled] = useState(false);
+
+    useEffect(() => {
+        const checkFeature = async () => {
+            if (propertyId) {
+                const { data } = await supabase.from('properties').select('enable_payments').eq('id', propertyId).single();
+                if (data?.enable_payments) setPaymentsEnabled(true);
+            }
+        };
+        checkFeature();
+    }, [propertyId]);
 
     useEffect(() => {
         if (isOpen) {
@@ -199,7 +210,8 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                                 value={method}
                                 onChange={(e: any) => setMethod(e.target.value)}
                             >
-                                <option value="card">Credit Card (Stripe)</option>
+                                {paymentsEnabled && <option value="card">Credit Card (Stripe)</option>}
+                                {!paymentsEnabled && <option value="card" disabled>Credit Card (Premium Feature)</option>}
                                 <option value="cash">Cash</option>
                                 <option value="check">Check</option>
                                 <option value="transfer">Bank Transfer</option>

@@ -6,6 +6,7 @@ import { supabase } from '../lib/supabase';
 import ChannexPropertySync from '../components/ChannexPropertySync';
 import ChannexRoomMapping from '../components/ChannexRoomMapping';
 import ChannexARIManager from '../components/ChannexARIManager';
+import { SaaSUpgradeLock } from '../components/SaaSUpgradeLock';
 
 // Error Boundary to catch ARI Manager rendering errors
 interface ErrorBoundaryProps {
@@ -68,12 +69,23 @@ const ChannelManager: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [channelSettings, setChannelSettings] = useState<ChannelSetting[]>([]);
     const [isSyncing, setIsSyncing] = useState(false);
+    const [hasAccess, setHasAccess] = useState<boolean | null>(null);
 
     useEffect(() => {
-        if (user?.propertyId) {
-            fetchChannelSettings();
-            fetchRoomMappings();
-        }
+        const checkFeature = async () => {
+            if (user?.propertyId) {
+                const { data } = await supabase.from('properties').select('enable_channel_manager').eq('id', user.propertyId).single();
+                if (!data?.enable_channel_manager) {
+                    setHasAccess(false);
+                    setLoading(false);
+                    return;
+                }
+                setHasAccess(true);
+                fetchChannelSettings();
+                fetchRoomMappings();
+            }
+        };
+        checkFeature();
     }, [user?.propertyId]);
 
     const fetchChannelSettings = async () => {
@@ -132,6 +144,18 @@ const ChannelManager: React.FC = () => {
         return (
             <div className="flex justify-center items-center h-64">
                 <Loader className="animate-spin text-gold-500" />
+            </div>
+        );
+    }
+
+    if (hasAccess === false) {
+        return (
+            <div className="p-8 pb-32">
+                <SaaSUpgradeLock 
+                    moduleName="Channel Manager" 
+                    description="Connect to 100+ OTAs (Booking.com, Airbnb, Expedia) and seamlessly sync rates & availability." 
+                    icon="channel" 
+                />
             </div>
         );
     }

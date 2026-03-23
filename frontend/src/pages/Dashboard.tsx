@@ -4,6 +4,7 @@ import { CheckCircle, TrendingUp, Users, BedDouble, DollarSign, ShieldCheck, Spa
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { LiveActivityFeed } from '../components/LiveActivityFeed';
 import { AIInsightCard } from '../components/AIInsightCard';
+import { SaaSMiniLock } from '../components/SaaSMiniLock';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { API_BASE_URL } from '../config';
@@ -35,6 +36,17 @@ const Dashboard: React.FC = () => {
   // AI Insights State
   const [aiInsights, setAiInsights] = React.useState<any>(null);
   const [loadingInsights, setLoadingInsights] = React.useState(true);
+  const [aiEnabled, setAiEnabled] = React.useState(false);
+
+  React.useEffect(() => {
+      const checkAiFeat = async () => {
+          if (user?.propertyId) {
+              const { data } = await supabase.from('properties').select('enable_ai').eq('id', user.propertyId).single();
+              if (data?.enable_ai) setAiEnabled(true);
+          }
+      };
+      checkAiFeat();
+  }, [user?.propertyId]);
 
   // Tenancy Alerts State
   const [tenancyAlerts, setTenancyAlerts] = React.useState<any[]>([]);
@@ -215,20 +227,24 @@ const Dashboard: React.FC = () => {
       )}
 
       {/* AI Intel Card */}
-      <AIInsightCard
-        title={aiInsights?.title}
-        subtitle={aiInsights?.subtitle}
-        message={aiInsights?.message}
-        actionLabel={aiInsights?.actionLabel}
-        variant={aiInsights?.variant || 'default'}
-        loading={loadingInsights}
-        error={aiInsights?.error}
-        timestamp={aiInsights?.generatedAt}
-        onAction={() => {
-          const query = encodeURIComponent(`How to fix ${aiInsights?.message || 'hotel maintenance issue'}`);
-          window.open(`https://www.google.com/search?q=${query}`, '_blank');
-        }}
-      />
+      {aiEnabled ? (
+          <AIInsightCard
+            title={aiInsights?.title}
+            subtitle={aiInsights?.subtitle}
+            message={aiInsights?.message}
+            actionLabel={aiInsights?.actionLabel}
+            variant={aiInsights?.variant || 'default'}
+            loading={loadingInsights}
+            error={aiInsights?.error}
+            timestamp={aiInsights?.generatedAt}
+            onAction={() => {
+              const query = encodeURIComponent(`How to fix ${aiInsights?.message || 'hotel maintenance issue'}`);
+              window.open(`https://www.google.com/search?q=${query}`, '_blank');
+            }}
+          />
+      ) : (
+          <SaaSMiniLock featureName="Operational AI" />
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard delay={0.1} title="Total Revenue" value={stats.revenue} sub={stats.revenueSub} icon={DollarSign} color="bg-emerald-500 text-emerald-600" />

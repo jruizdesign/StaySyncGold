@@ -92,6 +92,11 @@ export interface Property {
   createdAt: string;
   demo_mode?: boolean;
   enable_tax_engine?: boolean;
+  enable_finance_module?: boolean;
+  enable_quickbooks?: boolean;
+  enable_payments?: boolean;
+  enable_channel_manager?: boolean;
+  enable_ai?: boolean;
 }
 
 export interface AppUser {

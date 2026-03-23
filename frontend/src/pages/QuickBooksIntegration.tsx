@@ -3,6 +3,8 @@ import { Card, Button, Badge } from '../components/UIComponents';
 import { Server, RefreshCw, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { API_BASE_URL } from '../config';
+import { supabase } from '../lib/supabase';
+import { SaaSUpgradeLock } from '../components/SaaSUpgradeLock';
 
 interface QBAccount {
     id: string;
@@ -24,6 +26,7 @@ export const QuickBooksIntegration: React.FC = () => {
     const [logs, setLogs] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [syncing, setSyncing] = useState(false);
+    const [hasAccess, setHasAccess] = useState<boolean | null>(null);
 
     const [mappings, setMappings] = useState({
         room_revenue_account_id: '',
@@ -39,6 +42,14 @@ export const QuickBooksIntegration: React.FC = () => {
     const fetchData = async () => {
         if (!user?.propertyId || !session?.access_token) return;
         try {
+            const { data: propData } = await supabase.from('properties').select('enable_quickbooks').eq('id', user.propertyId).single();
+            if (!propData?.enable_quickbooks) {
+                setHasAccess(false);
+                setLoading(false);
+                return;
+            }
+            setHasAccess(true);
+
             const [statusRes, logsRes] = await Promise.all([
                 fetch(`${API_BASE_URL}/api/quickbooks/status?property_id=${user.propertyId}`, { headers: getHeaders() }),
                 fetch(`${API_BASE_URL}/api/quickbooks/logs?property_id=${user.propertyId}`, { headers: getHeaders() })
@@ -122,6 +133,18 @@ export const QuickBooksIntegration: React.FC = () => {
     };
 
     if (loading) return <div className="p-8">Loading QuickBooks Integration...</div>;
+
+    if (hasAccess === false) {
+        return (
+            <div className="p-8 pb-32">
+                <SaaSUpgradeLock 
+                    moduleName="QuickBooks Sync" 
+                    description="Automatically synchronize your daily ledger and payments to QuickBooks Online." 
+                    icon="quickbooks" 
+                />
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6">
