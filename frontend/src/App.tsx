@@ -15,6 +15,7 @@ import Login from './pages/Login';
 import Signup from './pages/Signup';
 import EULA from './pages/EULA';
 import TermsOfService from './pages/TermsOfService';
+import PrivacyPolicy from './pages/PrivacyPolicy';
 import LegalAgreement from './pages/LegalAgreement';
 import AdminSettings from './pages/AdminSettings';
 import { QuickBooksIntegration } from './pages/QuickBooksIntegration';
@@ -42,6 +43,7 @@ const App: React.FC = () => {
 
             {/* Public Landing Pages */}
             <Route path="/legal-agreement" element={<LegalAgreement />} />
+            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
             <Route path="/it-security" element={<ITSecurity />} />
             <Route path="/digital-solutions" element={<DigitalSolutions />} />
             <Route path="/eula" element={<EULA />} />

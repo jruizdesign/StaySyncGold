@@ -27,9 +27,11 @@ const LegalAgreement: React.FC = () => {
 
             if (dbError) throw dbError;
 
-            // Force reload to refresh context state and enter the dashboard
-            window.location.replace('/#/dashboard');
-            window.location.reload();
+            // Use a short delay to ensure DB propagation and avoid HashRouter racing conditions
+            setTimeout(() => {
+                window.location.href = '/#/dashboard';
+                window.location.reload();
+            }, 500);
         } catch (err: any) {
             setError(err.message || 'Verification failed. Please try again.');
             setLoading(false);
@@ -59,7 +61,7 @@ const LegalAgreement: React.FC = () => {
                             </div>
                         </a>
                         
-                        <a href="/docs/legal/PrivacyPolicy.md" target="_blank" className="flex items-center p-4 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors">
+                        <a href="#/privacy-policy" target="_blank" className="flex items-center p-4 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors">
                             <Server className="w-6 h-6 text-slate-500 mr-4" />
                             <div className="flex-1">
                                 <h4 className="font-semibold text-slate-800">Privacy Policy & DPA</h4>
