@@ -63,13 +63,25 @@ const LandingPage: React.FC = () => {
                 </p>
 
                 {/* CTA Buttons */}
-                <div className="flex flex-col sm:flex-row gap-4 mb-20">
+                <div className="flex flex-col sm:flex-row justify-center gap-4 mb-20 w-full max-w-3xl mx-auto">
                     <button
                         onClick={() => navigate('/signup')}
-                        className="group flex items-center justify-center gap-2 bg-gold-600 hover:bg-gold-500 text-white px-8 py-3.5 rounded-lg font-semibold text-lg transition-all hover:shadow-[0_0_20px_rgba(234,179,8,0.3)]"
+                        className="flex-1 group flex items-center justify-center gap-2 bg-gold-600 hover:bg-gold-500 text-white px-6 py-3.5 rounded-lg font-semibold text-lg transition-all hover:shadow-[0_0_20px_rgba(234,179,8,0.3)]"
                     >
-                        Sign Up for Cardea
+                        Sign Up
                         <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                    </button>
+
+                    <button
+                        onClick={() => {
+                            localStorage.setItem('LIVE_TRIAL', 'true');
+                            window.location.href = '/#/dashboard';
+                            window.location.reload();
+                        }}
+                        className="flex-1 flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 px-6 py-3.5 rounded-lg font-semibold text-lg transition-all shadow-lg shadow-black/20"
+                    >
+                        <Sparkles className="w-4 h-4 text-gold-400" />
+                        Start Live Trial
                     </button>
 
                     <button
@@ -78,10 +90,9 @@ const LandingPage: React.FC = () => {
                             window.location.href = '/#/login';
                             window.location.reload();
                         }}
-                        className="flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 px-8 py-3.5 rounded-lg font-semibold text-lg transition-all"
+                        className="flex-1 flex items-center justify-center gap-2 bg-transparent hover:bg-slate-800/50 text-slate-300 border border-slate-700 hover:text-white px-6 py-3.5 rounded-lg font-semibold text-lg transition-all"
                     >
-                        <ArrowRight className="w-4 h-4" />
-                        Login to Property
+                        Login
                     </button>
                 </div>
 
