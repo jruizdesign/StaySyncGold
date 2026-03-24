@@ -19,6 +19,7 @@ import PrivacyPolicy from './pages/PrivacyPolicy';
 import LegalAgreement from './pages/LegalAgreement';
 import AdminSettings from './pages/AdminSettings';
 import Pricing from './pages/Pricing';
+import AuthVerify from './pages/AuthVerify';
 import { QuickBooksIntegration } from './pages/QuickBooksIntegration';
 import Accounting from './pages/Accounting';
 import ITSecurity from './pages/ITSecurity';
@@ -41,6 +42,7 @@ const App: React.FC = () => {
             <Route path="/landing" element={<LandingPage />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
+            <Route path="/verify" element={<AuthVerify />} />
 
             {/* Public Landing Pages */}
             <Route path="/legal-agreement" element={<LegalAgreement />} />
