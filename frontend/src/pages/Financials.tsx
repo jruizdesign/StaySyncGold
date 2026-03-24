@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'; // Direct supabase usage for transac
 import { Button } from '../components/UIComponents';
 import { Download, TrendingUp, TrendingDown, DollarSign } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
+import { SaaSUpgradeLock } from '../components/SaaSUpgradeLock';
 
 interface Transaction {
   id: string;
@@ -27,11 +28,24 @@ const Financials: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [timeframe, setTimeframe] = useState<Timeframe>('30days');
+  const [hasAccess, setHasAccess] = useState<boolean | null>(null);
 
   useEffect(() => {
-    if (user?.propertyId) {
-      fetchFinancialData();
-    }
+    const checkFeatureAndFetchData = async () => {
+      if (user?.propertyId) {
+        // Check if the property has the finance module enabled
+        const { data: propData } = await supabase.from('properties').select('enable_finance_module').eq('id', user.propertyId).single();
+        if (!propData?.enable_finance_module) {
+            setHasAccess(false);
+            setLoading(false);
+            return;
+        }
+        setHasAccess(true);
+        fetchFinancialData();
+      }
+    };
+    
+    checkFeatureAndFetchData();
   }, [user?.propertyId]);
 
   const fetchFinancialData = async () => {
@@ -209,6 +223,18 @@ const Financials: React.FC = () => {
 
   if (loading) return <div className="p-8 text-center text-slate-500">Loading Financial Data...</div>;
   if (error) return <div className="p-8 text-center text-red-500">Error: {error}</div>;
+
+  if (hasAccess === false) {
+    return (
+        <div className="p-8 pb-32">
+            <SaaSUpgradeLock 
+                moduleName="Financial & Accounting" 
+                description="Advanced P&L, universal ledgers, and expense tracking workflows." 
+                icon="finance" 
+            />
+        </div>
+    );
+  }
 
   return (
     <div className="p-8 bg-slate-50 min-h-screen space-y-8 animate-fadeIn">

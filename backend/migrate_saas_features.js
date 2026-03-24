@@ -11,7 +11,8 @@ async function migrate() {
                 ADD COLUMN IF NOT EXISTS enable_finance_module BOOLEAN DEFAULT FALSE,
                 ADD COLUMN IF NOT EXISTS enable_quickbooks BOOLEAN DEFAULT FALSE,
                 ADD COLUMN IF NOT EXISTS enable_payments BOOLEAN DEFAULT FALSE,
-                ADD COLUMN IF NOT EXISTS enable_channel_manager BOOLEAN DEFAULT FALSE;
+                ADD COLUMN IF NOT EXISTS enable_channel_manager BOOLEAN DEFAULT FALSE,
+                ADD COLUMN IF NOT EXISTS enable_ai BOOLEAN DEFAULT FALSE;
             END
             $$;
         `);

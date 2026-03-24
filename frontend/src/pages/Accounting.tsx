@@ -6,7 +6,8 @@ import { GuestLedgerTable } from '../components/accounting/GuestLedgerTable';
 import { LedgerTable } from '../components/accounting/LedgerTable';
 import { FinancialInsightCard } from '../components/accounting/FinancialInsightCard';
 import { DebtItem, LedgerEntry, DailyFinancialData } from '../types/accounting';
-import { ShieldAlert, Download } from 'lucide-react';
+import { Download } from 'lucide-react';
+import { SaaSUpgradeLock } from '../components/SaaSUpgradeLock';
 
 const API_BASE = `${API_BASE_URL}/api`;
 
@@ -59,10 +60,12 @@ const Accounting: React.FC = () => {
 
     if (isEnabled === false) {
         return (
-            <div className="flex flex-col items-center justify-center h-[60vh] text-slate-400">
-                <ShieldAlert size={48} className="mb-4 text-slate-300" />
-                <h2 className="text-xl font-semibold text-slate-600">Accounting Module Disabled</h2>
-                <p>Please contact your administrator to enable this feature.</p>
+            <div className="p-8 pb-32">
+                <SaaSUpgradeLock 
+                    moduleName="Financial & Accounting" 
+                    description="Advanced P&L, universal ledgers, and expense tracking workflows." 
+                    icon="finance" 
+                />
             </div>
         );
     }
