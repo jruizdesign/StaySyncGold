@@ -11,12 +11,14 @@ const Signup: React.FC = () => {
     const [lastName, setLastName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
     const [organizationName, setOrganizationName] = useState('');
     const [propertyName, setPropertyName] = useState('');
     const [phone, setPhone] = useState('');
     const [location, setLocation] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [isVerificationSent, setIsVerificationSent] = useState(false);
 
     const navigate = useNavigate();
     const { user, loading: authLoading } = useAuth();
@@ -32,6 +34,26 @@ const Signup: React.FC = () => {
         e.preventDefault();
         setLoading(true);
         setError(null);
+
+        // Validation
+        if (password !== confirmPassword) {
+            setError("Passwords do not match");
+            setLoading(false);
+            return;
+        }
+
+        if (password.length < 8) {
+            setError("Password must be at least 8 characters long");
+            setLoading(false);
+            return;
+        }
+
+        const phoneRegex = /^[\d\s\-\+\(\)]*$/;
+        if (phone && !phoneRegex.test(phone)) {
+            setError("Please enter a valid phone number format");
+            setLoading(false);
+            return;
+        }
 
         try {
             // 1. Sign up user via Supabase Auth
@@ -73,6 +95,11 @@ const Signup: React.FC = () => {
 
             logger.info(`New property signed up: ${propertyName}`, { type: 'AUTH', event: 'SIGNUP_SUCCESS', details: { email, propertyId } });
 
+            if (!authData.session) {
+                setIsVerificationSent(true);
+                return;
+            }
+
             // Automatically navigate to dashboard upon successful creation
             // Use window.location to force a full reload so AuthContext refetches the updated user record
             // with the newly attached property_id. We must include the hash for HashRouter.
@@ -86,6 +113,33 @@ const Signup: React.FC = () => {
             setLoading(false);
         }
     };
+
+    if (isVerificationSent) {
+        return (
+            <div className="min-h-screen flex items-center justify-center p-4 bg-[url('https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=80')] bg-cover bg-center">
+                <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm z-0" />
+                <div className="w-full max-w-lg space-y-8 relative z-10 animate-fadeScaleIn">
+                    <div className="bg-white/95 backdrop-blur-xl p-10 rounded-2xl shadow-2xl border border-white/50 text-center">
+                        <div className="w-20 h-20 bg-gold-100 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner ring-4 ring-gold-50">
+                            <Mail className="w-10 h-10 text-gold-600" />
+                        </div>
+                        <h2 className="text-3xl font-bold text-slate-800 mb-4">Check Your Email</h2>
+                        <p className="text-slate-600 text-lg mb-8">
+                            We've sent a verification link to <span className="font-semibold text-slate-800">{email}</span>. 
+                            Please verify your account to access your property dashboard.
+                        </p>
+                        <Button
+                            type="button"
+                            onClick={() => navigate('/login')}
+                            className="w-full justify-center py-4 text-base font-semibold shadow-lg shadow-gold-500/20 hover:shadow-gold-500/30 transition-all active:scale-[0.98]"
+                        >
+                            Return to Login
+                        </Button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen flex items-center justify-center p-4 bg-[url('https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=80')] bg-cover bg-center">
@@ -142,16 +196,18 @@ const Signup: React.FC = () => {
                                 icon={User}
                             />
 
-                            <Input
-                                label="Email Address"
-                                type="email"
-                                placeholder="name@company.com"
-                                required
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                className="bg-white"
-                                icon={Mail}
-                            />
+                            <div className="md:col-span-2">
+                                <Input
+                                    label="Email Address"
+                                    type="email"
+                                    placeholder="name@company.com"
+                                    required
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    className="bg-white"
+                                    icon={Mail}
+                                />
+                            </div>
 
                             <Input
                                 label="Password"
@@ -160,6 +216,17 @@ const Signup: React.FC = () => {
                                 required
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
+                                className="bg-white"
+                                icon={Lock}
+                            />
+
+                            <Input
+                                label="Confirm Password"
+                                type="password"
+                                placeholder="••••••••"
+                                required
+                                value={confirmPassword}
+                                onChange={(e) => setConfirmPassword(e.target.value)}
                                 className="bg-white"
                                 icon={Lock}
                             />
