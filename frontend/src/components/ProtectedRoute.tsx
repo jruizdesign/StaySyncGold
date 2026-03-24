@@ -28,6 +28,10 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
         return <Navigate to="/legal-agreement" replace />;
     }
 
+    if (user && user.agreedToLegal && !user.subscriptionTier && !user.isDemoMode && location.pathname !== '/pricing') {
+        return <Navigate to="/pricing" replace />;
+    }
+
     return <>{children}</>;
 };
 

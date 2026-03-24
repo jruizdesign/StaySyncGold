@@ -28,7 +28,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 isAdmin: true,
                 isManager: true,
                 isDemoMode: true,
-                agreedToLegal: true
+                agreedToLegal: true,
+                subscriptionTier: 'professional'
             };
             setUser(mockUser);
             setSession({ user: { id: mockUser.id, email: mockUser.email } } as any);
@@ -91,16 +92,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             // Fetch Property Details if property_id exists
             let propertyName = undefined;
             let isDemoMode = false;
+            let subscriptionTier = undefined;
             if (data?.property_id) {
                 const { data: propertyData } = await supabase
                     .from('properties')
-                    .select('name, demo_mode')
+                    .select('name, demo_mode, subscription_tier')
                     .eq('id', data.property_id)
                     .single();
 
                 if (propertyData) {
                     propertyName = propertyData.name;
                     isDemoMode = propertyData.demo_mode;
+                    subscriptionTier = propertyData.subscription_tier;
                 }
             }
 
@@ -115,7 +118,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     isAdmin: data.isAdmin, // Using the column from DB
                     isManager: data.isManager || data.role === 'manager', // specific boolean or role-based fallback
                     isDemoMode: isDemoMode,
-                    agreedToLegal: data.agreed_to_legal
+                    agreedToLegal: data.agreed_to_legal,
+                    subscriptionTier: subscriptionTier
                 };
                 setUser(appUser);
             } else {

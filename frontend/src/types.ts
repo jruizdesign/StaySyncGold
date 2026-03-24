@@ -109,6 +109,7 @@ export interface AppUser {
   isManager?: boolean;
   isDemoMode?: boolean;
   agreedToLegal?: boolean;
+  subscriptionTier?: string | null;
 }
 
 export interface Invoice {
