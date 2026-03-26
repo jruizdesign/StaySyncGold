@@ -88,6 +88,12 @@ const ChannelManager: React.FC = () => {
 
     useEffect(() => {
         const checkFeature = async () => {
+            if (user?.isDemoMode) {
+                setHasAccess(true);
+                setLoading(false);
+                return;
+            }
+
             if (user?.propertyId) {
                 const { data } = await supabase.from('properties').select('enable_channel_manager').eq('id', user.propertyId).single();
                 if (!data?.enable_channel_manager) {
@@ -101,7 +107,7 @@ const ChannelManager: React.FC = () => {
             }
         };
         checkFeature();
-    }, [user?.propertyId]);
+    }, [user?.propertyId, user?.isDemoMode]);
 
     const fetchChannelSettings = async () => {
         if (!user?.propertyId) return;
@@ -158,6 +164,27 @@ const ChannelManager: React.FC = () => {
     const handleSaveChannel = async () => {
         if (!user?.propertyId || !selectedChannel || !apiKey || !hotelId) return;
         setIsSaving(true);
+
+        if (user.isDemoMode) {
+            setTimeout(() => {
+                setChannelSettings(prev => [...prev, {
+                    id: Math.random().toString(),
+                    property_id: user.propertyId,
+                    channel_name: selectedChannel!,
+                    api_key: apiKey,
+                    property_mapping_id: hotelId,
+                    is_active: true,
+                    status: 'Connected'
+                } as any]);
+                setShowAddModal(false);
+                setSelectedChannel(null);
+                setApiKey('');
+                setHotelId('');
+                setIsSaving(false);
+            }, 800);
+            return;
+        }
+
         try {
             const { error } = await supabase
                 .from('channel_settings')
