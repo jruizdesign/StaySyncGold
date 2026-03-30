@@ -40,6 +40,7 @@ const Reservations: React.FC = () => {
   const [selectedResForCharge, setSelectedResForCharge] = useState<Reservation | null>(null);
 
   const [isIndefinite, setIsIndefinite] = useState(false);
+  const [startingBalance, setStartingBalance] = useState('');
   const [isNewGuest, setIsNewGuest] = useState(false);
   const [newGuestForm, setNewGuestForm] = useState({ firstName: '', lastName: '', email: '', phone: '' });
   const [bookingForm, setBookingForm] = useState({
@@ -448,7 +449,7 @@ const Reservations: React.FC = () => {
             is_indefinite: isIndefinite,
             status: 'Confirmed',
             total_price: quote ? quote.total : await calculateTotalAmount(bookingForm.roomId, bookingForm.checkIn, bookingForm.checkOut),
-
+            starting_balance: Number(startingBalance) || 0
           })
         });
 
@@ -465,6 +466,7 @@ const Reservations: React.FC = () => {
       setBookingForm({ guestId: '', roomId: '', checkIn: '', checkOut: '', guestName: '', notes: '' });
       setNewGuestForm({ firstName: '', lastName: '', email: '', phone: '' });
       setIsNewGuest(false);
+      setStartingBalance('');
       setEditingReservationId(null);
 
     } catch (err: any) {
@@ -803,6 +805,7 @@ const Reservations: React.FC = () => {
     // Ideally we pass is_indefinite from DB.
     // For now, just set dates.
     setIsIndefinite(false);
+    setStartingBalance('');
     setIsBookingModalOpen(true);
     setOpenMenuId(null);
   };
@@ -1017,6 +1020,22 @@ const Reservations: React.FC = () => {
                 )}
               </div>
             </div>
+
+            {/* Starting Balance */}
+            {!editingReservationId && (
+              <div className="mt-4">
+                <label className="block text-sm font-medium text-slate-700 mb-1">Prior Starting Balance ($) - Optional</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  className="w-full pl-3 pr-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  value={startingBalance}
+                  onChange={(e: any) => setStartingBalance(e.target.value)}
+                  placeholder="e.g. 250.00"
+                />
+                <p className="text-xs text-slate-500 mt-1">If the guest has an existing balance from before using the system, enter it here.</p>
+              </div>
+            )}
 
             {/* 28-Day Override Warning */}
             {(!isIndefinite && bookingForm.checkIn && bookingForm.checkOut && Math.ceil(Math.abs(new Date(bookingForm.checkOut).getTime() - new Date(bookingForm.checkIn).getTime()) / (1000 * 60 * 60 * 24)) > 28) && (

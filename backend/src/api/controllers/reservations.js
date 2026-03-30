@@ -93,7 +93,7 @@ const getReservationById = async (req, res, next) => {
 const createReservation = async (req, res, next) => {
   const client = await db.pool.connect();
   try {
-    const { property_id, guest_id, room_id, check_in, check_out, status, total_price } = req.body;
+    const { property_id, guest_id, room_id, check_in, check_out, status, total_price, starting_balance } = req.body;
 
     // Start transaction
     await client.query('BEGIN');
@@ -101,12 +101,27 @@ const createReservation = async (req, res, next) => {
     // NOTE: RLS context via user_id removed as requested.
     // Ensure database user has privileges to insert without RLS impersonation.
 
+    let final_total = Number(total_price) || 0;
+    const sBalance = Number(starting_balance) || 0;
+    if (sBalance > 0) {
+        final_total += sBalance;
+    }
+
     // 1. Create Reservation
     const { rows: resRows } = await client.query(
       'INSERT INTO Reservations (property_id, guest_id, room_id, check_in, check_out, status, total_amount) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
-      [property_id, guest_id, room_id, check_in, check_out, status, total_price]
+      [property_id, guest_id, room_id, check_in, check_out, status, final_total]
     );
     const reservation = resRows[0];
+
+    // Insert Starting Balance as a manual charge if > 0
+    if (sBalance > 0) {
+      await client.query(
+        `INSERT INTO financial_transactions (reservation_id, amount, type, description, category, property_id, created_at)
+         VALUES ($1, $2, 'charge', 'Prior Balance Forward', 'Service', $3, NOW())`,
+        [reservation.id, sBalance, property_id]
+      );
+    }
 
     // 2. Sync to Bookings table (for Financials/Channex consistency)
     // Fetch details needed for bookings table
@@ -137,7 +152,7 @@ const createReservation = async (req, res, next) => {
         property_id,
         `local_${reservation.id}`, // Generate a local ID
         guestName,
-        total_price || 0, // Ensure we capture the money!
+        final_total, // Ensure we capture the money!
         'USD',
         status,
         check_in,
