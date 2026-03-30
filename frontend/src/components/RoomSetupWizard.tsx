@@ -19,11 +19,28 @@ const RoomSetupWizard: React.FC<RoomSetupWizardProps> = ({ onClose, onComplete }
         startNumber: 101,
         type: 'Standard King',
         price_per_night: 150,
-        capacity: 2
+        capacity: 2,
+        hasMezzanine: false
     });
 
     const previewRooms = () => {
         const rooms = [];
+        
+        // Generate Mezzanine Floor
+        if (config.hasMezzanine) {
+            for (let r = 0; r < config.roomsPerFloor; r++) {
+                rooms.push({
+                    number: `M${(r + 1).toString().padStart(2, '0')}`,
+                    floor: 0,
+                    type: config.type,
+                    price_per_night: config.price_per_night,
+                    capacity: config.capacity,
+                    status: RoomStatus.CLEAN
+                });
+            }
+        }
+
+        // Generate Standard Floors
         for (let f = 0; f < config.floors; f++) {
             const floorNum = Math.floor(config.startNumber / 100) + f;
             for (let r = 0; r < config.roomsPerFloor; r++) {
@@ -182,6 +199,18 @@ const RoomSetupWizard: React.FC<RoomSetupWizardProps> = ({ onClose, onComplete }
                                     />
                                     <p className="text-xs text-slate-400 mt-1">Starting number for the first floor (e.g. 101 for Floor 1)</p>
                                 </div>
+                                <div className="flex items-center gap-3 pt-2">
+                                    <input
+                                        type="checkbox"
+                                        id="hasMezzanine"
+                                        checked={config.hasMezzanine}
+                                        onChange={e => setConfig({ ...config, hasMezzanine: e.target.checked })}
+                                        className="w-4 h-4 text-purple-600 rounded border-slate-300 focus:ring-purple-500 cursor-pointer"
+                                    />
+                                    <label htmlFor="hasMezzanine" className="text-sm font-medium text-slate-700 cursor-pointer select-none">
+                                        Include Mezzanine Floor (M01, M02...)
+                                    </label>
+                                </div>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
                                         <label className="block text-sm font-medium text-slate-700 mb-1">Room Type</label>
@@ -237,7 +266,7 @@ const RoomSetupWizard: React.FC<RoomSetupWizardProps> = ({ onClose, onComplete }
                                     <div className="flex items-center gap-3">
                                         <span className="font-bold text-slate-700">#{room.number}</span>
                                         <span className="text-slate-400">•</span>
-                                        <span className="text-slate-600">Floor {room.floor}</span>
+                                        <span className="text-slate-600">Floor {room.floor === 0 ? 'M' : room.floor}</span>
                                     </div>
                                     <span className="text-slate-500">{room.type}</span>
                                 </div>

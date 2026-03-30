@@ -290,7 +290,7 @@ const Housekeeping: React.FC = () => {
               <div className="px-5 py-2 space-y-2 text-sm">
                 <div className="flex justify-between text-slate-600">
                   <span>Floor:</span>
-                  <span className="font-medium text-slate-900">{room.floor || 1}</span>
+                  <span className="font-medium text-slate-900">{room.floor === 0 ? 'M' : (room.floor ?? 1)}</span>
                 </div>
                 <div className="flex justify-between text-slate-600">
                   <span>Capacity:</span>

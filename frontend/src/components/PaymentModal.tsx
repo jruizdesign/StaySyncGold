@@ -88,6 +88,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
     const [step, setStep] = useState<'amount' | 'checkout'>('amount');
     const [method, setMethod] = useState<'card' | 'cash' | 'check' | 'transfer' | 'other'>('card');
     const [notes, setNotes] = useState('');
+    const [paymentDate, setPaymentDate] = useState(() => new Date().toISOString().split('T')[0]);
     const [isInitializing, setIsInitializing] = useState(false);
     const [paymentsEnabled, setPaymentsEnabled] = useState(false);
 
@@ -108,6 +109,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
             setAmount(defaultAmount.toString());
             setMethod('card');
             setNotes('');
+            setPaymentDate(new Date().toISOString().split('T')[0]);
         }
     }, [isOpen, defaultAmount]);
 
@@ -151,7 +153,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
             }
         } else {
             try {
-                const { error } = await supabase.from('payments').insert([{
+                const paymentPayload: any = {
                     property_id: propertyId,
                     res_id: reservationId || null,
                     amount: numAmount,
@@ -159,7 +161,15 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                     status: 'succeeded',
                     currency: 'usd',
                     notes: notes
-                }]);
+                };
+
+                if (paymentDate) {
+                    // Try to preserve current time if it's today, otherwise midnight UTC
+                    const d = new Date(paymentDate);
+                    paymentPayload.created_at = d.toISOString();
+                }
+
+                const { error } = await supabase.from('payments').insert([paymentPayload]);
 
                 if (error) {
                     throw error;
@@ -219,13 +229,24 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                             </select>
                         </div>
                         {method !== 'card' && (
-                            <div>
-                                <Input
-                                    label="Notes (Optional)"
-                                    value={notes}
-                                    onChange={(e: any) => setNotes(e.target.value)}
-                                    placeholder="Reference #, etc."
-                                />
+                            <div className="space-y-4">
+                                <div>
+                                    <Input
+                                        label="Payment Date"
+                                        type="date"
+                                        value={paymentDate}
+                                        onChange={(e: any) => setPaymentDate(e.target.value)}
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <Input
+                                        label="Notes (Optional)"
+                                        value={notes}
+                                        onChange={(e: any) => setNotes(e.target.value)}
+                                        placeholder="Reference #, etc."
+                                    />
+                                </div>
                             </div>
                         )}
                         <div className="flex justify-end gap-2 pt-4">
