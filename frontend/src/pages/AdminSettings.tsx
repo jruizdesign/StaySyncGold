@@ -166,6 +166,117 @@ const DatabaseInspector: React.FC = () => {
     );
 };
 
+const DashboardUsers: React.FC = () => {
+    const { user, session } = useAuth();
+    const [dashboardUsers, setDashboardUsers] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [showInviteForm, setShowInviteForm] = useState(false);
+    const [submitting, setSubmitting] = useState(false);
+
+    const [inviteData, setInviteData] = useState({ email: '', role: 'staff' });
+
+    useEffect(() => {
+        if (user?.propertyId) fetchDashboardUsers();
+    }, [user]);
+
+    const fetchDashboardUsers = async () => {
+        setLoading(true);
+        const { data, error } = await supabase
+            .from('users')
+            .select('*')
+            .eq('property_id', user?.propertyId);
+
+        if (!error && data) {
+            setDashboardUsers(data);
+        }
+        setLoading(false);
+    };
+
+    const handleInviteUser = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!session?.access_token) return;
+        setSubmitting(true);
+
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/auth/invite`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session.access_token}`
+                },
+                body: JSON.stringify(inviteData)
+            });
+
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Failed to send invitation');
+
+            alert('Invitation sent successfully!');
+            setShowInviteForm(false);
+            setInviteData({ email: '', role: 'staff' });
+        } catch (err: any) {
+            alert('Error inviting user: ' + err.message);
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    return (
+        <Card title="Dashboard Users" action={
+            <Button icon={Plus} onClick={() => setShowInviteForm(!showInviteForm)}>
+                {showInviteForm ? 'Cancel' : 'Invite User'}
+            </Button>
+        }>
+             <p className="text-sm text-slate-500 mb-4 pb-2 border-b">
+                Dashboard Users have access to login to this administrative portal. For local employees (e.g., Housekeepers) who only need kiosk PIN access, use the Staff Management section below.
+            </p>
+
+            <div className="space-y-4">
+                {showInviteForm && (
+                     <div className="p-4 border border-slate-200 rounded-lg bg-indigo-50 mb-4 animate-fadeIn">
+                        <h4 className="font-semibold text-indigo-900 mb-3">Invite Dashboard User</h4>
+                        <form onSubmit={handleInviteUser} className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <Input label="User Email" type="email" value={inviteData.email} onChange={e => setInviteData({ ...inviteData, email: e.target.value })} required />
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">Access Role</label>
+                                    <select className="w-full p-2 border border-slate-300 rounded-md bg-white" value={inviteData.role} onChange={e => setInviteData({ ...inviteData, role: e.target.value })}>
+                                        <option value="staff">Staff (Basic Access)</option>
+                                        <option value="manager">Manager (Full Operational Access)</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div className="flex justify-end">
+                                <Button type="submit" disabled={submitting}>{submitting ? 'Sending...' : 'Send Invitation'}</Button>
+                            </div>
+                        </form>
+                    </div>
+                )}
+
+                <div className="space-y-2">
+                    {loading ? <Loader className="animate-spin" /> : dashboardUsers.map((u: any) => (
+                        <div key={u.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-100">
+                           <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center font-bold text-indigo-700">
+                                    {(u.first_name?.[0] || u.email?.[0] || '?').toUpperCase()}
+                                </div>
+                                <div>
+                                    <p className="font-medium text-slate-900">{u.first_name} {u.last_name}</p>
+                                    <p className="text-sm text-slate-500">{u.email}</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <span className="text-xs font-semibold px-2 py-1 bg-slate-200 text-slate-700 rounded-full uppercase tracking-wider">{u.role}</span>
+                                <Badge color="green">Active</Badge>
+                            </div>
+                        </div>
+                    ))}
+                    {!loading && dashboardUsers.length === 0 && <p className="text-slate-500 text-center py-4">No dashboard users found.</p>}
+                </div>
+            </div>
+        </Card>
+    );
+};
+
 const UserManagement: React.FC = () => {
     const { user, session } = useAuth();
     const [users, setUsers] = useState<any[]>([]);
@@ -1614,7 +1725,12 @@ const AdminSettings: React.FC = () => {
                 {/* Tab Content */}
                 <div className="col-span-1 md:col-span-3">
                     {activeTab === 'property' && <PropertyManagement />}
-                    {activeTab === 'users' && <UserManagement />}
+                    {activeTab === 'users' && (
+                        <div className="space-y-6">
+                            <DashboardUsers />
+                            <UserManagement />
+                        </div>
+                    )}
                     {activeTab === 'rooms' && <RoomWizard />}
                     {activeTab === 'rates' && <RatesTab />}
                     {activeTab === 'taxes' && <TaxesManager />}

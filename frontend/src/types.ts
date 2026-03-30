@@ -102,7 +102,7 @@ export interface Property {
 export interface AppUser {
   id: string;
   email: string;
-  role: 'admin' | 'manager' | 'staff';
+  role: 'admin' | 'owner' | 'manager' | 'staff';
   propertyId?: string; // Foreign key to Property
   propertyName?: string; // Fetched name of the property
   isAdmin?: boolean;

@@ -19,6 +19,7 @@ const aiRouter = require('./api/routes/ai');
 const accountingRouter = require('./api/routes/accounting');
 const quickbooksRouter = require('./api/routes/quickbooks');
 const messagesRouter = require('./api/routes/messages');
+const authRouter = require('./api/routes/auth');
 
 // ...
 
@@ -80,6 +81,7 @@ app.use('/api/accounting', protect, accountingRouter);
 app.use('/api/quickbooks', quickbooksRouter);
 app.use('/api/messages', protect, messagesRouter);
 app.use('/api/overview', protect, require('./api/routes/overview'));
+app.use('/api/auth', protect, authRouter);
 
 app.get('/', (req, res) => {
   res.send('Welcome to the Cardea API!');

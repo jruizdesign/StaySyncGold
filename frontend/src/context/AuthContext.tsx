@@ -112,11 +112,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 const appUser: AppUser = {
                     id: data.id, // Using DB ID
                     email: data.email,
-                    role: data.role as 'admin' | 'manager' | 'staff',
+                    role: data.role as 'admin' | 'owner' | 'manager' | 'staff',
                     propertyId: data.property_id,
                     propertyName: propertyName,
                     isAdmin: data.isAdmin, // Using the column from DB
-                    isManager: data.isManager || data.role === 'manager', // specific boolean or role-based fallback
+                    isManager: data.isManager || data.role === 'manager' || data.role === 'owner', // specific boolean or role-based fallback
                     isDemoMode: isDemoMode,
                     agreedToLegal: data.agreed_to_legal,
                     subscriptionTier: subscriptionTier
