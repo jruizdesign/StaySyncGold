@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button, Badge } from '../components/UIComponents';
 import { Check, ShieldCheck, Sparkles, Building2 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { supabase } from '../lib/supabase';
 
 const TIERS = [
   {
@@ -37,6 +39,7 @@ const MODULES = [
 ];
 
 const Pricing: React.FC = () => {
+    const { user } = useAuth();
     const navigate = useNavigate();
     const [selectedTier, setSelectedTier] = useState('professional');
     const [activeModules, setActiveModules] = useState<Record<string, boolean>>({
@@ -46,6 +49,9 @@ const Pricing: React.FC = () => {
         channel: false,
         ai: false
     });
+
+    const [promoCode, setPromoCode] = useState('');
+    const [isProcessing, setIsProcessing] = useState(false);
 
     const toggleModule = (id: string) => {
         setActiveModules(prev => ({ ...prev, [id]: !prev[id] }));
@@ -59,6 +65,33 @@ const Pricing: React.FC = () => {
             if (activeModules[mod.id]) total += mod.price;
         });
         return total;
+    };
+
+    const handleCheckout = async () => {
+        if (promoCode.toUpperCase() === 'STAYSYNC2026') {
+            if (!user?.propertyId) return alert('No property context found. Please log in again.');
+            setIsProcessing(true);
+            const { error } = await supabase.from('properties')
+                .update({
+                    subscription_tier: selectedTier,
+                    enable_finance_module: activeModules.finance,
+                    enable_quickbooks: activeModules.quickbooks,
+                    enable_payments: activeModules.payments,
+                    enable_channel_manager: activeModules.channel,
+                    enable_ai: activeModules.ai
+                })
+                .eq('id', user.propertyId);
+
+            setIsProcessing(false);
+            if (error) {
+                alert('Error unlocking app: ' + error.message);
+            } else {
+                alert('App Unlocked Successfully! Welcome to StaySync Gold.');
+                window.location.href = '/dashboard';
+            }
+        } else {
+            alert(`Proceeding to specific Stripe Checkout session for ${isEnterprise ? 'Enterprise' : '$' + calculateTotal() + '/mo'}...`);
+        }
     };
 
     const isEnterprise = selectedTier === 'enterprise';
@@ -208,17 +241,30 @@ const Pricing: React.FC = () => {
                     </div>
                     
                     <div className="p-8 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-6">
-                        <p className="text-sm text-slate-500 flex items-center gap-2.5 font-medium">
-                            <div className="p-1.5 bg-emerald-100 rounded-full">
-                                <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                        <div className="flex-1 space-y-4 w-full sm:w-auto">
+                            <p className="text-sm text-slate-500 flex items-center gap-2.5 font-medium">
+                                <div className="p-1.5 bg-emerald-100 rounded-full">
+                                    <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                                </div>
+                                Prices are automatically prorated based on today's activation date.
+                            </p>
+                            <div className="flex items-center gap-3">
+                                <input 
+                                    type="text" 
+                                    placeholder="Enter Promo Code" 
+                                    className="px-4 py-2 border border-slate-300 rounded-lg text-sm uppercase max-w-[200px]"
+                                    value={promoCode}
+                                    onChange={(e) => setPromoCode(e.target.value)}
+                                />
+                                {promoCode && <span className="text-xs text-indigo-600 font-semibold">Code applied</span>}
                             </div>
-                            Prices are automatically prorated based on today's activation date.
-                        </p>
+                        </div>
                         <Button 
                             className="w-full sm:w-auto bg-slate-900 border-slate-900 text-white hover:bg-slate-800 hover:border-slate-800 px-10 py-4 text-base font-bold uppercase tracking-wide h-auto shadow-xl shadow-slate-900/20 transition-all hover:shadow-slate-900/30 hover:-translate-y-0.5" 
-                            onClick={() => alert(`Proceeding to specific Stripe Checkout session for ${isEnterprise ? 'Enterprise' : '$' + calculateTotal() + '/mo'}...`)}
+                            onClick={handleCheckout}
+                            disabled={isProcessing}
                         >
-                            Proceed to Checkout
+                            {isProcessing ? 'Processing...' : 'Proceed to Checkout'}
                         </Button>
                     </div>
                 </div>
