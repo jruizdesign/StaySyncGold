@@ -19,13 +19,25 @@ const AuthVerify: React.FC = () => {
 
         const verifyEmail = async () => {
             try {
-                // Parse standard URL search params, since the hash router stores it before the #
-                // example: http://site.com/?token_hash=ABC&type=signup#/verify
-                const urlParams = new URLSearchParams(window.location.search);
-                const token_hash = urlParams.get('token_hash');
-                const type = urlParams.get('type') as EmailOtpType;
+                // 1. Check if a session already exists (e.g. PKCE flow auto-handled it or user is already logged in)
+                const { data: { session } } = await supabase.auth.getSession();
+                if (session) {
+                    setSuccess(true);
+                    setTimeout(() => navigate('/dashboard', { replace: true }), 2000);
+                    return;
+                }
+
+                // Parse standard URL search params, or if hash router is used, extract from the hash.
+                const searchParams = new URLSearchParams(window.location.search);
+                const hashParamsStr = window.location.hash.split('?')[1] || '';
+                const hashParams = new URLSearchParams(hashParamsStr);
+
+                const token_hash = searchParams.get('token_hash') || hashParams.get('token_hash');
+                const type = (searchParams.get('type') || hashParams.get('type')) as EmailOtpType;
 
                 if (!token_hash || !type) {
+                    // Try to see if it's the implicit flow `#access_token=` which Supabase might have just consumed
+                    // Since session was checked above, if session is null and no token_hash, it really is missing.
                     throw new Error("Invalid verification link. Missing security token.");
                 }
 
@@ -46,7 +58,13 @@ const AuthVerify: React.FC = () => {
 
             } catch (err: any) {
                 console.error("OTP Verification Error:", err);
-                setError(err.message || 'The verification link is invalid or has expired.');
+                const msg = err.message?.toLowerCase() || '';
+                
+                if (msg.includes('invalid') || msg.includes('expired')) {
+                    setError('The verification link is invalid, consumed, or expired. Corporate email scanners often pre-fetch links, which verifies your email automatically. Please try logging in directly on the portal. If login fails, please sign up again or request a new link.');
+                } else {
+                    setError(err.message || 'The verification link is invalid or has expired.');
+                }
             } finally {
                 setVerifying(false);
             }
