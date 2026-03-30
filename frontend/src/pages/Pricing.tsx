@@ -87,7 +87,8 @@ const Pricing: React.FC = () => {
                 alert('Error unlocking app: ' + error.message);
             } else {
                 alert('App Unlocked Successfully! Welcome to StaySync Gold.');
-                window.location.href = '/dashboard';
+                window.location.hash = '#/dashboard';
+                window.location.reload();
             }
         } else {
             alert(`Proceeding to specific Stripe Checkout session for ${isEnterprise ? 'Enterprise' : '$' + calculateTotal() + '/mo'}...`);
