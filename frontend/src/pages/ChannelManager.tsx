@@ -76,7 +76,6 @@ const ChannelManager: React.FC = () => {
     const { user } = useAuth();
     const [loading, setLoading] = useState(true);
     const [channelSettings, setChannelSettings] = useState<ChannelSetting[]>([]);
-    const [isSyncing, setIsSyncing] = useState(false);
     const [hasAccess, setHasAccess] = useState<boolean | null>(null);
 
     // Modal State
@@ -138,26 +137,6 @@ const ChannelManager: React.FC = () => {
 
         } catch (err) {
             console.error('Error fetching room mappings:', err);
-        }
-    };
-
-    const handleSyncToChannex = async () => {
-        setIsSyncing(true);
-        try {
-            // This will be implemented with MCP tools
-            alert('Channex sync functionality will be implemented via MCP tools. Please configure your Channex API key in the MCP settings first.');
-
-            // TODO: Call MCP tools:
-            // 1. channex_create_property or channex_update_property
-            // 2. Update channel_settings with channex_property_id
-            // 3. Sync room types
-            // 4. Create rate plans
-
-        } catch (err: any) {
-            console.error('Sync error:', err);
-            alert('Failed to sync: ' + err.message);
-        } finally {
-            setIsSyncing(false);
         }
     };
 
