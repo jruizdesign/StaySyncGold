@@ -214,6 +214,20 @@ const getLogs = async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 };
+// @desc    Handle Disconnect Webhook from QuickBooks
+// @route   GET /api/quickbooks/disconnect
+const disconnect = async (req, res) => {
+    try {
+        // Intuit may send realmId when someone disconnects from the App Center
+        const realmId = req.query.realmId || req.body?.realmId;
+        if (realmId) {
+            await db.query('UPDATE quickbooks_settings SET is_connected = false, access_token = null, refresh_token = null WHERE realm_id = $1', [realmId]);
+        }
+        res.status(200).send('Disconnected successfully');
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
 
 module.exports = {
     getStatus,
@@ -222,5 +236,6 @@ module.exports = {
     getAccounts,
     saveMapping,
     sync,
-    getLogs
+    getLogs,
+    disconnect
 };

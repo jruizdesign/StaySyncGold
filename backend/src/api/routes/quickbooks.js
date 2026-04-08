@@ -6,6 +6,7 @@ const { protect } = require('../../middleware/auth');
 // Public routes for OAuth flow
 router.get('/authUri', qbController.getAuthUri);
 router.get('/callback', qbController.callback);
+router.get('/disconnect', qbController.disconnect);
 
 // Protected routes for UI interaction
 router.get('/status', protect, qbController.getStatus);
