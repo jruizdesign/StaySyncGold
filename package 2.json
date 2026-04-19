@@ -1,0 +1,11 @@
+{
+  "name": "staysyncpms",
+  "version": "1.0.0",
+  "private": true,
+  "description": "StaySyncPMS build scripts for Capacitor iOS",
+  "scripts": {
+    "ios:sync": "npx cap sync ios",
+    "ios:open": "npx cap open ios",
+    "ios:build": "cd frontend && npm install && npm run build && cd .. && npx cap sync ios && npx cap open ios"
+  }
+}
