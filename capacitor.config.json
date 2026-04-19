@@ -1,0 +1,5 @@
+{
+  "appId": "com.staysync.app",
+  "appName": "StaySyncPMS",
+  "webDir": "frontend/dist"
+}
