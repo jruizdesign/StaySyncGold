@@ -6,6 +6,9 @@
   "scripts": {
     "ios:sync": "npx cap sync ios",
     "ios:open": "npx cap open ios",
-    "ios:build": "cd frontend && npm install && npm run build && cd .. && npx cap sync ios && npx cap open ios"
+    "ios:build": "npm --prefix frontend install && npm --prefix frontend run build && npx cap sync ios && npx cap open ios",
+    "web:dev": "npm --prefix frontend run dev",
+    "web:build": "npm --prefix frontend run build",
+    "ios:run:live": "npm --prefix frontend run dev & npx cap run ios -l --external"
   }
 }

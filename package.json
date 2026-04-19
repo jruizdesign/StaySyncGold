@@ -41,6 +41,7 @@
   "dependencies": {
     "@capacitor/android": "^8.3.1",
     "@capacitor/core": "^8.3.1",
+    "@capacitor/ios": "^8.3.1",
     "@google/genai": "^1.37.0",
     "@supabase/supabase-js": "^2.102.1",
     "assist": "^0.3.2",
