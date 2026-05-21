@@ -193,7 +193,7 @@ const LandingPage: React.FC = () => {
                     <button onClick={() => navigate('/eula')} className="hover:text-slate-300 transition-colors">EULA</button>
                 </div>
                 <p>&copy; {new Date().getFullYear()} Cardea. All rights reserved.</p>
-                <p className="mt-2 text-xs">Architected by <a href="https://twitter.com/jruizdesign" target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-gold-400 transition-colors">Jason Ruiz @jruizdesign</a></p>
+                <p className="mt-2 text-xs">Architected by <span className="text-slate-400 font-semibold">Jason Ruiz, JTR Technology LLC.</span></p>
             </footer>
         </div>
     );

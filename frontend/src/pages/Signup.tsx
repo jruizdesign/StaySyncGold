@@ -481,7 +481,7 @@ const Signup: React.FC = () => {
                         <button type="button" onClick={() => navigate('/eula')} className="hover:text-white transition-colors">EULA</button>
                     </div>
                     <p className="text-sm text-slate-400 font-medium tracking-wide">
-                        Architected by <a href="https://www.linkedin.com/in/jason-ruiz-it" target="_blank" rel="noopener noreferrer" className="text-base font-bold text-slate-300 hover:text-gold-400 transition-colors">Jason Ruiz @jruizdesign</a>
+                        Architected by <span className="text-base font-bold text-slate-300">Jason Ruiz, JTR Technology LLC.</span>
                     </p>
                 </div>
             </div>
