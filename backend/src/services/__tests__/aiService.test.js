@@ -29,15 +29,13 @@ describe('AI Service', () => {
     describe('generatePropertyInsights', () => {
         it('should return AI-generated insights on success', async () => {
             const mockApiResponse = {
-                response: {
-                    text: () => JSON.stringify({
-                        title: 'High Priority Maintenance',
-                        subtitle: 'MAINTENANCE',
-                        message: 'Urgent action required for 2 high priority tickets.',
-                        actionLabel: 'Dispatch team now',
-                        variant: 'alert'
-                    }),
-                },
+                text: JSON.stringify({
+                    title: 'High Priority Maintenance',
+                    subtitle: 'MAINTENANCE',
+                    message: 'Urgent action required for 2 high priority tickets.',
+                    actionLabel: 'Dispatch team now',
+                    variant: 'alert'
+                }),
             };
             mockGenerateContent.mockResolvedValue(mockApiResponse);
 
@@ -76,9 +74,7 @@ describe('AI Service', () => {
         it('should return a financial briefing string on success', async () => {
             const briefingText = '- **Financial Health**: Strong revenue projected.';
             const mockApiResponse = {
-                response: {
-                    text: () => briefingText,
-                },
+                text: briefingText,
             };
             mockGenerateContent.mockResolvedValue(mockApiResponse);
 
@@ -108,9 +104,7 @@ describe('AI Service', () => {
                 suggestedAction: 'Shut off main water valve and call emergency plumber.',
             };
             const mockApiResponse = {
-                response: {
-                    text: () => JSON.stringify(analysis),
-                },
+                text: JSON.stringify(analysis),
             };
             mockGenerateContent.mockResolvedValue(mockApiResponse);
 
@@ -142,9 +136,7 @@ describe('AI Service', () => {
         it('should return a chat response string on success', async () => {
             const responseText = 'The current occupancy is 75%.';
             const mockApiResponse = {
-                response: {
-                    text: () => responseText,
-                },
+                text: responseText,
             };
             mockGenerateContent.mockResolvedValue(mockApiResponse);
 

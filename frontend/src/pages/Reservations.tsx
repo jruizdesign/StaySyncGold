@@ -66,6 +66,11 @@ const Reservations: React.FC = () => {
   const [isRoomDetailsModalOpen, setIsRoomDetailsModalOpen] = useState(false);
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
 
+  // Live guest search and conflict warning states
+  const [guestSearch, setGuestSearch] = useState('');
+  const [showGuestDropdown, setShowGuestDropdown] = useState(false);
+  const [conflictWarning, setConflictWarning] = useState<string | null>(null);
+
 
   useEffect(() => {
     if (user) {
@@ -319,6 +324,34 @@ const Reservations: React.FC = () => {
     return () => clearTimeout(debounce);
 
   }, [bookingForm.roomId, bookingForm.checkIn, bookingForm.checkOut, rooms, user?.propertyId]);
+
+  // Live conflict warning check
+  useEffect(() => {
+    if (!bookingForm.roomId || !bookingForm.checkIn || (!bookingForm.checkOut && !isIndefinite)) {
+      setConflictWarning(null);
+      return;
+    }
+
+    const start = new Date(bookingForm.checkIn);
+    const end = isIndefinite ? new Date('2099-12-31') : new Date(bookingForm.checkOut);
+
+    const conflict = reservations.find(res => {
+      if (res.roomId !== bookingForm.roomId) return false;
+      if (res.id === editingReservationId) return false;
+      if (res.status === 'Cancelled' || res.status === 'Checked Out') return false;
+
+      const resStart = new Date(res.checkIn);
+      const resEnd = new Date(res.checkOut);
+
+      return start < resEnd && end > resStart;
+    });
+
+    if (conflict) {
+      setConflictWarning(`⚠️ Room is already occupied by ${conflict.guestName} from ${new Date(conflict.checkIn).toLocaleDateString()} to ${new Date(conflict.checkOut).toLocaleDateString()}!`);
+    } else {
+      setConflictWarning(null);
+    }
+  }, [bookingForm.roomId, bookingForm.checkIn, bookingForm.checkOut, isIndefinite, editingReservationId, reservations]);
 
   const handleCreateBooking = async () => {
     if (!user?.propertyId || !bookingForm.roomId || !bookingForm.checkIn || (!isIndefinite && !bookingForm.checkOut)) {
@@ -790,6 +823,17 @@ const Reservations: React.FC = () => {
     }
   };
 
+  const handleNewBookingClick = () => {
+    setEditingReservationId(null);
+    setBookingForm({ guestId: '', roomId: '', checkIn: '', checkOut: '', guestName: '', notes: '' });
+    setNewGuestForm({ firstName: '', lastName: '', email: '', phone: '' });
+    setGuestSearch('');
+    setIsNewGuest(false);
+    setStartingBalance('');
+    setIsIndefinite(false);
+    setIsBookingModalOpen(true);
+  };
+
   const handleEditClick = (res: Reservation) => {
     setEditingReservationId(res.id);
     setBookingForm({
@@ -800,6 +844,8 @@ const Reservations: React.FC = () => {
       guestName: res.guestName,
       notes: ''
     });
+    setGuestSearch(res.guestName || '');
+    setIsNewGuest(false);
     // Determine if indefinite
     // Simple check: is checkOut far in future? Or logic from DB? 
     // Ideally we pass is_indefinite from DB.
@@ -815,6 +861,11 @@ const Reservations: React.FC = () => {
     setIsRoomDetailsModalOpen(true);
   };
 
+
+  const filteredGuestsForSearch = guests.filter(g =>
+    `${g.first_name || ''} ${g.last_name || ''}`.toLowerCase().includes(guestSearch.toLowerCase()) ||
+    (g.email && g.email.toLowerCase().includes(guestSearch.toLowerCase()))
+  );
 
   const filteredReservations = reservations.filter(r =>
     r.guestName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -904,7 +955,7 @@ const Reservations: React.FC = () => {
             />
           </div>
           {activeTab === 'active' && (
-            <Button icon={Plus} onClick={() => setIsBookingModalOpen(true)}>New Booking</Button>
+            <Button icon={Plus} onClick={handleNewBookingClick}>New Booking</Button>
           )}
         </div>
       </div>
@@ -919,7 +970,11 @@ const Reservations: React.FC = () => {
                   <label className="block text-sm font-medium text-slate-700">Guest</label>
                   <button
                     type="button"
-                    onClick={() => setIsNewGuest(!isNewGuest)}
+                    onClick={() => {
+                      setIsNewGuest(!isNewGuest);
+                      setGuestSearch('');
+                      setBookingForm({ ...bookingForm, guestId: '', guestName: '' });
+                    }}
                     className="text-xs text-gold-600 hover:text-gold-700 font-medium hover:underline focus:outline-none"
                   >
                     {isNewGuest ? 'Select Existing Guest' : 'Register New Guest'}
@@ -954,71 +1009,206 @@ const Reservations: React.FC = () => {
                     />
                   </div>
                 ) : (
-                  <select
-                    className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-gold-500 focus:border-transparent outline-none bg-white"
-                    value={bookingForm.guestId}
-                    onChange={(e) => {
-                      const g = guests.find(g => g.id === e.target.value);
-                      setBookingForm({
-                        ...bookingForm,
-                        guestId: e.target.value,
-                        guestName: g ? `${g.first_name} ${g.last_name}` : ''
-                      });
-                    }}
-                  >
-                    <option value="">Select a Guest...</option>
-                    {guests.map(guest => (
-                      <option key={guest.id} value={guest.id}>
-                        {guest.first_name} {guest.last_name} {guest.email ? `(${guest.email})` : ''}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-gold-500 focus:border-transparent outline-none bg-white text-sm"
+                      placeholder="Type guest name or email..."
+                      value={guestSearch}
+                      onChange={(e) => {
+                        setGuestSearch(e.target.value);
+                        setShowGuestDropdown(true);
+                        if (bookingForm.guestId) {
+                          setBookingForm({ ...bookingForm, guestId: '', guestName: '' });
+                        }
+                      }}
+                      onFocus={() => setShowGuestDropdown(true)}
+                    />
+                    
+                    {showGuestDropdown && (
+                      <>
+                        <div className="fixed inset-0 z-40" onClick={() => setShowGuestDropdown(false)} />
+                        <div className="absolute left-0 right-0 mt-1 max-h-60 overflow-y-auto bg-white border border-slate-200 rounded-lg shadow-lg z-50 py-1">
+                          {filteredGuestsForSearch.length > 0 ? (
+                            filteredGuestsForSearch.map(g => (
+                              <button
+                                key={g.id}
+                                type="button"
+                                onClick={() => {
+                                  setBookingForm({
+                                    ...bookingForm,
+                                    guestId: g.id,
+                                    guestName: `${g.first_name} ${g.last_name}`
+                                  });
+                                  setGuestSearch(`${g.first_name} ${g.last_name}`);
+                                  setShowGuestDropdown(false);
+                                }}
+                                className="w-full text-left px-4 py-2 text-sm hover:bg-slate-50 transition-colors flex flex-col"
+                              >
+                                <span className="font-semibold text-slate-800">{g.first_name} {g.last_name}</span>
+                                {g.email && <span className="text-xs text-slate-500">{g.email}</span>}
+                              </button>
+                            ))
+                          ) : (
+                            <div className="px-4 py-2 text-sm text-slate-500">No guests found</div>
+                          )}
+                          
+                          <div className="border-t border-slate-100 my-1" />
+                          
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsNewGuest(true);
+                              setShowGuestDropdown(false);
+                              const parts = guestSearch.trim().split(/\s+/);
+                              const fName = parts[0] || '';
+                              const lName = parts.slice(1).join(' ') || '';
+                              setNewGuestForm({
+                                firstName: fName,
+                                lastName: lName,
+                                email: '',
+                                phone: ''
+                              });
+                            }}
+                            className="w-full text-left px-4 py-2 text-sm text-gold-600 hover:bg-gold-50 font-medium transition-colors flex items-center gap-1.5"
+                          >
+                            <span>➕</span> Register "{guestSearch || 'New Guest'}" as New Guest
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
                 )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700">Room</label>
                 <select
-                  className="w-full p-2 border rounded-lg"
+                  className="w-full p-2 border rounded-lg bg-white"
                   value={bookingForm.roomId}
                   onChange={(e) => setBookingForm({ ...bookingForm, roomId: e.target.value })}
                 >
                   <option value="">Select Room</option>
-                  {rooms.map(room => (
-                    <option key={room.id} value={room.id}>{room.number} - {room.type}</option>
-                  ))}
+                  {rooms.map(room => {
+                    const statusEmoji = room.status === 'Clean' ? '🟢' : room.status === 'Dirty' ? '🔴' : room.status === 'Inspect' ? '🟡' : room.status === 'Occupied' ? '👤' : '🚫';
+                    return (
+                      <option key={room.id} value={room.id}>
+                        {room.number} - {room.type} ({statusEmoji} {room.status})
+                      </option>
+                    );
+                  })}
                 </select>
               </div>
-              <div className="grid grid-cols-2 gap-2">
-                <label className="block text-sm font-medium text-slate-700">Check In</label>
-                <Input type="date" value={bookingForm.checkIn} onChange={(e) => setBookingForm({ ...bookingForm, checkIn: e.target.value })} />
-              </div>
+              
               <div>
-                <div className="flex justify-between">
-                  <label className="block text-sm font-medium text-slate-700">Check Out</label>
-                  <div className="flex items-center gap-1">
-                    <input
-                      type="checkbox"
-                      id="indefinite"
-                      checked={isIndefinite}
-                      onChange={(e) => setIsIndefinite(e.target.checked)}
-                      className="rounded border-slate-300 text-gold-600 focus:ring-gold-500"
-                    />
-                    <label htmlFor="indefinite" className="text-xs text-slate-500 cursor-pointer">Indefinite Stay</label>
-                  </div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Stay Duration Presets</label>
+                <div className="flex flex-wrap gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const today = new Date();
+                      const tomorrow = new Date();
+                      tomorrow.setDate(today.getDate() + 1);
+                      setBookingForm({
+                        ...bookingForm,
+                        checkIn: today.toISOString().split('T')[0],
+                        checkOut: tomorrow.toISOString().split('T')[0]
+                      });
+                      setIsIndefinite(false);
+                    }}
+                    className="px-2.5 py-1 text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md font-medium transition-colors"
+                  >
+                    Tonight
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const start = bookingForm.checkIn ? new Date(bookingForm.checkIn) : new Date();
+                      const end = new Date(start);
+                      end.setDate(start.getDate() + 1);
+                      setBookingForm({
+                        ...bookingForm,
+                        checkIn: start.toISOString().split('T')[0],
+                        checkOut: end.toISOString().split('T')[0]
+                      });
+                      setIsIndefinite(false);
+                    }}
+                    className="px-2.5 py-1 text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md font-medium transition-colors"
+                  >
+                    +1 Night
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const start = bookingForm.checkIn ? new Date(bookingForm.checkIn) : new Date();
+                      const end = new Date(start);
+                      end.setDate(start.getDate() + 2);
+                      setBookingForm({
+                        ...bookingForm,
+                        checkIn: start.toISOString().split('T')[0],
+                        checkOut: end.toISOString().split('T')[0]
+                      });
+                      setIsIndefinite(false);
+                    }}
+                    className="px-2.5 py-1 text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md font-medium transition-colors"
+                  >
+                    +2 Nights
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const start = bookingForm.checkIn ? new Date(bookingForm.checkIn) : new Date();
+                      const end = new Date(start);
+                      end.setDate(start.getDate() + 7);
+                      setBookingForm({
+                        ...bookingForm,
+                        checkIn: start.toISOString().split('T')[0],
+                        checkOut: end.toISOString().split('T')[0]
+                      });
+                      setIsIndefinite(false);
+                    }}
+                    className="px-2.5 py-1 text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md font-medium transition-colors"
+                  >
+                    +1 Week
+                  </button>
                 </div>
-                {!isIndefinite && (
-                  <Input type="date" value={bookingForm.checkOut} onChange={(e) => setBookingForm({ ...bookingForm, checkOut: e.target.value })} />
-                )}
-                {isIndefinite && (
-                  <div className="p-2 bg-slate-100 text-xs text-slate-500 rounded border border-slate-200 mt-1">
-                    Guest is staying indefinitely.
-                    {new Date(bookingForm.checkIn) < new Date() ?
-                      " Quote shows accrued balance up to today." :
-                      " Quote showing 1-night deposit estimate."
-                    }
-                  </div>
-                )}
               </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Check In</label>
+                  <Input type="date" value={bookingForm.checkIn} onChange={(e) => setBookingForm({ ...bookingForm, checkIn: e.target.value })} />
+                </div>
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="block text-sm font-medium text-slate-700">Check Out</label>
+                    <div className="flex items-center gap-1">
+                      <input
+                        type="checkbox"
+                        id="indefinite"
+                        checked={isIndefinite}
+                        onChange={(e) => setIsIndefinite(e.target.checked)}
+                        className="rounded border-slate-300 text-gold-600 focus:ring-gold-500"
+                      />
+                      <label htmlFor="indefinite" className="text-xs text-slate-500 cursor-pointer">Indefinite</label>
+                    </div>
+                  </div>
+                  {!isIndefinite && (
+                    <Input type="date" value={bookingForm.checkOut} onChange={(e) => setBookingForm({ ...bookingForm, checkOut: e.target.value })} />
+                  )}
+                  {isIndefinite && (
+                    <div className="p-2 bg-slate-100 text-xs text-slate-500 rounded border border-slate-200 mt-1">
+                      Guest is staying indefinitely.
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {conflictWarning && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-md flex items-start gap-2">
+                  <div className="text-red-600 font-bold text-xs mt-0.5">⚠️</div>
+                  <div className="text-xs font-bold text-red-800 leading-relaxed">{conflictWarning}</div>
+                </div>
+              )}
             </div>
 
             {/* Starting Balance */}
@@ -1117,7 +1307,7 @@ const Reservations: React.FC = () => {
 
             <div className="flex justify-end gap-2 mt-4">
               <Button variant="ghost" onClick={() => { setIsBookingModalOpen(false); setEditingReservationId(null); setIsOverride(false); }}>Cancel</Button>
-              <Button onClick={handleCreateBooking}>{editingReservationId ? 'Update Booking' : 'Confirm Booking'}</Button>
+              <Button onClick={handleCreateBooking} disabled={!!conflictWarning}>{editingReservationId ? 'Update Booking' : 'Confirm Booking'}</Button>
             </div>
           </div>
         </div >

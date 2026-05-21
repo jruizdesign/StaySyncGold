@@ -143,7 +143,7 @@ const Login: React.FC = () => {
                 </div>
 
                 <p className="text-center text-base text-slate-300">
-                    Need an account? <a href="https://www.linkedin.com/in/jason-ruiz-it" target="_blank" rel="noopener noreferrer" className="text-lg font-bold text-white hover:text-gold-400 underline decoration-gold-400/50 hover:decoration-gold-400 transition-all">Contact Sales</a>
+                    Need an account? <button type="button" onClick={() => navigate('/signup')} className="text-lg font-bold text-white hover:text-gold-400 underline decoration-gold-400/50 hover:decoration-gold-400 transition-all cursor-pointer bg-transparent border-none p-0 outline-none">Register Organization</button>
                 </p>
 
                 <div className="pt-8 text-center pb-8">
